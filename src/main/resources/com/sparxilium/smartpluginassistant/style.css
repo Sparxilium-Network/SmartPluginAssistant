@@ -1,0 +1,190 @@
+/* Prism Launcher Dark Theme Palette */
+.root {
+    -fx-base: #1e1f22;
+    -fx-background: #18191c;
+    -fx-control-inner-background: #2b2d30;
+    -fx-accent: #3574f0;
+    -fx-focus-color: #3574f0;
+    -fx-faint-focus-color: transparent;
+    -fx-text-base-color: #dfe1e5;
+    -fx-font-family: "Segoe UI", "Microsoft JhengHei", "PingFang SC", sans-serif;
+    -fx-font-size: 13px;
+}
+
+.top-bar {
+    -fx-background-color: #1e1f22;
+    -fx-padding: 10 16;
+    -fx-border-color: #2e3136;
+    -fx-border-width: 0 0 1 0;
+}
+
+.app-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.btn-primary {
+    -fx-background-color: #3574f0;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 6 14;
+    -fx-cursor: hand;
+}
+.btn-primary:hover {
+    -fx-background-color: #4682f7;
+}
+
+.btn-secondary {
+    -fx-background-color: #2b2d30;
+    -fx-text-fill: #dfe1e5;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+    -fx-cursor: hand;
+    -fx-border-color: #393b40;
+    -fx-border-radius: 6;
+}
+.btn-secondary:hover {
+    -fx-background-color: #393b40;
+}
+
+.btn-success {
+    -fx-background-color: #2ecc71;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+    -fx-cursor: hand;
+}
+.btn-success:hover {
+    -fx-background-color: #27ae60;
+}
+
+.btn-danger {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: #ffffff;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+    -fx-cursor: hand;
+}
+.btn-danger:hover {
+    -fx-background-color: #c0392b;
+}
+
+.instance-card {
+    -fx-background-color: #2b2d30;
+    -fx-background-radius: 8;
+    -fx-padding: 12;
+    -fx-border-color: #393b40;
+    -fx-border-radius: 8;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 6, 0, 0, 2);
+}
+.instance-card:hover {
+    -fx-background-color: #32353a;
+    -fx-border-color: #4e5157;
+}
+.instance-card-selected {
+    -fx-background-color: #263238;
+    -fx-border-color: #3574f0;
+    -fx-border-width: 1.5;
+}
+
+.sidebar {
+    -fx-background-color: #1e1f22;
+    -fx-border-color: #2e3136;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 12;
+}
+
+.sidebar-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #bcbec4;
+    -fx-alignment: BASELINE_LEFT;
+    -fx-padding: 8 12;
+    -fx-background-radius: 6;
+    -fx-cursor: hand;
+    -fx-font-size: 13px;
+}
+.sidebar-btn:hover {
+    -fx-background-color: #2b2d30;
+    -fx-text-fill: #ffffff;
+}
+.sidebar-btn-active {
+    -fx-background-color: #3574f0;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.table-view {
+    -fx-background-color: #1e1f22;
+    -fx-table-cell-border-color: #2e3136;
+    -fx-background-radius: 6;
+}
+.table-view .column-header-background {
+    -fx-background-color: #25272a;
+}
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-padding: 8 4;
+}
+.table-view .table-row-cell {
+    -fx-background-color: #1e1f22;
+    -fx-border-color: #282a2e;
+    -fx-border-width: 0 0 1 0;
+}
+.table-view .table-row-cell:odd {
+    -fx-background-color: #232528;
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: #2b394e;
+}
+
+.badge-loader {
+    -fx-background-color: #e67e22;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+}
+
+.badge-version {
+    -fx-background-color: #34495e;
+    -fx-text-fill: #ecf0f1;
+    -fx-padding: 2 6;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+}
+
+.badge-update {
+    -fx-background-color: #27ae60;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+}
+
+.text-input {
+    -fx-background-color: #2b2d30;
+    -fx-text-fill: #dfe1e5;
+    -fx-border-color: #393b40;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 6 8;
+}
+.text-input:focused {
+    -fx-border-color: #3574f0;
+}
+
+.combo-box {
+    -fx-background-color: #2b2d30;
+    -fx-border-color: #393b40;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.combo-box .list-cell {
+    -fx-text-fill: #dfe1e5;
+}
