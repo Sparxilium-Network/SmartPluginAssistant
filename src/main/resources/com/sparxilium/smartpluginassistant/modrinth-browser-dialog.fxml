@@ -16,13 +16,22 @@
     </HBox>
 
     <!-- Filter Bar -->
-    <HBox spacing="10.0" alignment="CENTER_LEFT">
-        <TextField fx:id="searchField" promptText="搜尋插件名稱或關鍵字 (例如: viaversion, essentials...)" HBox.hgrow="ALWAYS" onAction="#handleSearch"/>
-        <ComboBox fx:id="loaderFilterCombo" prefWidth="130"/>
-        <ComboBox fx:id="versionFilterCombo" prefWidth="120"/>
-        <CheckBox fx:id="ignoreVersionCheckBox" text="無視版本檢查" style="-fx-text-fill: #dfe1e5; -fx-font-weight: bold;"/>
-        <Button fx:id="searchBtn" text="搜尋" onAction="#handleSearch" styleClass="btn-primary"/>
-    </HBox>
+    <VBox spacing="8.0">
+        <HBox spacing="10.0" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField" promptText="搜尋插件名稱或關鍵字 (例如: viaversion, essentials...)" HBox.hgrow="ALWAYS" onAction="#handleSearch"/>
+            <ComboBox fx:id="loaderFilterCombo" prefWidth="130"/>
+            <ComboBox fx:id="versionFilterCombo" prefWidth="120"/>
+            <CheckBox fx:id="ignoreVersionCheckBox" text="無視版本檢查" style="-fx-text-fill: #dfe1e5; -fx-font-weight: bold;"/>
+            <CheckBox fx:id="ignoreCompatCheckBox" text="無視相容性" style="-fx-text-fill: #dfe1e5; -fx-font-weight: bold;"/>
+            <Button fx:id="searchBtn" text="搜尋" onAction="#handleSearch" styleClass="btn-primary"/>
+        </HBox>
+
+        <!-- Compatibility Inclusion Checkboxes when Ignore Compatibility is enabled -->
+        <HBox fx:id="compatFilterBox" spacing="12.0" alignment="CENTER_LEFT" style="-fx-background-color: #2b2d30; -fx-padding: 6 10; -fx-background-radius: 4;" visible="false" managed="false">
+            <Label text="包含相容架構 (Include Loaders):" style="-fx-text-fill: #3574f0; -fx-font-weight: bold; -fx-font-size: 11px;"/>
+            <HBox fx:id="compatCheckboxesContainer" spacing="10.0" alignment="CENTER_LEFT"/>
+        </HBox>
+    </VBox>
 
     <HBox alignment="CENTER_LEFT">
         <Label fx:id="statusLabel" text="準備就緒" style="-fx-text-fill: #8b8e96; -fx-font-size: 12px;"/>

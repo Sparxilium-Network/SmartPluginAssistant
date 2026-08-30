@@ -17,6 +17,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,9 @@ public class ModrinthBrowserController {
     @FXML private ComboBox<String> loaderFilterCombo;
     @FXML private ComboBox<String> versionFilterCombo;
     @FXML private CheckBox ignoreVersionCheckBox;
+    @FXML private CheckBox ignoreCompatCheckBox;
+    @FXML private javafx.scene.layout.HBox compatFilterBox;
+    @FXML private javafx.scene.layout.HBox compatCheckboxesContainer;
     @FXML private Button searchBtn;
     @FXML private ScrollPane resultsScrollPane;
     @FXML private VBox resultsContainer;
@@ -55,6 +59,7 @@ public class ModrinthBrowserController {
 
     // Map of projectId/title/hash -> installed version number / filename
     private final Map<String, String> installedPluginsMap = new HashMap<>();
+    private final Map<String, CheckBox> customCompatCheckBoxMap = new HashMap<>();
 
     // Infinite scroll pagination state
     private static final int PAGE_SIZE = 20;
@@ -71,6 +76,7 @@ public class ModrinthBrowserController {
 
         applyI18n();
         refreshInstalledMap();
+        setupCompatibilityCheckboxes();
 
         loaderFilterCombo.getItems().addAll(I18n.get("modrinth.all"), "folia", "purpur", "paper", "spigot", "velocity", "bungeecord", "fabric", "sponge");
         if (instance != null && instance.getLoader() != null) {
@@ -79,8 +85,19 @@ public class ModrinthBrowserController {
             loaderFilterCombo.setValue("paper");
         }
 
+        loaderFilterCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            setupCompatibilityCheckboxes();
+            performSearch();
+        });
+
         ignoreVersionCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
             versionFilterCombo.setDisable(newVal);
+            performSearch();
+        });
+
+        ignoreCompatCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            compatFilterBox.setVisible(newVal);
+            compatFilterBox.setManaged(newVal);
             performSearch();
         });
 
@@ -153,10 +170,32 @@ public class ModrinthBrowserController {
         return null;
     }
 
+    private void setupCompatibilityCheckboxes() {
+        if (compatCheckboxesContainer == null) return;
+        compatCheckboxesContainer.getChildren().clear();
+        customCompatCheckBoxMap.clear();
+
+        String selectedLoader = loaderFilterCombo.getValue();
+        if (selectedLoader == null || selectedLoader.equalsIgnoreCase("all") || selectedLoader.contains("全部")) {
+            return;
+        }
+
+        List<String> available = ServerInstance.getAvailableCompatibleLoadersFor(selectedLoader);
+        for (String loaderOption : available) {
+            CheckBox cb = new CheckBox(loaderOption.toUpperCase());
+            cb.setStyle("-fx-text-fill: #dfe1e5; -fx-font-weight: bold; -fx-font-size: 11px;");
+            cb.setSelected(true); // Default checked
+            cb.selectedProperty().addListener((obs, oldV, newV) -> performSearch());
+            customCompatCheckBoxMap.put(loaderOption.toLowerCase(), cb);
+            compatCheckboxesContainer.getChildren().add(cb);
+        }
+    }
+
     private void applyI18n() {
         titleLabel.setText(I18n.get("modrinth.title"));
         searchField.setPromptText(I18n.get("modrinth.search_prompt"));
         ignoreVersionCheckBox.setText(I18n.get("modrinth.ignore_version"));
+        ignoreCompatCheckBox.setText(I18n.get("modrinth.ignore_compat"));
         searchBtn.setText(I18n.get("modrinth.btn_search"));
         statusLabel.setText(I18n.get("app.status_ready"));
     }
@@ -243,11 +282,19 @@ public class ModrinthBrowserController {
         String allText = I18n.get("modrinth.all");
         if (allText.equals(selectedLoader) || "全部 (All)".equals(selectedLoader) || "All".equals(selectedLoader) || selectedLoader == null) {
             return Collections.emptyList();
-        } else if (currentInstance != null && currentInstance.getLoader().equalsIgnoreCase(selectedLoader)) {
-            return currentInstance.getEffectiveLoaders();
-        } else {
-            return List.of(selectedLoader);
         }
+
+        List<String> loaders = new ArrayList<>();
+        loaders.add(selectedLoader.toLowerCase());
+
+        if (ignoreCompatCheckBox != null && ignoreCompatCheckBox.isSelected()) {
+            for (Map.Entry<String, CheckBox> entry : customCompatCheckBoxMap.entrySet()) {
+                if (entry.getValue().isSelected() && !loaders.contains(entry.getKey())) {
+                    loaders.add(entry.getKey());
+                }
+            }
+        }
+        return loaders;
     }
 
     private String getSelectedVersion() {
@@ -314,8 +361,17 @@ public class ModrinthBrowserController {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         titleBox.getChildren().add(spacer);
 
-        if (currentInstance != null && !currentInstance.getExtraCompatibleLoaders().isEmpty()) {
-            String primaryLoader = currentInstance.getLoader().toLowerCase();
+        boolean isCompatSearchActive = (ignoreCompatCheckBox != null && ignoreCompatCheckBox.isSelected())
+                || (currentInstance != null && !currentInstance.getExtraCompatibleLoaders().isEmpty());
+
+        if (isCompatSearchActive) {
+            String primaryLoader = loaderFilterCombo.getValue();
+            if (primaryLoader == null || primaryLoader.equalsIgnoreCase("all") || primaryLoader.contains("全部")) {
+                primaryLoader = currentInstance != null ? currentInstance.getLoader().toLowerCase() : "paper";
+            } else {
+                primaryLoader = primaryLoader.toLowerCase();
+            }
+
             List<String> categories = hit.getCategories() != null ? hit.getCategories() : Collections.emptyList();
             List<String> supportedLoaders = categories.stream()
                     .map(String::toLowerCase)
