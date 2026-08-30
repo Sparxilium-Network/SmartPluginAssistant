@@ -67,7 +67,6 @@ public class MainController {
     @FXML private TableColumn<InstalledPlugin, String> colName;
     @FXML private TableColumn<InstalledPlugin, String> colCurrentVersion;
     @FXML private TableColumn<InstalledPlugin, String> colLastModified;
-    @FXML private TableColumn<InstalledPlugin, String> colStatus;
     @FXML private TableColumn<InstalledPlugin, String> colUpdate;
     @FXML private TableColumn<InstalledPlugin, Void> colActions;
 
@@ -165,7 +164,6 @@ public class MainController {
         colName.setText(I18n.get("table.col_name"));
         colCurrentVersion.setText(I18n.get("table.col_current_version"));
         colLastModified.setText(I18n.get("table.col_last_modified"));
-        colStatus.setText(I18n.get("table.col_status"));
         colUpdate.setText(I18n.get("table.col_update"));
         colActions.setText(I18n.get("table.col_actions"));
 
@@ -245,6 +243,25 @@ public class MainController {
         });
 
         colName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
+        colName.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || getTableRow() == null || getTableRow().getItem() == null) {
+                    setText(null);
+                    setGraphic(null);
+                    setStyle("");
+                } else {
+                    InstalledPlugin plugin = getTableRow().getItem();
+                    setText(item);
+                    if (!plugin.isEnabled()) {
+                        setStyle("-fx-text-fill: #7f8c8d; -fx-opacity: 0.7;");
+                    } else {
+                        setStyle("-fx-text-fill: #ffffff;");
+                    }
+                }
+            }
+        });
         
         // Current Version column with Architecture Incompatibility Warning Icon
         colCurrentVersion.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getCurrentVersionNumber()));
@@ -292,26 +309,6 @@ public class MainController {
                     timeLabel.setStyle("-fx-text-fill: #8b8e96; -fx-font-size: 11px;");
                     setAlignment(javafx.geometry.Pos.CENTER);
                     setGraphic(timeLabel);
-                    setText(null);
-                }
-            }
-        });
-
-        colStatus.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(String item, boolean empty) {
-                super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
-                    setGraphic(null);
-                    setText(null);
-                } else {
-                    InstalledPlugin plugin = getTableRow().getItem();
-                    Label statusBadge = new Label(plugin.isEnabled() ? I18n.get("table.status_enabled") : I18n.get("table.status_disabled"));
-                    statusBadge.setStyle(plugin.isEnabled() ?
-                            "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-padding: 2 6; -fx-background-radius: 4;" :
-                            "-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-padding: 2 6; -fx-background-radius: 4;");
-                    setAlignment(javafx.geometry.Pos.CENTER);
-                    setGraphic(statusBadge);
                     setText(null);
                 }
             }

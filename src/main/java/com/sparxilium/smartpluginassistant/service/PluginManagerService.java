@@ -48,11 +48,17 @@ public class PluginManagerService {
 
                 InstalledPlugin plugin = new InstalledPlugin(fileName, sha1, size, lastModified, enabled);
                 
-                // Deduce current version number from filename if possible (e.g., EssentialsX-2.20.1.jar -> 2.20.1)
-                String cleanName = fileName.replace(".jar.disabled", "").replace(".jar", "");
-                int lastDash = cleanName.lastIndexOf('-');
-                if (lastDash > 0 && lastDash < cleanName.length() - 1) {
-                    plugin.setCurrentVersionNumber(cleanName.substring(lastDash + 1));
+                // 1. Read exact version from inside jar (plugin.yml, paper-plugin.yml, bungeecord.yml, velocity-plugin.json)
+                String internalVersion = readPluginVersionFromJar(file);
+                if (internalVersion != null && !internalVersion.isBlank()) {
+                    plugin.setCurrentVersionNumber(internalVersion.trim());
+                } else {
+                    // 2. Fallback: deduce current version number from filename (e.g., EssentialsX-2.20.1.jar -> 2.20.1)
+                    String cleanName = fileName.replace(".jar.disabled", "").replace(".jar", "");
+                    int lastDash = cleanName.lastIndexOf('-');
+                    if (lastDash > 0 && lastDash < cleanName.length() - 1) {
+                        plugin.setCurrentVersionNumber(cleanName.substring(lastDash + 1));
+                    }
                 }
 
                 plugins.add(plugin);
@@ -78,31 +84,45 @@ public class PluginManagerService {
                             ModrinthVersion version = updateMap.get(hash);
                             ModrinthVersion.ModrinthFile primaryFile = version.getPrimaryFile();
 
-                            plugin.setUpdateAvailable(true);
-                            plugin.setLatestVersionId(version.getId());
-                            plugin.setLatestVersionNumber(version.getVersionNumber());
-                            plugin.setProjectId(version.getProjectId());
+                            String latestVerNum = version.getVersionNumber();
+                            String currentVerNum = plugin.getCurrentVersionNumber();
 
-                            if (version.getGameVersions() != null && !version.getGameVersions().isEmpty()) {
-                                if (version.getGameVersions().size() > 2) {
-                                    plugin.setSupportedGameVersions(version.getGameVersions().get(0) + " ~ " + version.getGameVersions().get(version.getGameVersions().size() - 1));
-                                } else {
-                                    plugin.setSupportedGameVersions(String.join(", ", version.getGameVersions()));
+                            // Only treat as update if latestVerNum is actually newer than currentVerNum
+                            boolean isNewer = isNewerVersion(currentVerNum, latestVerNum);
+
+                            if (isNewer) {
+                                plugin.setUpdateAvailable(true);
+                                plugin.setLatestVersionId(version.getId());
+                                plugin.setLatestVersionNumber(latestVerNum);
+                                plugin.setProjectId(version.getProjectId());
+
+                                if (version.getGameVersions() != null && !version.getGameVersions().isEmpty()) {
+                                    if (version.getGameVersions().size() > 2) {
+                                        plugin.setSupportedGameVersions(version.getGameVersions().get(0) + " ~ " + version.getGameVersions().get(version.getGameVersions().size() - 1));
+                                    } else {
+                                        plugin.setSupportedGameVersions(String.join(", ", version.getGameVersions()));
+                                    }
                                 }
-                            }
 
-                            if (version.getLoaders() != null && !version.getLoaders().isEmpty()) {
-                                String primaryLoader = instance.getLoader() != null ? instance.getLoader().toLowerCase() : "paper";
-                                boolean supportsPrimary = version.getLoaders().stream().anyMatch(l -> l.equalsIgnoreCase(primaryLoader));
-                                plugin.setLoaderIncompatible(!supportsPrimary);
-                                plugin.setSupportedLoadersSummary(String.join(", ", version.getLoaders()));
+                                if (version.getLoaders() != null && !version.getLoaders().isEmpty()) {
+                                    String primaryLoader = instance.getLoader() != null ? instance.getLoader().toLowerCase() : "paper";
+                                    boolean supportsPrimary = version.getLoaders().stream().anyMatch(l -> l.equalsIgnoreCase(primaryLoader));
+                                    plugin.setLoaderIncompatible(!supportsPrimary);
+                                    plugin.setSupportedLoadersSummary(String.join(", ", version.getLoaders()));
+                                } else {
+                                    plugin.setLoaderIncompatible(false);
+                                }
+
+                                if (primaryFile != null) {
+                                    plugin.setLatestDownloadUrl(primaryFile.getUrl());
+                                    plugin.setLatestFileName(primaryFile.getFilename());
+                                }
                             } else {
+                                plugin.setUpdateAvailable(false);
                                 plugin.setLoaderIncompatible(false);
-                            }
-
-                            if (primaryFile != null) {
-                                plugin.setLatestDownloadUrl(primaryFile.getUrl());
-                                plugin.setLatestFileName(primaryFile.getFilename());
+                                if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
+                                    plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
+                                }
                             }
                         } else {
                             plugin.setUpdateAvailable(false);
@@ -199,5 +219,68 @@ public class PluginManagerService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static String readPluginVersionFromJar(File jarFile) {
+        if (!jarFile.exists() || !jarFile.getName().toLowerCase().contains(".jar")) {
+            return null;
+        }
+
+        try (java.util.jar.JarFile jar = new java.util.jar.JarFile(jarFile)) {
+            // Check plugin.yml, paper-plugin.yml, bungeecord.yml, velocity-plugin.json
+            String[] descriptors = {"plugin.yml", "paper-plugin.yml", "bungeecord.yml", "velocity-plugin.json", "fabric.mod.json", "mcmod.info"};
+            for (String desc : descriptors) {
+                java.util.zip.ZipEntry entry = jar.getEntry(desc);
+                if (entry != null) {
+                    try (var is = jar.getInputStream(entry);
+                         var reader = new java.io.BufferedReader(new java.io.InputStreamReader(is, java.nio.charset.StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            String trimmed = line.trim();
+                            if (trimmed.startsWith("version:") || trimmed.startsWith("\"version\":")) {
+                                String ver = trimmed.replaceFirst("(?i)^\"?version\"?\\s*:\\s*", "")
+                                        .replace("\"", "").replace("'", "").replace(",", "").trim();
+                                if (!ver.isBlank() && !ver.startsWith("${") && !ver.equalsIgnoreCase("@version@")) {
+                                    return ver;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    public static boolean isNewerVersion(String currentVersion, String latestVersion) {
+        if (latestVersion == null || latestVersion.isBlank()) return false;
+        if (currentVersion == null || currentVersion.isBlank() || currentVersion.equals("-")) return true;
+
+        String cur = currentVersion.trim().toLowerCase().replaceAll("^[vV]", "");
+        String lat = latestVersion.trim().toLowerCase().replaceAll("^[vV]", "");
+
+        if (cur.equalsIgnoreCase(lat)) return false;
+
+        // Split semantic parts: 1.5.3 -> [1, 5, 3]
+        String[] curParts = cur.split("[.-]");
+        String[] latParts = lat.split("[.-]");
+
+        int maxLen = Math.max(curParts.length, latParts.length);
+        for (int i = 0; i < maxLen; i++) {
+            String cPart = i < curParts.length ? curParts[i] : "0";
+            String lPart = i < latParts.length ? latParts[i] : "0";
+
+            try {
+                int cNum = Integer.parseInt(cPart.replaceAll("\\D", ""));
+                int lNum = Integer.parseInt(lPart.replaceAll("\\D", ""));
+                if (lNum > cNum) return true;
+                if (lNum < cNum) return false;
+            } catch (NumberFormatException e) {
+                int cmp = lPart.compareTo(cPart);
+                if (cmp > 0) return true;
+                if (cmp < 0) return false;
+            }
+        }
+        return false;
     }
 }
