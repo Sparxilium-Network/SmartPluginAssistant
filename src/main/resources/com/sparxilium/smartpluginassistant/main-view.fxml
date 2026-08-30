@@ -49,6 +49,7 @@
                     </VBox>
                     <Button fx:id="instanceSettingsBtn" text="⚙️ 實例設定" onAction="#handleOpenInstanceSettings" styleClass="btn-secondary"/>
                     <Button fx:id="openPluginsFolderBtn" text="開啟插件資料夾" onAction="#handleOpenPluginsFolder" styleClass="btn-secondary"/>
+                    <Button fx:id="exportZipBtn" text="📦 匯出為 ZIP" onAction="#handleExportInstanceZip" styleClass="btn-secondary"/>
                     <Button fx:id="deleteInstanceBtn" text="刪除實例" onAction="#handleDeleteCurrentInstance" styleClass="btn-danger"/>
                 </HBox>
 

@@ -145,4 +145,35 @@ public class InstanceManager {
     public Path getRootDataDir() {
         return rootDataDir;
     }
+
+    public void exportInstanceToZip(ServerInstance instance, Path targetZipFile) throws IOException {
+        Path instanceDir = getInstanceDirectory(instance);
+        if (!Files.exists(instanceDir)) {
+            Files.createDirectories(instanceDir);
+        }
+
+        if (targetZipFile.getParent() != null) {
+            Files.createDirectories(targetZipFile.getParent());
+        }
+
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(targetZipFile))) {
+            // Also write instance metadata config inside zip
+            byte[] metadataBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(instance);
+            java.util.zip.ZipEntry metaEntry = new java.util.zip.ZipEntry("instance.json");
+            zos.putNextEntry(metaEntry);
+            zos.write(metadataBytes);
+            zos.closeEntry();
+
+            try (var stream = Files.walk(instanceDir)) {
+                List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
+                for (Path p : paths) {
+                    String relativePath = instanceDir.relativize(p).toString().replace('\\', '/');
+                    java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(relativePath);
+                    zos.putNextEntry(zipEntry);
+                    Files.copy(p, zos);
+                    zos.closeEntry();
+                }
+            }
+        }
+    }
 }

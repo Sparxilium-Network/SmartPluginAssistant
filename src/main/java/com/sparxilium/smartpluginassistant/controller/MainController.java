@@ -43,6 +43,7 @@ public class MainController {
     @FXML private VBox instanceDetailPanel;
     @FXML private Button instanceSettingsBtn;
     @FXML private Button openPluginsFolderBtn;
+    @FXML private Button exportZipBtn;
     @FXML private Button deleteInstanceBtn;
 
     // Toolbar
@@ -87,6 +88,7 @@ public class MainController {
 
         instanceSettingsBtn.setText(I18n.get("app.instance_settings"));
         openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder"));
+        exportZipBtn.setText(I18n.get("app.export_zip"));
         deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
 
         browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
@@ -104,6 +106,7 @@ public class MainController {
         if (currentSelectedInstance == null) {
             selectedInstanceNameLabel.setText(I18n.get("app.no_instance_selected"));
             selectedInstanceInfoLabel.setText(I18n.get("app.select_instance_hint"));
+            setInstanceButtonsDisabled(true);
         } else {
             selectInstance(currentSelectedInstance);
         }
@@ -297,8 +300,28 @@ public class MainController {
         return card;
     }
 
+    private void setInstanceButtonsDisabled(boolean disabled) {
+        instanceSettingsBtn.setDisable(disabled);
+        openPluginsFolderBtn.setDisable(disabled);
+        exportZipBtn.setDisable(disabled);
+        deleteInstanceBtn.setDisable(disabled);
+        browseModrinthBtn.setDisable(disabled);
+        addByUrlBtn.setDisable(disabled);
+        checkUpdatesBtn.setDisable(disabled);
+        refreshPluginsBtn.setDisable(disabled);
+    }
+
     private void selectInstance(ServerInstance instance) {
         this.currentSelectedInstance = instance;
+        if (instance == null) {
+            selectedInstanceNameLabel.setText(I18n.get("app.no_instance_selected"));
+            selectedInstanceInfoLabel.setText(I18n.get("app.select_instance_hint"));
+            setInstanceButtonsDisabled(true);
+            installedPluginsList.clear();
+            return;
+        }
+
+        setInstanceButtonsDisabled(false);
         selectedInstanceNameLabel.setText(instance.getName());
 
         String fuzzyText = "";
@@ -312,6 +335,26 @@ public class MainController {
                 I18n.get("instance.path", instanceManager.getInstanceDirectory(instance).toAbsolutePath())
         );
         refreshPlugins();
+    }
+
+    @FXML
+    private void handleExportInstanceZip() {
+        if (currentSelectedInstance == null) return;
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle(I18n.get("app.export_zip_title"));
+        fileChooser.setInitialFileName(currentSelectedInstance.getName() + ".zip");
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("ZIP Archive (*.zip)", "*.zip"));
+        java.io.File file = fileChooser.showSaveDialog(exportZipBtn.getScene().getWindow());
+        if (file != null) {
+            try {
+                instanceManager.exportInstanceToZip(currentSelectedInstance, file.toPath());
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, I18n.get("app.export_zip_success", currentSelectedInstance.getName(), file.getAbsolutePath()), ButtonType.OK);
+                alert.showAndWait();
+            } catch (Exception e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("app.export_zip_failed", e.getMessage()), ButtonType.OK);
+                alert.showAndWait();
+            }
+        }
     }
 
     @FXML
@@ -491,11 +534,25 @@ public class MainController {
         if (currentSelectedInstance == null) return;
         Path pluginsDir = instanceManager.getPluginsDirectory(currentSelectedInstance);
         try {
-            if (Desktop.isDesktopSupported()) {
-                Desktop.getDesktop().open(pluginsDir.toFile());
+            if (!java.nio.file.Files.exists(pluginsDir)) {
+                java.nio.file.Files.createDirectories(pluginsDir);
             }
-        } catch (IOException e) {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                Desktop.getDesktop().open(pluginsDir.toFile());
+            } else {
+                String os = System.getProperty("os.name").toLowerCase();
+                if (os.contains("win")) {
+                    new ProcessBuilder("explorer.exe", pluginsDir.toAbsolutePath().toString()).start();
+                } else if (os.contains("mac")) {
+                    new ProcessBuilder("open", pluginsDir.toAbsolutePath().toString()).start();
+                } else {
+                    new ProcessBuilder("xdg-open", pluginsDir.toAbsolutePath().toString()).start();
+                }
+            }
+        } catch (Exception e) {
             e.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR, "無法開啟資料夾: " + e.getMessage(), ButtonType.OK);
+            alert.showAndWait();
         }
     }
 
