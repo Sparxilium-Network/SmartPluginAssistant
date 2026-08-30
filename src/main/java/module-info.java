@@ -12,6 +12,9 @@ module com.sparxilium.smartpluginassistant {
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.datatype.jsr310;
 
+    requires org.apache.logging.log4j;
+    requires org.slf4j;
+
     opens com.sparxilium.smartpluginassistant to javafx.fxml;
     opens com.sparxilium.smartpluginassistant.controller to javafx.fxml;
     opens com.sparxilium.smartpluginassistant.model to com.fasterxml.jackson.databind, javafx.base;

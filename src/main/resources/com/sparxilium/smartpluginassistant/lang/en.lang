@@ -58,6 +58,14 @@ settings.warning=⚠️ Warning: Enabling extra compatible loaders may cause API
 settings.btn_save=Save Settings
 settings.btn_cancel=Cancel
 
+app_settings.title=Application Settings
+app_settings.language=Interface Language:
+app_settings.cache_section=Cache Management:
+app_settings.cache_size=Current Image Cache Size: {0}
+app_settings.btn_clear_cache=🗑️ Clear All Cache
+app_settings.cache_cleared=Cache successfully cleared!
+app_settings.btn_close=Close
+
 create.title=Create Server Instance
 create.hint=Enter instance name. This will be used as directory name (cannot contain \\ / : * ? " < > |).
 create.name=Instance Name (Directory Name):
@@ -76,6 +84,7 @@ modrinth.title=Modrinth Plugin Hub
 modrinth.window_title=Browse Modrinth Plugins - {0}
 modrinth.search_prompt=Search plugin name or keyword (e.g., viaversion, essentials...)
 modrinth.all=All
+modrinth.ignore_version=Ignore Version Check
 modrinth.btn_search=Search
 modrinth.searching=Searching...
 modrinth.found_results=Found {0} plugin results

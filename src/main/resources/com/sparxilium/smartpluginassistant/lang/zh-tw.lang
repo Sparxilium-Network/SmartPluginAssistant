@@ -58,6 +58,14 @@ settings.warning=⚠️ 警告：勾選額外相容載入器後，部分非原�
 settings.btn_save=儲存設定
 settings.btn_cancel=取消
 
+app_settings.title=應用程式設定
+app_settings.language=介面語言 (Language):
+app_settings.cache_section=快取管理 (Cache Management):
+app_settings.cache_size=目前圖片快取大小: {0}
+app_settings.btn_clear_cache=🗑️ 清除所有快取
+app_settings.cache_cleared=快取已成功清除！
+app_settings.btn_close=關閉
+
 create.title=建立新伺服器實例
 create.hint=請輸入實例名稱，系統將以此名稱作為資料夾名（不可包含 \\ / : * ? " < > | 等非法符號）。
 create.name=實例名稱 (同時作為目錄名稱):
@@ -76,6 +84,7 @@ modrinth.title=Modrinth 插件中心
 modrinth.window_title=瀏覽 Modrinth 插件 - {0}
 modrinth.search_prompt=搜尋插件名稱或關鍵字 (例如: viaversion, essentials...)
 modrinth.all=全部 (All)
+modrinth.ignore_version=無視版本檢查 (Ignore Version Check)
 modrinth.btn_search=搜尋
 modrinth.searching=搜尋中...
 modrinth.found_results=找到 {0} 個插件結果

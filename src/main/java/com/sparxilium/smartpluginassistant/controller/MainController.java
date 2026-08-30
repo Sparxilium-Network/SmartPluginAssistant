@@ -31,7 +31,7 @@ public class MainController {
     // Top Bar
     @FXML private Label appTitleLabel;
     @FXML private Label appSubtitleLabel;
-    @FXML private ComboBox<String> langComboBox;
+    @FXML private Button appSettingsBtn;
     @FXML private Button addInstanceBtn;
 
     // Instance sidebar
@@ -71,35 +71,15 @@ public class MainController {
 
     @FXML
     public void initialize() {
-        setupLangSelector();
         setupTableColumns();
         applyI18n();
         refreshInstanceList();
     }
 
-    private void setupLangSelector() {
-        langComboBox.getItems().addAll("繁體中文 (zh-tw)", "English (en)");
-        langComboBox.setValue("繁體中文 (zh-tw)");
-
-        langComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                if (newVal.contains("en")) {
-                    I18n.loadLanguage("en");
-                } else {
-                    I18n.loadLanguage("zh-tw");
-                }
-                applyI18n();
-                if (currentSelectedInstance != null) {
-                    selectInstance(currentSelectedInstance);
-                }
-                pluginTableView.refresh();
-            }
-        });
-    }
-
     private void applyI18n() {
         appTitleLabel.setText(I18n.get("app.title"));
         appSubtitleLabel.setText(I18n.get("app.subtitle"));
+        if (appSettingsBtn != null) appSettingsBtn.setText(I18n.get("app_settings.title"));
         addInstanceBtn.setText(I18n.get("app.add_instance"));
 
         instanceListHeaderLabel.setText(I18n.get("app.instance_list"));
@@ -124,6 +104,33 @@ public class MainController {
         if (currentSelectedInstance == null) {
             selectedInstanceNameLabel.setText(I18n.get("app.no_instance_selected"));
             selectedInstanceInfoLabel.setText(I18n.get("app.select_instance_hint"));
+        } else {
+            selectInstance(currentSelectedInstance);
+        }
+    }
+
+    @FXML
+    private void handleOpenAppSettings() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sparxilium/smartpluginassistant/app-settings-dialog.fxml"));
+            Parent root = loader.load();
+
+            AppSettingsDialogController controller = loader.getController();
+            controller.init(() -> {
+                applyI18n();
+                pluginTableView.refresh();
+                refreshInstanceList();
+            });
+
+            Stage stage = new Stage();
+            stage.setTitle(I18n.get("app_settings.title"));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
+            stage.setScene(scene);
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

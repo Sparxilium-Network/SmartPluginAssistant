@@ -27,6 +27,7 @@ public class ModrinthBrowserController {
     @FXML private TextField searchField;
     @FXML private ComboBox<String> loaderFilterCombo;
     @FXML private ComboBox<String> versionFilterCombo;
+    @FXML private CheckBox ignoreVersionCheckBox;
     @FXML private Button searchBtn;
     @FXML private VBox resultsContainer;
     @FXML private ProgressIndicator loadingIndicator;
@@ -39,6 +40,8 @@ public class ModrinthBrowserController {
     @FXML private Label detailDescLabel;
     @FXML private ComboBox<String> detailVersionCombo;
     @FXML private Button detailInstallBtn;
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ModrinthBrowserController.class);
 
     private ServerInstance currentInstance;
     private ModrinthService modrinthService;
@@ -64,19 +67,29 @@ public class ModrinthBrowserController {
             loaderFilterCombo.setValue("paper");
         }
 
-        versionFilterCombo.getItems().addAll(I18n.get("modrinth.all"), "1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2");
-        if (instance != null && instance.getMcVersion() != null) {
-            versionFilterCombo.setValue(instance.getMcVersion());
-        } else {
-            versionFilterCombo.setValue("1.21.1");
-        }
+        ignoreVersionCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            versionFilterCombo.setDisable(newVal);
+            performSearch();
+        });
 
-        performSearch();
+        versionFilterCombo.getItems().clear();
+        versionFilterCombo.getItems().add(I18n.get("modrinth.all"));
+        modrinthService.fetchGameVersions()
+                .thenAccept(versions -> Platform.runLater(() -> {
+                    versionFilterCombo.getItems().addAll(versions);
+                    if (instance != null && instance.getMcVersion() != null) {
+                        versionFilterCombo.setValue(instance.getMcVersion());
+                    } else {
+                        versionFilterCombo.setValue(I18n.get("modrinth.all"));
+                    }
+                    performSearch();
+                }));
     }
 
     private void applyI18n() {
         titleLabel.setText(I18n.get("modrinth.title"));
         searchField.setPromptText(I18n.get("modrinth.search_prompt"));
+        ignoreVersionCheckBox.setText(I18n.get("modrinth.ignore_version"));
         searchBtn.setText(I18n.get("modrinth.btn_search"));
         statusLabel.setText(I18n.get("app.status_ready"));
     }
@@ -103,9 +116,11 @@ public class ModrinthBrowserController {
         }
 
         String version = versionFilterCombo.getValue();
-        if (allText.equals(version) || "全部 (All)".equals(version) || "All".equals(version)) {
+        if (ignoreVersionCheckBox.isSelected() || allText.equals(version) || "全部 (All)".equals(version) || "All".equals(version)) {
             version = null;
         }
+
+        logger.debug("Performing Modrinth search: query='{}', loaders={}, version={}", query, loadersToSearch, version);
 
         loadingIndicator.setVisible(true);
         statusLabel.setText(I18n.get("modrinth.searching"));
@@ -120,6 +135,7 @@ public class ModrinthBrowserController {
                 }))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
+                        logger.error("Modrinth search failed", ex);
                         loadingIndicator.setVisible(false);
                         statusLabel.setText(I18n.get("modrinth.search_failed", ex.getMessage()));
                     });
@@ -150,9 +166,8 @@ public class ModrinthBrowserController {
         iconView.setFitWidth(48);
         iconView.setFitHeight(48);
         if (hit.getIconUrl() != null && !hit.getIconUrl().isBlank()) {
-            try {
-                iconView.setImage(new Image(hit.getIconUrl(), 48, 48, true, true, true));
-            } catch (Exception ignored) {}
+            com.sparxilium.smartpluginassistant.service.ImageCacheService.loadImageAsync(
+                    hit.getIconUrl(), 48, 48, iconView::setImage);
         }
 
         VBox infoBox = new VBox(4);
@@ -206,13 +221,15 @@ public class ModrinthBrowserController {
         detailInstallBtn.setText(I18n.get("modrinth.fetching_versions"));
 
         List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
-        String mcVersion = currentInstance != null ? currentInstance.getMcVersion() : null;
+        String mcVersion = (ignoreVersionCheckBox.isSelected()) ? null : (currentInstance != null ? currentInstance.getMcVersion() : null);
+
+        logger.debug("Fetching versions for project '{}' with loaders={} and mcVersion={}", hit.getProjectId(), loaders, mcVersion);
 
         modrinthService.getProjectVersions(hit.getProjectId(), loaders, mcVersion)
                 .thenAccept(versions -> Platform.runLater(() -> {
                     this.selectedProjectVersions = versions;
                     if (versions.isEmpty()) {
-                        detailInstallBtn.setText(I18n.get("modrinth.no_versions", loaders, mcVersion));
+                        detailInstallBtn.setText(I18n.get("modrinth.no_versions", loaders, (mcVersion == null ? "Any" : mcVersion)));
                         return;
                     }
 
@@ -229,6 +246,7 @@ public class ModrinthBrowserController {
                 }))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
+                        logger.error("Failed to fetch versions for " + hit.getProjectId(), ex);
                         detailInstallBtn.setText(I18n.get("modrinth.install_failed", ex.getMessage()));
                     });
                     return null;

@@ -20,6 +20,7 @@
         <TextField fx:id="searchField" promptText="搜尋插件名稱或關鍵字 (例如: viaversion, essentials...)" HBox.hgrow="ALWAYS" onAction="#handleSearch"/>
         <ComboBox fx:id="loaderFilterCombo" prefWidth="130"/>
         <ComboBox fx:id="versionFilterCombo" prefWidth="120"/>
+        <CheckBox fx:id="ignoreVersionCheckBox" text="無視版本檢查" style="-fx-text-fill: #dfe1e5; -fx-font-weight: bold;"/>
         <Button fx:id="searchBtn" text="搜尋" onAction="#handleSearch" styleClass="btn-primary"/>
     </HBox>
 

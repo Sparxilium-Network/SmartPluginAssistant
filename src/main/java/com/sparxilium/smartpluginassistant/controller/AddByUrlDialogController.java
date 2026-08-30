@@ -108,9 +108,8 @@ public class AddByUrlDialogController {
         targetVersionLabel.setText(I18n.get("url.compat_version", targetVersion.getVersionNumber(), fileName));
 
         if (resolvedProject.getIconUrl() != null && !resolvedProject.getIconUrl().isBlank()) {
-            try {
-                iconView.setImage(new Image(resolvedProject.getIconUrl(), 48, 48, true, true, true));
-            } catch (Exception ignored) {}
+            com.sparxilium.smartpluginassistant.service.ImageCacheService.loadImageAsync(
+                    resolvedProject.getIconUrl(), 48, 48, iconView::setImage);
         }
     }
 

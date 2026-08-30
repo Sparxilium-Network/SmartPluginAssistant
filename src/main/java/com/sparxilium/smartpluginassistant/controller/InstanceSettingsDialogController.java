@@ -39,8 +39,11 @@ public class InstanceSettingsDialogController {
         loaderComboBox.getItems().addAll("folia", "purpur", "paper", "spigot", "velocity", "bungeecord", "fabric", "sponge");
         loaderComboBox.setValue(instance.getLoader());
 
-        versionComboBox.getItems().addAll("1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2");
-        versionComboBox.setValue(instance.getMcVersion());
+        new com.sparxilium.smartpluginassistant.service.ModrinthService().fetchGameVersions()
+                .thenAccept(versions -> javafx.application.Platform.runLater(() -> {
+                    versionComboBox.getItems().setAll(versions);
+                    versionComboBox.setValue(instance.getMcVersion());
+                }));
 
         loaderComboBox.valueProperty().addListener((obs, oldVal, newVal) -> refreshCompatibilityOptions(newVal));
 

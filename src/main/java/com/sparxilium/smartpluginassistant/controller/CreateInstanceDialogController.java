@@ -33,8 +33,14 @@ public class CreateInstanceDialogController {
         loaderComboBox.getItems().addAll("paper", "spigot", "purpur", "folia", "velocity", "bungeecord", "fabric", "sponge");
         loaderComboBox.setValue("paper");
 
-        versionComboBox.getItems().addAll("1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2");
-        versionComboBox.setValue("1.21.1");
+        // Load game versions dynamically from Modrinth API
+        new com.sparxilium.smartpluginassistant.service.ModrinthService().fetchGameVersions()
+                .thenAccept(versions -> javafx.application.Platform.runLater(() -> {
+                    versionComboBox.getItems().setAll(versions);
+                    if (!versions.isEmpty()) {
+                        versionComboBox.setValue(versions.get(0));
+                    }
+                }));
 
         nameField.setTextFormatter(new TextFormatter<String>(change -> {
             String newText = change.getControlNewText();

@@ -17,9 +17,8 @@
 
             <Region HBox.hgrow="ALWAYS"/>
 
-            <!-- Language Switcher -->
-            <Label text="🌐" style="-fx-font-size: 14px;"/>
-            <ComboBox fx:id="langComboBox" prefWidth="120"/>
+            <!-- App Global Settings Button -->
+            <Button fx:id="appSettingsBtn" text="⚙️ 設定" onAction="#handleOpenAppSettings" styleClass="btn-secondary"/>
 
             <Button fx:id="addInstanceBtn" text="+ 新增伺服器實例" onAction="#handleCreateInstance" styleClass="btn-primary"/>
         </HBox>

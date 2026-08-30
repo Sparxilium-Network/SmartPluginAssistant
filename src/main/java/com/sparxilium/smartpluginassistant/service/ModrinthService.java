@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class ModrinthService {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ModrinthService.class);
     private static final String BASE_URL = "https://api.modrinth.com/v2";
     private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant/1.0 (contact@sparxilium.com)";
 
@@ -35,6 +36,50 @@ public class ModrinthService {
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
         this.objectMapper = new ObjectMapper();
+    }
+
+    /**
+     * Fetch all release game versions from Modrinth API sorted newest first
+     */
+    public CompletableFuture<List<String>> fetchGameVersions() {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/tag/game_version"))
+                .header("User-Agent", USER_AGENT)
+                .GET()
+                .build();
+
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> {
+                    if (response.statusCode() != 200) {
+                        return List.of("1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2");
+                    }
+                    try {
+                        List<Map<String, Object>> list = objectMapper.readValue(response.body(), new TypeReference<List<Map<String, Object>>>() {});
+                        // Filter releases and extract names
+                        List<Map<String, Object>> filtered = list.stream()
+                                .filter(m -> "release".equals(m.get("version_type")))
+                                .toList();
+                        
+                        // Sort by date descending (newest first)
+                        List<String> sortedVersions = new ArrayList<>(filtered.stream()
+                                .sorted((a, b) -> {
+                                    String dateA = (String) a.get("date");
+                                    String dateB = (String) b.get("date");
+                                    if (dateA == null) return 1;
+                                    if (dateB == null) return -1;
+                                    return dateB.compareTo(dateA); // Reverse sorting (descending)
+                                })
+                                .map(m -> (String) m.get("version"))
+                                .toList());
+
+                        if (sortedVersions.isEmpty()) {
+                            return List.of("1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2");
+                        }
+                        return sortedVersions;
+                    } catch (Exception e) {
+                        return List.of("1.21.4", "1.21.3", "1.21.1", "1.21", "1.20.6", "1.20.4", "1.20.2", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2");
+                    }
+                });
     }
 
     public CompletableFuture<ModrinthSearchResponse> searchPlugins(String query, List<String> loaders, String mcVersion, int offset, int limit) {
