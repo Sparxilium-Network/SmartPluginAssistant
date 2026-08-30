@@ -7,7 +7,7 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.sparxilium.smartpluginassistant.controller.ModrinthBrowserController"
-      spacing="12.0" prefWidth="960.0" prefHeight="650.0" style="-fx-background-color: #1e1f22; -fx-padding: 16;">
+      spacing="12.0" prefWidth="1080.0" prefHeight="720.0" style="-fx-background-color: #1e1f22; -fx-padding: 16;">
 
     <HBox spacing="10.0" alignment="CENTER_LEFT">
         <Label fx:id="titleLabel" text="Modrinth 插件中心" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>

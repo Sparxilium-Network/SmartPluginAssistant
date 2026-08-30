@@ -7,7 +7,7 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.sparxilium.smartpluginassistant.controller.InstanceSettingsDialogController"
-      spacing="14.0" prefWidth="500.0" style="-fx-background-color: #1e1f22; -fx-padding: 20;">
+      spacing="14.0" prefWidth="580.0" style="-fx-background-color: #1e1f22; -fx-padding: 20;">
 
     <Label fx:id="titleLabel" text="伺服器實例設定" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>
     <Label fx:id="instanceNameLabel" style="-fx-text-fill: #3574f0; -fx-font-weight: bold; -fx-font-size: 13px;"/>
