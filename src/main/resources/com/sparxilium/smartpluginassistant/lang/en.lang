@@ -35,7 +35,8 @@ app.update_failed=Update failed: {0}
 app.confirm_delete_plugin=Are you sure you want to delete {0}?
 
 table.col_name=File Name / Plugin
-table.col_game_version=Supported MC
+table.col_current_version=Current Version
+table.col_last_modified=Last Modified
 table.col_status=Status
 table.col_update=Update Status
 table.col_actions=Actions

@@ -43,9 +43,18 @@ public class PluginManagerService {
                 String fileName = file.getName();
                 boolean enabled = !fileName.endsWith(".disabled");
                 long size = file.length();
+                long lastModified = file.lastModified();
                 String sha1 = calculateSha1(file);
 
-                InstalledPlugin plugin = new InstalledPlugin(fileName, sha1, size, enabled);
+                InstalledPlugin plugin = new InstalledPlugin(fileName, sha1, size, lastModified, enabled);
+                
+                // Deduce current version number from filename if possible (e.g., EssentialsX-2.20.1.jar -> 2.20.1)
+                String cleanName = fileName.replace(".jar.disabled", "").replace(".jar", "");
+                int lastDash = cleanName.lastIndexOf('-');
+                if (lastDash > 0 && lastDash < cleanName.length() - 1) {
+                    plugin.setCurrentVersionNumber(cleanName.substring(lastDash + 1));
+                }
+
                 plugins.add(plugin);
             }
         } catch (IOException e) {

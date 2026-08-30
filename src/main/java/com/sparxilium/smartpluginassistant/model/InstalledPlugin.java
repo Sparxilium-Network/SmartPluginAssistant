@@ -12,6 +12,7 @@ public class InstalledPlugin {
     private String sha1;
     private String sha512;
     private long fileSizeBytes;
+    private long lastModifiedTime;
     private boolean enabled;
 
     private boolean updateAvailable;
@@ -25,10 +26,11 @@ public class InstalledPlugin {
         this.enabled = true;
     }
 
-    public InstalledPlugin(String fileName, String sha1, long fileSizeBytes, boolean enabled) {
+    public InstalledPlugin(String fileName, String sha1, long fileSizeBytes, long lastModifiedTime, boolean enabled) {
         this.fileName = fileName;
         this.sha1 = sha1;
         this.fileSizeBytes = fileSizeBytes;
+        this.lastModifiedTime = lastModifiedTime;
         this.enabled = enabled;
     }
 
@@ -94,6 +96,26 @@ public class InstalledPlugin {
 
     public void setFileSizeBytes(long fileSizeBytes) {
         this.fileSizeBytes = fileSizeBytes;
+    }
+
+    public long getLastModifiedTime() {
+        return lastModifiedTime;
+    }
+
+    public void setLastModifiedTime(long lastModifiedTime) {
+        this.lastModifiedTime = lastModifiedTime;
+    }
+
+    public String getFormattedLastModified() {
+        if (lastModifiedTime <= 0) return "-";
+        try {
+            java.time.LocalDateTime dt = java.time.Instant.ofEpochMilli(lastModifiedTime)
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDateTime();
+            return dt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (Exception e) {
+            return "-";
+        }
     }
 
     public boolean isEnabled() {

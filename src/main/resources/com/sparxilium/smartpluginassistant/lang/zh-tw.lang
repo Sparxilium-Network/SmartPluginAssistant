@@ -35,7 +35,8 @@ app.update_failed=更新失敗: {0}
 app.confirm_delete_plugin=確定要刪除 {0} 嗎？
 
 table.col_name=檔案名稱 / 插件
-table.col_game_version=支援版本 (MC)
+table.col_current_version=目前版本
+table.col_last_modified=最後修改時間
 table.col_status=狀態
 table.col_update=版本狀態
 table.col_actions=操作
