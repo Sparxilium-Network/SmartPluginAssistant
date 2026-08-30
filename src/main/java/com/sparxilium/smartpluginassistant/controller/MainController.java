@@ -380,8 +380,7 @@ public class MainController {
 
         selectedInstanceInfoLabel.setText(
                 I18n.get("instance.core", instance.getLoader()) + " | " +
-                I18n.get("instance.mc_version", instance.getMcVersion()) + fuzzyText + " | " +
-                I18n.get("instance.path", instanceManager.getInstanceDirectory(instance).toAbsolutePath())
+                I18n.get("instance.mc_version", instance.getMcVersion()) + fuzzyText
         );
         refreshPlugins();
     }
