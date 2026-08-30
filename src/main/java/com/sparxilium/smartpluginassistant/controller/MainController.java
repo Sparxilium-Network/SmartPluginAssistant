@@ -18,6 +18,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -190,12 +191,26 @@ public class MainController {
                 refreshInstanceList();
             });
 
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double w = prefs.getDouble("app_settings_dialog_w", 480);
+            double h = prefs.getDouble("app_settings_dialog_h", 380);
+
             Stage stage = new Stage();
             stage.setTitle(I18n.get("app_settings.title"));
             stage.initModality(Modality.APPLICATION_MODAL);
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(root, w, h);
             scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
             stage.setScene(scene);
+            stage.setMinWidth(420);
+            stage.setMinHeight(300);
+
+            stage.setOnCloseRequest(e -> {
+                if (!stage.isMaximized()) {
+                    prefs.putDouble("app_settings_dialog_w", stage.getWidth());
+                    prefs.putDouble("app_settings_dialog_h", stage.getHeight());
+                }
+            });
+
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
@@ -398,8 +413,33 @@ public class MainController {
             card.getStyleClass().add("instance-card-selected");
         }
 
+        HBox topRow = new HBox(8);
+        topRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+
+        // Instance Icon
+        javafx.scene.image.ImageView iconView = new javafx.scene.image.ImageView();
+        iconView.setFitWidth(28);
+        iconView.setFitHeight(28);
+
+        Path instanceDir = instanceManager.getInstanceDirectory(instance);
+        Path iconPath = instanceDir.resolve("icon.png");
+        if (java.nio.file.Files.exists(iconPath)) {
+            com.sparxilium.smartpluginassistant.service.ImageCacheService.loadImageAsync(
+                    iconPath.toUri().toString(), 28, 28, iconView::setImage);
+        } else if (instance.getIcon() != null && !instance.getIcon().isBlank()) {
+            com.sparxilium.smartpluginassistant.service.ImageCacheService.loadImageAsync(
+                    instance.getIcon(), 28, 28, iconView::setImage);
+        }
+
         Label nameLabel = new Label(instance.getName());
         nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #ffffff;");
+        HBox.setHgrow(nameLabel, Priority.ALWAYS);
+
+        if (iconView.getImage() != null || java.nio.file.Files.exists(iconPath) || (instance.getIcon() != null && !instance.getIcon().isBlank())) {
+            topRow.getChildren().addAll(iconView, nameLabel);
+        } else {
+            topRow.getChildren().add(nameLabel);
+        }
 
         HBox badges = new HBox(6);
         Label loaderBadge = new Label(instance.getLoader().toUpperCase());
@@ -408,14 +448,64 @@ public class MainController {
         versionBadge.getStyleClass().add("badge-version");
         badges.getChildren().addAll(loaderBadge, versionBadge);
 
-        card.getChildren().addAll(nameLabel, badges);
+        card.getChildren().addAll(topRow, badges);
+
+        // Right-Click Context Menu for changing instance icon
+        ContextMenu contextMenu = new ContextMenu();
+        MenuItem changeIconItem = new MenuItem(I18n.get("instance.ctx_change_icon"));
+        changeIconItem.setOnAction(e -> handleSelectCustomIcon(instance));
+        MenuItem removeIconItem = new MenuItem(I18n.get("instance.ctx_remove_icon"));
+        removeIconItem.setOnAction(e -> handleRemoveCustomIcon(instance));
+        contextMenu.getItems().addAll(changeIconItem, removeIconItem);
+
+        card.setOnContextMenuRequested(e -> {
+            contextMenu.show(card, e.getScreenX(), e.getScreenY());
+        });
 
         card.setOnMouseClicked(e -> {
-            selectInstance(instance);
-            refreshInstanceList();
+            if (e.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                selectInstance(instance);
+                refreshInstanceList();
+            }
         });
 
         return card;
+    }
+
+    private void handleSelectCustomIcon(ServerInstance instance) {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle(I18n.get("instance.ctx_change_icon"));
+        fileChooser.getExtensionFilters().add(
+                new javafx.stage.FileChooser.ExtensionFilter(I18n.get("instance.icon_file_filter"), "*.png", "*.jpg", "*.jpeg", "*.webp")
+        );
+        java.io.File selected = fileChooser.showOpenDialog(rootPane.getScene().getWindow());
+        if (selected != null) {
+            try {
+                Path instanceDir = instanceManager.getInstanceDirectory(instance);
+                if (!java.nio.file.Files.exists(instanceDir)) {
+                    java.nio.file.Files.createDirectories(instanceDir);
+                }
+                Path destIcon = instanceDir.resolve("icon.png");
+                java.nio.file.Files.copy(selected.toPath(), destIcon, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                instance.setIcon(destIcon.toUri().toString());
+                instanceManager.updateInstance(instance);
+                refreshInstanceList();
+            } catch (Exception ex) {
+                Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("instance.icon_change_failed", ex.getMessage()), ButtonType.OK);
+                alert.showAndWait();
+            }
+        }
+    }
+
+    private void handleRemoveCustomIcon(ServerInstance instance) {
+        try {
+            Path instanceDir = instanceManager.getInstanceDirectory(instance);
+            Path destIcon = instanceDir.resolve("icon.png");
+            java.nio.file.Files.deleteIfExists(destIcon);
+            instance.setIcon(null);
+            instanceManager.updateInstance(instance);
+            refreshInstanceList();
+        } catch (Exception ignored) {}
     }
 
     private void setInstanceButtonsDisabled(boolean disabled) {
@@ -529,12 +619,26 @@ public class MainController {
             InstanceSettingsDialogController controller = loader.getController();
             controller.init(currentSelectedInstance);
 
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double w = prefs.getDouble("instance_settings_dialog_w", 580);
+            double h = prefs.getDouble("instance_settings_dialog_h", 460);
+
             Stage stage = new Stage();
             stage.setTitle(I18n.get("settings.title") + " - " + currentSelectedInstance.getName());
             stage.initModality(Modality.APPLICATION_MODAL);
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(root, w, h);
             scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
             stage.setScene(scene);
+            stage.setMinWidth(480);
+            stage.setMinHeight(380);
+
+            stage.setOnCloseRequest(e -> {
+                if (!stage.isMaximized()) {
+                    prefs.putDouble("instance_settings_dialog_w", stage.getWidth());
+                    prefs.putDouble("instance_settings_dialog_h", stage.getHeight());
+                }
+            });
+
             stage.showAndWait();
 
             if (controller.isSaved()) {
@@ -667,12 +771,26 @@ public class MainController {
             AddByUrlDialogController controller = loader.getController();
             controller.init(currentSelectedInstance, modrinthService, instanceManager, this::refreshPlugins);
 
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double w = prefs.getDouble("add_by_url_dialog_w", 560);
+            double h = prefs.getDouble("add_by_url_dialog_h", 420);
+
             Stage stage = new Stage();
             stage.setTitle(I18n.get("url.window_title", currentSelectedInstance.getName()));
             stage.initModality(Modality.APPLICATION_MODAL);
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(root, w, h);
             scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
             stage.setScene(scene);
+            stage.setMinWidth(480);
+            stage.setMinHeight(320);
+
+            stage.setOnCloseRequest(e -> {
+                if (!stage.isMaximized()) {
+                    prefs.putDouble("add_by_url_dialog_w", stage.getWidth());
+                    prefs.putDouble("add_by_url_dialog_h", stage.getHeight());
+                }
+            });
+
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
@@ -685,12 +803,26 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sparxilium/smartpluginassistant/create-instance-dialog.fxml"));
             Parent root = loader.load();
 
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double w = prefs.getDouble("create_instance_dialog_w", 520);
+            double h = prefs.getDouble("create_instance_dialog_h", 420);
+
             Stage stage = new Stage();
             stage.setTitle(I18n.get("create.title"));
             stage.initModality(Modality.APPLICATION_MODAL);
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(root, w, h);
             scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
             stage.setScene(scene);
+            stage.setMinWidth(460);
+            stage.setMinHeight(340);
+
+            stage.setOnCloseRequest(e -> {
+                if (!stage.isMaximized()) {
+                    prefs.putDouble("create_instance_dialog_w", stage.getWidth());
+                    prefs.putDouble("create_instance_dialog_h", stage.getHeight());
+                }
+            });
+
             stage.showAndWait();
 
             CreateInstanceDialogController controller = loader.getController();
