@@ -1,0 +1,27 @@
+# Smart Plugin Assistant - Agent Rules and Guidelines
+
+以下是本專案開發時，AI Agent 必須遵循的開發規範與準則：
+
+## 1. 介面與視窗翻譯 (I18n Translation)
+* **規範**：所有 UI 視窗、對話框、提示訊息及文字標籤，皆必須透過專案內建的 `I18n.get(...)` 進行翻譯處理，嚴禁在 Java 程式碼或 FXML 中寫死（Hardcode）中英文或其他語言的文字。
+* **語系檔案**：翻譯資源應同步更新至 `src/main/resources/` 下的語系檔（如 `zh-tw.lang`、`en.lang`）。
+* **使用範例**：
+  ```java
+  titleLabel.setText(I18n.get("app_settings.title"));
+  ```
+
+## 2. 日誌紀錄 (Log4j Logging)
+* **規範**：專案中所有關鍵動作、異常處理、網路請求與狀態變更，皆應盡量透過 Log4j 寫入日誌。
+* **使用範例**：
+  ```java
+  private static final Logger logger = LogManager.getLogger(MyController.class);
+  
+  // 在動作發生時記錄
+  logger.info("Starting instance: {}", instanceName);
+  logger.error("Failed to load instance configuration", exception);
+  ```
+
+## 3. 版本控制與提交 (Git Commit)
+* **規範**：每一次完成程式碼或檔案的修改/新增後，必須進行 Git Commit。
+* **提交訊息**：Commit Message 必須清晰描述本次修改的具體內容與相關資料，例如修復的 Bug、新增的功能、修改的類別或對應的設計考量。
+
