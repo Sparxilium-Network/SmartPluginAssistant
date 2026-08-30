@@ -30,7 +30,7 @@
 
     <SplitPane dividerPositions="0.65" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent;">
         <!-- Left Side: Results List -->
-        <ScrollPane fitToWidth="true" style="-fx-background: #18191c; -fx-background-color: #18191c;">
+        <ScrollPane fx:id="resultsScrollPane" fitToWidth="true" style="-fx-background: #18191c; -fx-background-color: #18191c;">
             <VBox fx:id="resultsContainer" spacing="10.0" style="-fx-padding: 8;"/>
         </ScrollPane>
 

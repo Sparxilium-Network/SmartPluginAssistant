@@ -74,12 +74,23 @@ public class PluginManagerService {
                             plugin.setLatestVersionNumber(version.getVersionNumber());
                             plugin.setProjectId(version.getProjectId());
 
+                            if (version.getGameVersions() != null && !version.getGameVersions().isEmpty()) {
+                                if (version.getGameVersions().size() > 2) {
+                                    plugin.setSupportedGameVersions(version.getGameVersions().get(0) + " ~ " + version.getGameVersions().get(version.getGameVersions().size() - 1));
+                                } else {
+                                    plugin.setSupportedGameVersions(String.join(", ", version.getGameVersions()));
+                                }
+                            }
+
                             if (primaryFile != null) {
                                 plugin.setLatestDownloadUrl(primaryFile.getUrl());
                                 plugin.setLatestFileName(primaryFile.getFilename());
                             }
                         } else {
                             plugin.setUpdateAvailable(false);
+                            if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
+                                plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
+                            }
                         }
                     }
                     return plugins;

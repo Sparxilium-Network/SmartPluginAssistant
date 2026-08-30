@@ -60,7 +60,7 @@ public class MainController {
     // Plugins Table
     @FXML private TableView<InstalledPlugin> pluginTableView;
     @FXML private TableColumn<InstalledPlugin, String> colName;
-    @FXML private TableColumn<InstalledPlugin, String> colSize;
+    @FXML private TableColumn<InstalledPlugin, String> colGameVersion;
     @FXML private TableColumn<InstalledPlugin, String> colStatus;
     @FXML private TableColumn<InstalledPlugin, String> colUpdate;
     @FXML private TableColumn<InstalledPlugin, Void> colActions;
@@ -147,7 +147,7 @@ public class MainController {
         refreshPluginsBtn.setText(I18n.get("app.refresh_list"));
 
         colName.setText(I18n.get("table.col_name"));
-        colSize.setText(I18n.get("table.col_size"));
+        colGameVersion.setText(I18n.get("table.col_game_version"));
         colStatus.setText(I18n.get("table.col_status"));
         colUpdate.setText(I18n.get("table.col_update"));
         colActions.setText(I18n.get("table.col_actions"));
@@ -188,7 +188,24 @@ public class MainController {
 
     private void setupTableColumns() {
         colName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
-        colSize.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getFormattedSize()));
+        
+        colGameVersion.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getSupportedGameVersions()));
+        colGameVersion.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    Label verLabel = new Label(item);
+                    verLabel.setStyle("-fx-text-fill: #9aa0a6; -fx-font-size: 11px;");
+                    setAlignment(javafx.geometry.Pos.CENTER);
+                    setGraphic(verLabel);
+                    setText(null);
+                }
+            }
+        });
 
         colStatus.setCellFactory(column -> new TableCell<>() {
             @Override
@@ -203,6 +220,7 @@ public class MainController {
                     statusBadge.setStyle(plugin.isEnabled() ?
                             "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-padding: 2 6; -fx-background-radius: 4;" :
                             "-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-padding: 2 6; -fx-background-radius: 4;");
+                    setAlignment(javafx.geometry.Pos.CENTER);
                     setGraphic(statusBadge);
                     setText(null);
                 }
@@ -218,13 +236,14 @@ public class MainController {
                     setText(null);
                 } else {
                     InstalledPlugin plugin = getTableRow().getItem();
+                    setAlignment(javafx.geometry.Pos.CENTER);
                     if (plugin.isUpdateAvailable()) {
                         Label updateBadge = new Label(I18n.get("table.has_update", plugin.getLatestVersionNumber()));
                         updateBadge.getStyleClass().add("badge-update");
                         setGraphic(updateBadge);
                     } else {
                         Label currentBadge = new Label(I18n.get("table.latest_version"));
-                        currentBadge.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 11px;");
+                        currentBadge.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 11px; -fx-alignment: center;");
                         setGraphic(currentBadge);
                     }
                     setText(null);

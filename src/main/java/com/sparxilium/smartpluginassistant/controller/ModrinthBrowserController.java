@@ -29,6 +29,7 @@ public class ModrinthBrowserController {
     @FXML private ComboBox<String> versionFilterCombo;
     @FXML private CheckBox ignoreVersionCheckBox;
     @FXML private Button searchBtn;
+    @FXML private ScrollPane resultsScrollPane;
     @FXML private VBox resultsContainer;
     @FXML private ProgressIndicator loadingIndicator;
     @FXML private Label statusLabel;
@@ -52,6 +53,13 @@ public class ModrinthBrowserController {
     private List<ModrinthVersion> selectedProjectVersions;
     private final Map<String, ModrinthVersion> versionMap = new HashMap<>();
 
+    // Infinite scroll pagination state
+    private static final int PAGE_SIZE = 20;
+    private int currentOffset = 0;
+    private int totalHits = 0;
+    private boolean isLoadingMore = false;
+    private boolean hasMore = true;
+
     public void init(ServerInstance instance, ModrinthService modrinthService, InstanceManager instanceManager, Runnable onPluginInstalledCallback) {
         this.currentInstance = instance;
         this.modrinthService = modrinthService;
@@ -71,6 +79,16 @@ public class ModrinthBrowserController {
             versionFilterCombo.setDisable(newVal);
             performSearch();
         });
+
+        // Setup Infinite Scrolling on resultsScrollPane
+        if (resultsScrollPane != null) {
+            resultsScrollPane.vvalueProperty().addListener((obs, oldVal, newVal) -> {
+                // When scrolled past 75% of the list, automatically trigger loading next page
+                if (newVal.doubleValue() >= 0.75 && !isLoadingMore && hasMore) {
+                    loadNextPage();
+                }
+            });
+        }
 
         versionFilterCombo.getItems().clear();
         versionFilterCombo.getItems().add(I18n.get("modrinth.all"));
@@ -102,23 +120,13 @@ public class ModrinthBrowserController {
     private void performSearch() {
         if (modrinthService == null) return;
 
+        currentOffset = 0;
+        hasMore = true;
+        isLoadingMore = false;
+
         String query = searchField.getText().trim();
-        String selectedLoader = loaderFilterCombo.getValue();
-        List<String> loadersToSearch;
-
-        String allText = I18n.get("modrinth.all");
-        if (allText.equals(selectedLoader) || "全部 (All)".equals(selectedLoader) || "All".equals(selectedLoader)) {
-            loadersToSearch = Collections.emptyList();
-        } else if (currentInstance != null && currentInstance.getLoader().equalsIgnoreCase(selectedLoader)) {
-            loadersToSearch = currentInstance.getEffectiveLoaders();
-        } else {
-            loadersToSearch = List.of(selectedLoader);
-        }
-
-        String version = versionFilterCombo.getValue();
-        if (ignoreVersionCheckBox.isSelected() || allText.equals(version) || "全部 (All)".equals(version) || "All".equals(version)) {
-            version = null;
-        }
+        List<String> loadersToSearch = getSelectedLoaders();
+        String version = getSelectedVersion();
 
         logger.debug("Performing Modrinth search: query='{}', loaders={}, version={}", query, loadersToSearch, version);
 
@@ -127,11 +135,14 @@ public class ModrinthBrowserController {
         resultsContainer.getChildren().clear();
         detailContainer.setVisible(false);
 
-        modrinthService.searchPlugins(query, loadersToSearch, version, 0, 20)
+        modrinthService.searchPlugins(query, loadersToSearch, version, 0, PAGE_SIZE)
                 .thenAccept(response -> Platform.runLater(() -> {
                     loadingIndicator.setVisible(false);
-                    statusLabel.setText(I18n.get("modrinth.found_results", response.getTotalHits()));
-                    renderResults(response.getHits());
+                    this.totalHits = response.getTotalHits();
+                    this.currentOffset = response.getHits().size();
+                    this.hasMore = currentOffset < totalHits;
+                    statusLabel.setText(I18n.get("modrinth.found_results", totalHits));
+                    renderResults(response.getHits(), false);
                 }))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
@@ -143,12 +154,72 @@ public class ModrinthBrowserController {
                 });
     }
 
-    private void renderResults(List<ModrinthSearchResult> hits) {
-        resultsContainer.getChildren().clear();
+    private void loadNextPage() {
+        if (modrinthService == null || isLoadingMore || !hasMore) return;
+
+        isLoadingMore = true;
+        loadingIndicator.setVisible(true);
+
+        String query = searchField.getText().trim();
+        List<String> loadersToSearch = getSelectedLoaders();
+        String version = getSelectedVersion();
+
+        logger.debug("Loading next page offset={} query='{}'", currentOffset, query);
+
+        modrinthService.searchPlugins(query, loadersToSearch, version, currentOffset, PAGE_SIZE)
+                .thenAccept(response -> Platform.runLater(() -> {
+                    isLoadingMore = false;
+                    loadingIndicator.setVisible(false);
+                    List<ModrinthSearchResult> hits = response.getHits();
+                    if (hits != null && !hits.isEmpty()) {
+                        this.currentOffset += hits.size();
+                        this.hasMore = currentOffset < totalHits;
+                        renderResults(hits, true);
+                    } else {
+                        this.hasMore = false;
+                    }
+                }))
+                .exceptionally(ex -> {
+                    Platform.runLater(() -> {
+                        isLoadingMore = false;
+                        loadingIndicator.setVisible(false);
+                        logger.warn("Failed to fetch next page", ex);
+                    });
+                    return null;
+                });
+    }
+
+    private List<String> getSelectedLoaders() {
+        String selectedLoader = loaderFilterCombo.getValue();
+        String allText = I18n.get("modrinth.all");
+        if (allText.equals(selectedLoader) || "全部 (All)".equals(selectedLoader) || "All".equals(selectedLoader) || selectedLoader == null) {
+            return Collections.emptyList();
+        } else if (currentInstance != null && currentInstance.getLoader().equalsIgnoreCase(selectedLoader)) {
+            return currentInstance.getEffectiveLoaders();
+        } else {
+            return List.of(selectedLoader);
+        }
+    }
+
+    private String getSelectedVersion() {
+        String version = versionFilterCombo.getValue();
+        String allText = I18n.get("modrinth.all");
+        if (ignoreVersionCheckBox.isSelected() || allText.equals(version) || "全部 (All)".equals(version) || "All".equals(version) || version == null) {
+            return null;
+        }
+        return version;
+    }
+
+    private void renderResults(List<ModrinthSearchResult> hits, boolean append) {
+        if (!append) {
+            resultsContainer.getChildren().clear();
+        }
         if (hits == null || hits.isEmpty()) {
-            Label emptyLabel = new Label(I18n.get("modrinth.no_results"));
-            emptyLabel.setStyle("-fx-text-fill: #8b8e96; -fx-padding: 20;");
-            resultsContainer.getChildren().add(emptyLabel);
+            if (!append) {
+                Label emptyLabel = new Label(I18n.get("modrinth.no_results"));
+                emptyLabel.setStyle("-fx-text-fill: #8b8e96; -fx-padding: 20;");
+                resultsContainer.getChildren().add(emptyLabel);
+            }
             return;
         }
 

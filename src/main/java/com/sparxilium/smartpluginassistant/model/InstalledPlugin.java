@@ -19,6 +19,7 @@ public class InstalledPlugin {
     private String latestVersionId;
     private String latestDownloadUrl;
     private String latestFileName;
+    private String supportedGameVersions = "-";
 
     public InstalledPlugin() {
         this.enabled = true;
@@ -141,6 +142,14 @@ public class InstalledPlugin {
 
     public void setLatestFileName(String latestFileName) {
         this.latestFileName = latestFileName;
+    }
+
+    public String getSupportedGameVersions() {
+        return supportedGameVersions != null ? supportedGameVersions : "-";
+    }
+
+    public void setSupportedGameVersions(String supportedGameVersions) {
+        this.supportedGameVersions = supportedGameVersions;
     }
 
     public String getFormattedSize() {
