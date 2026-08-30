@@ -255,10 +255,15 @@ public class PluginManagerService {
     public static String normalizeVersionNumber(String ver) {
         if (ver == null) return "";
         String clean = ver.trim();
-        // Extract version pattern like 2.6.21 or 1.20.4-v2
-        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+(\\.\\d+)+([\\w.-]*)?)").matcher(clean);
+        // Remove common platform prefixes like bukkit-, spigot-, paper-, fabric-, v, etc.
+        clean = clean.replaceAll("(?i)^(bukkit|spigot|paper|purpur|folia|velocity|bungee|bungeecord|fabric|sponge|forge|neoforge|release|rel|v)[-_.]+", "");
+        // Also remove platform suffix like -bukkit, -spigot, -paper, -fabric, etc.
+        clean = clean.replaceAll("(?i)[-_.]+(bukkit|spigot|paper|purpur|folia|velocity|bungee|bungeecord|fabric|sponge|forge|neoforge|all|universal)$", "");
+
+        // Extract primary semantic version pattern like 5.5.71 or 2.6.21
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+(\\.\\d+)+)").matcher(clean);
         if (m.find()) {
-            return m.group(1).toLowerCase().replaceAll("^[vV]", "");
+            return m.group(1);
         }
         return clean.toLowerCase().replaceAll("^[vV]", "");
     }
@@ -272,7 +277,7 @@ public class PluginManagerService {
 
         if (curNorm.equalsIgnoreCase(latNorm)) return false;
 
-        // Split semantic parts: 2.6.21 -> [2, 6, 21]
+        // Split semantic parts: 5.5.71 -> [5, 5, 71]
         String[] curParts = curNorm.split("[.-]");
         String[] latParts = latNorm.split("[.-]");
 
