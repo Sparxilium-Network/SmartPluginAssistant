@@ -16,6 +16,8 @@ module com.sparxilium.smartpluginassistant {
 
     requires org.apache.logging.log4j;
     requires org.slf4j;
+    requires com.sun.jna;
+    requires com.sun.jna.platform;
 
     opens com.sparxilium.smartpluginassistant to javafx.fxml;
     opens com.sparxilium.smartpluginassistant.controller to javafx.fxml;

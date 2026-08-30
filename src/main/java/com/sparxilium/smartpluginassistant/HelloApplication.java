@@ -38,6 +38,7 @@ public class HelloApplication extends Application {
             stage.setY(savedY);
         }
 
+        com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
         stage.show();
 
         if (isMaximized) {

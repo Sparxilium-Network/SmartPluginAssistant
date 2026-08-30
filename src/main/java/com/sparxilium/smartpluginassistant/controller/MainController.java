@@ -209,6 +209,7 @@ public class MainController {
                 }
             });
 
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
@@ -636,6 +637,7 @@ public class MainController {
                 }
             });
 
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
 
             if (controller.isSaved()) {
@@ -752,6 +754,7 @@ public class MainController {
                 }
             });
 
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
@@ -788,6 +791,7 @@ public class MainController {
                 }
             });
 
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();
@@ -820,6 +824,7 @@ public class MainController {
                 }
             });
 
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
 
             CreateInstanceDialogController controller = loader.getController();
