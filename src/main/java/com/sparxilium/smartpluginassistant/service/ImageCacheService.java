@@ -92,14 +92,33 @@ public class ImageCacheService {
                 }
 
                 if (imageBytes != null && imageBytes.length > 0) {
+                    Image loadedImg = null;
+                    // First try standard JavaFX Image decoder
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes)) {
                         Image img = new Image(bais, width, height, true, true);
                         if (!img.isError()) {
-                            MEMORY_CACHE.put(memKey, img);
-                            Platform.runLater(() -> callback.accept(img));
-                        } else {
-                            logger.warn("JavaFX failed to decode image format for URL: {} (Exception: {})", url, img.getException());
+                            loadedImg = img;
                         }
+                    } catch (Exception ignored) {}
+
+                    // Fallback to ImageIO (supports WebP via TwelveMonkeys ImageIO)
+                    if (loadedImg == null) {
+                        try (ByteArrayInputStream bais = new ByteArrayInputStream(imageBytes)) {
+                            java.awt.image.BufferedImage bImg = javax.imageio.ImageIO.read(bais);
+                            if (bImg != null) {
+                                loadedImg = javafx.embed.swing.SwingFXUtils.toFXImage(bImg, null);
+                            }
+                        } catch (Exception ex) {
+                            logger.warn("ImageIO failed to decode image for URL: {}", url, ex);
+                        }
+                    }
+
+                    if (loadedImg != null) {
+                        final Image finalImg = loadedImg;
+                        MEMORY_CACHE.put(memKey, finalImg);
+                        Platform.runLater(() -> callback.accept(finalImg));
+                    } else {
+                        logger.warn("All decoders failed for image URL: {}", url);
                     }
                 }
             } catch (Exception e) {

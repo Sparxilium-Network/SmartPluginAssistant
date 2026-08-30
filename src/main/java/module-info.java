@@ -1,6 +1,7 @@
 module com.sparxilium.smartpluginassistant {
     requires javafx.controls;
     requires javafx.fxml;
+    requires javafx.swing;
     requires java.net.http;
     requires java.desktop;
 
