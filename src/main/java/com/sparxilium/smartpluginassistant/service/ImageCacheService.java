@@ -156,6 +156,11 @@ public class ImageCacheService {
         }
     }
 
+    public static void evict(String url) {
+        if (url == null) return;
+        MEMORY_CACHE.keySet().removeIf(k -> k.startsWith(url));
+    }
+
     public static void clearCache() {
         MEMORY_CACHE.clear();
         if (Files.exists(CACHE_DIR)) {

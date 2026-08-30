@@ -15,6 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.stage.Stage;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -473,6 +474,31 @@ public class ModrinthBrowserController {
                 });
     }
 
+    public static class DownloadItem {
+        private final String title;
+        private final String versionNumber;
+        private final String fileName;
+        private final String url;
+        private final String depType; // null for primary, "required", "optional"
+        private boolean selected = true;
+
+        public DownloadItem(String title, String versionNumber, String fileName, String url, String depType) {
+            this.title = title;
+            this.versionNumber = versionNumber;
+            this.fileName = fileName;
+            this.url = url;
+            this.depType = depType;
+        }
+
+        public String getTitle() { return title; }
+        public String getVersionNumber() { return versionNumber; }
+        public String getFileName() { return fileName; }
+        public String getUrl() { return url; }
+        public String getDepType() { return depType; }
+        public boolean isSelected() { return selected; }
+        public void setSelected(boolean selected) { this.selected = selected; }
+    }
+
     @FXML
     private void handleInstallSelectedVersion() {
         String selectedVersionStr = detailVersionCombo.getValue();
@@ -487,13 +513,160 @@ public class ModrinthBrowserController {
         }
 
         detailInstallBtn.setDisable(true);
+        detailInstallBtn.setText(I18n.get("modrinth.resolving_deps"));
+
+        // Resolve dependencies
+        List<DownloadItem> downloadList = new ArrayList<>();
+        downloadList.add(new DownloadItem(
+                selectedResult != null ? selectedResult.getTitle() : targetVer.getName(),
+                targetVer.getVersionNumber(),
+                primaryFile.getFilename(),
+                primaryFile.getUrl(),
+                null
+        ));
+
+        List<ModrinthVersion.ModrinthDependency> deps = targetVer.getDependencies();
+        if (deps != null && !deps.isEmpty()) {
+            List<java.util.concurrent.CompletableFuture<Void>> depFutures = new ArrayList<>();
+            for (ModrinthVersion.ModrinthDependency dep : deps) {
+                if ("incompatible".equalsIgnoreCase(dep.getDependencyType()) || "embedded".equalsIgnoreCase(dep.getDependencyType())) {
+                    continue;
+                }
+                if (dep.getVersionId() != null) {
+                    depFutures.add(modrinthService.getVersion(dep.getVersionId()).thenAccept(depVer -> {
+                        ModrinthVersion.ModrinthFile depFile = depVer.getPrimaryFile();
+                        if (depFile != null && depFile.getUrl() != null) {
+                            synchronized (downloadList) {
+                                downloadList.add(new DownloadItem(
+                                        depVer.getName() != null ? depVer.getName() : depFile.getFilename(),
+                                        depVer.getVersionNumber(),
+                                        depFile.getFilename(),
+                                        depFile.getUrl(),
+                                        dep.getDependencyType()
+                                ));
+                            }
+                        }
+                    }).exceptionally(ex -> {
+                        logger.debug("Failed to resolve dependency version {}: {}", dep.getVersionId(), ex.getMessage());
+                        return null;
+                    }));
+                } else if (dep.getProjectId() != null) {
+                    List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
+                    String mcVersion = (ignoreVersionCheckBox.isSelected()) ? null : (currentInstance != null ? currentInstance.getMcVersion() : null);
+                    depFutures.add(modrinthService.getProjectVersions(dep.getProjectId(), loaders, mcVersion).thenAccept(pVers -> {
+                        if (!pVers.isEmpty()) {
+                            ModrinthVersion depVer = pVers.get(0);
+                            ModrinthVersion.ModrinthFile depFile = depVer.getPrimaryFile();
+                            if (depFile != null && depFile.getUrl() != null) {
+                                synchronized (downloadList) {
+                                    downloadList.add(new DownloadItem(
+                                            depVer.getName() != null ? depVer.getName() : depFile.getFilename(),
+                                            depVer.getVersionNumber(),
+                                            depFile.getFilename(),
+                                            depFile.getUrl(),
+                                            dep.getDependencyType()
+                                    ));
+                                }
+                            }
+                        }
+                    }).exceptionally(ex -> {
+                        logger.debug("Failed to resolve dependency project {}: {}", dep.getProjectId(), ex.getMessage());
+                        return null;
+                    }));
+                }
+            }
+
+            java.util.concurrent.CompletableFuture.allOf(depFutures.toArray(new java.util.concurrent.CompletableFuture[0]))
+                    .whenComplete((v, t) -> Platform.runLater(() -> promptConfirmationAndDownload(downloadList)));
+        } else {
+            promptConfirmationAndDownload(downloadList);
+        }
+    }
+
+    private void promptConfirmationAndDownload(List<DownloadItem> items) {
+        detailInstallBtn.setDisable(false);
+        detailInstallBtn.setText(I18n.get("modrinth.btn_install"));
+
+        Dialog<Boolean> dialog = new Dialog<>();
+        dialog.setTitle(I18n.get("modrinth.confirm_title"));
+        dialog.setHeaderText(null);
+
+        Stage stage = (Stage) dialog.getDialogPane().getScene().getWindow();
+        stage.setMinWidth(480);
+        stage.setMinHeight(360);
+        com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
+        dialog.getDialogPane().getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
+
+        ButtonType okButtonType = new ButtonType(I18n.get("common.ok"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType cancelButtonType = new ButtonType(I18n.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType, cancelButtonType);
+
+        VBox contentBox = new VBox(12);
+        contentBox.setStyle("-fx-padding: 16;");
+
+        Label headerLabel = new Label(I18n.get("modrinth.confirm_header"));
+        headerLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
+
+        VBox listBox = new VBox(8);
+        listBox.setStyle("-fx-background-color: #1e1f22; -fx-background-radius: 6; -fx-padding: 12; -fx-border-color: #35373c; -fx-border-radius: 6;");
+
+        for (DownloadItem item : items) {
+            CheckBox cb = new CheckBox();
+            cb.setSelected(true);
+            cb.setOnAction(e -> item.setSelected(cb.isSelected()));
+
+            HBox itemRow = new HBox(8);
+            itemRow.setAlignment(Pos.CENTER_LEFT);
+
+            Label titleLbl = new Label(item.getTitle());
+            titleLbl.setStyle("-fx-font-weight: bold; -fx-text-fill: #ffffff;");
+
+            Label verLbl = new Label("(" + item.getVersionNumber() + ")");
+            verLbl.setStyle("-fx-text-fill: #9a9da3; -fx-font-size: 11px;");
+
+            itemRow.getChildren().addAll(cb, titleLbl, verLbl);
+
+            if (item.getDepType() != null) {
+                Label depBadge = new Label("required".equalsIgnoreCase(item.getDepType()) ? I18n.get("modrinth.dep_required") : I18n.get("modrinth.dep_optional"));
+                depBadge.setStyle("required".equalsIgnoreCase(item.getDepType())
+                        ? "-fx-text-fill: #e67e22; -fx-font-size: 11px; -fx-font-weight: bold;"
+                        : "-fx-text-fill: #3498db; -fx-font-size: 11px;");
+                itemRow.getChildren().add(depBadge);
+            }
+
+            listBox.getChildren().add(itemRow);
+        }
+
+        Label footerLabel = new Label(I18n.get("modrinth.confirm_footer"));
+        footerLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #9a9da3;");
+
+        contentBox.getChildren().addAll(headerLabel, listBox, footerLabel);
+        dialog.getDialogPane().setContent(contentBox);
+
+        dialog.setResultConverter(btn -> btn == okButtonType);
+
+        var result = dialog.showAndWait();
+        if (result.isPresent() && result.get()) {
+            executeDownload(items.stream().filter(DownloadItem::isSelected).toList());
+        }
+    }
+
+    private void executeDownload(List<DownloadItem> toDownload) {
+        if (toDownload.isEmpty()) return;
+
+        detailInstallBtn.setDisable(true);
         detailInstallBtn.setText(I18n.get("modrinth.btn_installing"));
 
         Path pluginsDir = instanceManager.getPluginsDirectory(currentInstance);
-        Path dest = pluginsDir.resolve(primaryFile.getFilename());
 
-        modrinthService.downloadFile(primaryFile.getUrl(), dest, null)
-                .thenAccept(path -> Platform.runLater(() -> {
+        List<java.util.concurrent.CompletableFuture<Path>> futures = new ArrayList<>();
+        for (DownloadItem item : toDownload) {
+            Path dest = pluginsDir.resolve(item.getFileName());
+            futures.add(modrinthService.downloadFile(item.getUrl(), dest, null));
+        }
+
+        java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0]))
+                .thenAccept(v -> Platform.runLater(() -> {
                     detailInstallBtn.setText(I18n.get("modrinth.btn_installed"));
                     detailInstallBtn.setStyle("-fx-background-color: #2ecc71;");
                     refreshInstalledMap();

@@ -188,6 +188,27 @@ public class ModrinthService {
                 });
     }
 
+    public CompletableFuture<ModrinthVersion> getVersion(String versionId) {
+        String url = BASE_URL + "/version/" + URLEncoder.encode(versionId, StandardCharsets.UTF_8);
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("User-Agent", USER_AGENT)
+                .GET()
+                .build();
+
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> {
+                    if (response.statusCode() != 200) {
+                        throw new RuntimeException("Version not found (" + response.statusCode() + "): " + versionId);
+                    }
+                    try {
+                        return objectMapper.readValue(response.body(), ModrinthVersion.class);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to parse version: " + e.getMessage(), e);
+                    }
+                });
+    }
+
     public CompletableFuture<List<ModrinthVersion>> getProjectVersions(String idOrSlug, String loader, String mcVersion) {
         List<String> loaders = (loader != null && !loader.equalsIgnoreCase("all") && !loader.isBlank()) ? List.of(loader) : Collections.emptyList();
         return getProjectVersions(idOrSlug, loaders, mcVersion);

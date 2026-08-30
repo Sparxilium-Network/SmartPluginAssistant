@@ -485,7 +485,10 @@ public class MainController {
                 }
                 Path destIcon = instanceDir.resolve("icon.png");
                 java.nio.file.Files.copy(selected.toPath(), destIcon, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                instance.setIcon(destIcon.toUri().toString());
+                String iconUri = destIcon.toUri().toString();
+                com.sparxilium.smartpluginassistant.service.ImageCacheService.evict(iconUri);
+                com.sparxilium.smartpluginassistant.service.ImageCacheService.evict(destIcon.toAbsolutePath().toString());
+                instance.setIcon(iconUri);
                 instanceManager.updateInstance(instance);
                 refreshInstanceList();
             } catch (Exception ex) {
@@ -499,6 +502,8 @@ public class MainController {
         try {
             Path instanceDir = instanceManager.getInstanceDirectory(instance);
             Path destIcon = instanceDir.resolve("icon.png");
+            com.sparxilium.smartpluginassistant.service.ImageCacheService.evict(destIcon.toUri().toString());
+            com.sparxilium.smartpluginassistant.service.ImageCacheService.evict(destIcon.toAbsolutePath().toString());
             java.nio.file.Files.deleteIfExists(destIcon);
             instance.setIcon(null);
             instanceManager.updateInstance(instance);

@@ -34,6 +34,9 @@ public class ModrinthVersion {
     @JsonProperty("files")
     private List<ModrinthFile> files;
 
+    @JsonProperty("dependencies")
+    private List<ModrinthDependency> dependencies;
+
     @JsonProperty("date_published")
     private String datePublished;
 
@@ -117,12 +120,71 @@ public class ModrinthVersion {
         this.datePublished = datePublished;
     }
 
+    public List<ModrinthDependency> getDependencies() {
+        return dependencies;
+    }
+
+    public void setDependencies(List<ModrinthDependency> dependencies) {
+        this.dependencies = dependencies;
+    }
+
     public ModrinthFile getPrimaryFile() {
         if (files == null || files.isEmpty()) return null;
         for (ModrinthFile f : files) {
             if (f.isPrimary()) return f;
         }
         return files.get(0);
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ModrinthDependency {
+        @JsonProperty("version_id")
+        private String versionId;
+
+        @JsonProperty("project_id")
+        private String projectId;
+
+        @JsonProperty("file_name")
+        private String fileName;
+
+        @JsonProperty("dependency_type")
+        private String dependencyType; // "required", "optional", "incompatible", "embedded"
+
+        public String getVersionId() {
+            return versionId;
+        }
+
+        public void setVersionId(String versionId) {
+            this.versionId = versionId;
+        }
+
+        public String getProjectId() {
+            return projectId;
+        }
+
+        public void setProjectId(String projectId) {
+            this.projectId = projectId;
+        }
+
+        public String getFileName() {
+            return fileName;
+        }
+
+        public void setFileName(String fileName) {
+            this.fileName = fileName;
+        }
+
+        public String getDependencyType() {
+            return dependencyType;
+        }
+
+        public void setDependencyType(String dependencyType) {
+            this.dependencyType = dependencyType;
+        }
+
+        public boolean isRequired() {
+            return "required".equalsIgnoreCase(dependencyType);
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

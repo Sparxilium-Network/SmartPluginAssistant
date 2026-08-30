@@ -113,9 +113,14 @@ modrinth.btn_installing=Downloading...
 modrinth.btn_installed=✓ Installed
 modrinth.installed_badge=✓ Installed: {0}
 modrinth.fetching_versions=Fetching versions...
-modrinth.install_failed=Installation failed: {0}
 modrinth.no_versions=No version found for {0} {1}!
 modrinth.no_files=No downloadable files found!
+modrinth.confirm_title=Confirm Download Selection
+modrinth.confirm_header=You are about to download the following plugins:
+modrinth.confirm_footer=Only checked plugins will be downloaded!
+modrinth.dep_required=(Required)
+modrinth.dep_optional=(Optional)
+modrinth.resolving_deps=Checking plugin dependencies...
 
 url.title=Add Plugin by Modrinth URL
 url.window_title=Add Plugin by URL - {0}

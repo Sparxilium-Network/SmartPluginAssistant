@@ -115,9 +115,14 @@ modrinth.btn_installing=下載中...
 modrinth.btn_installed=✓ 已安裝
 modrinth.installed_badge=✓ 已安裝: {0}
 modrinth.fetching_versions=取得版本中...
-modrinth.install_failed=安裝失敗: {0}
 modrinth.no_versions=找不到適用於 {0} {1} 的版本！
 modrinth.no_files=找不到可供下載的檔案！
+modrinth.confirm_title=確認下載選擇
+modrinth.confirm_header=您即將下載下列插件：
+modrinth.confirm_footer=只會下載勾選的插件！
+modrinth.dep_required=(前置需求)
+modrinth.dep_optional=(選用依賴)
+modrinth.resolving_deps=正在檢查依賴前置插件...
 
 url.title=透過 Modrinth 網址新增插件
 url.window_title=透過網址新增插件 - {0}
