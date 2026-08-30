@@ -631,12 +631,26 @@ public class MainController {
             ModrinthBrowserController controller = loader.getController();
             controller.init(currentSelectedInstance, modrinthService, instanceManager, this::refreshPlugins);
 
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double w = prefs.getDouble("modrinth_dialog_w", 1080);
+            double h = prefs.getDouble("modrinth_dialog_h", 720);
+
             Stage stage = new Stage();
             stage.setTitle(I18n.get("modrinth.window_title", currentSelectedInstance.getName()));
             stage.initModality(Modality.APPLICATION_MODAL);
-            Scene scene = new Scene(root);
+            Scene scene = new Scene(root, w, h);
             scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
             stage.setScene(scene);
+            stage.setMinWidth(900);
+            stage.setMinHeight(600);
+
+            stage.setOnCloseRequest(e -> {
+                if (!stage.isMaximized()) {
+                    prefs.putDouble("modrinth_dialog_w", stage.getWidth());
+                    prefs.putDouble("modrinth_dialog_h", stage.getHeight());
+                }
+            });
+
             stage.showAndWait();
         } catch (IOException e) {
             e.printStackTrace();

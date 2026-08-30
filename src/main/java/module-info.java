@@ -4,6 +4,7 @@ module com.sparxilium.smartpluginassistant {
     requires javafx.swing;
     requires java.net.http;
     requires java.desktop;
+    requires java.prefs;
 
     requires org.controlsfx.controls;
     requires org.kordamp.ikonli.javafx;
