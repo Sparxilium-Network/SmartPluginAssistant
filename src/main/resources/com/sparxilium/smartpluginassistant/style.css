@@ -205,3 +205,23 @@
 .combo-box .list-cell {
     -fx-text-fill: #dfe1e5;
 }
+
+/* JavaFX Dialog & DialogPane Dark Mode Styling */
+.dialog-pane {
+    -fx-background-color: #1e1f22;
+}
+.dialog-pane > .button-bar > .container {
+    -fx-background-color: #1e1f22;
+}
+.dialog-pane > .content.label {
+    -fx-text-fill: #dfe1e5;
+}
+.dialog-pane:header .header-panel {
+    -fx-background-color: #1e1f22;
+}
+.dialog-pane:header .header-panel .label {
+    -fx-text-fill: #ffffff;
+}
+.dialog-pane > .content {
+    -fx-background-color: #1e1f22;
+}

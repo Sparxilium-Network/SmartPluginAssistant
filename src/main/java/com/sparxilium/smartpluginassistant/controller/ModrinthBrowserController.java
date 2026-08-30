@@ -11,6 +11,7 @@ import com.sparxilium.smartpluginassistant.service.ModrinthService;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -691,38 +692,23 @@ public class ModrinthBrowserController {
     private void promptConfirmationAndDownload(List<DownloadItem> items) {
         updateBottomActionBar();
 
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(I18n.get("modrinth.confirm_title"));
-        dialog.setHeaderText(null);
+        Stage confirmStage = new Stage();
+        confirmStage.setTitle(I18n.get("modrinth.confirm_title"));
+        confirmStage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
 
-        DialogPane dialogPane = dialog.getDialogPane();
-        dialogPane.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
-        dialogPane.setStyle("-fx-background-color: #1e1f22;");
-
-        ButtonType okButtonType = new ButtonType(I18n.get("common.ok"), ButtonBar.ButtonData.OK_DONE);
-        ButtonType cancelButtonType = new ButtonType(I18n.get("common.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialogPane.getButtonTypes().addAll(okButtonType, cancelButtonType);
-
-        // Customize Button UI and Text
-        Button okButton = (Button) dialogPane.lookupButton(okButtonType);
-        if (okButton != null) {
-            okButton.setText(I18n.get("common.ok"));
-            okButton.getStyleClass().add("btn-success");
-        }
-        Button cancelButton = (Button) dialogPane.lookupButton(cancelButtonType);
-        if (cancelButton != null) {
-            cancelButton.setText(I18n.get("common.cancel"));
-            cancelButton.getStyleClass().add("btn-secondary");
-        }
-
-        VBox contentBox = new VBox(12);
-        contentBox.setStyle("-fx-padding: 16; -fx-background-color: #1e1f22;");
+        VBox rootBox = new VBox(14);
+        rootBox.setStyle("-fx-background-color: #1e1f22; -fx-padding: 16;");
 
         Label headerLabel = new Label(I18n.get("modrinth.confirm_header"));
         headerLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
 
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background: #18191c; -fx-background-color: #18191c; -fx-background-radius: 6; -fx-border-color: #393b40; -fx-border-radius: 6;");
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
         VBox listBox = new VBox(8);
-        listBox.setStyle("-fx-background-color: #2b2d30; -fx-background-radius: 6; -fx-padding: 12; -fx-border-color: #393b40; -fx-border-radius: 6;");
+        listBox.setStyle("-fx-background-color: #18191c; -fx-padding: 12;");
 
         for (DownloadItem item : items) {
             CheckBox cb = new CheckBox();
@@ -750,21 +736,43 @@ public class ModrinthBrowserController {
 
             listBox.getChildren().add(itemRow);
         }
+        scrollPane.setContent(listBox);
 
         Label footerLabel = new Label(I18n.get("modrinth.confirm_footer"));
         footerLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #8b8e96;");
 
-        contentBox.getChildren().addAll(headerLabel, listBox, footerLabel);
-        dialogPane.setContent(contentBox);
+        HBox btnBox = new HBox(12);
+        btnBox.setAlignment(Pos.CENTER_RIGHT);
 
-        // Dark Title Bar & Window Setup
-        Stage stage = (Stage) dialogPane.getScene().getWindow();
-        stage.setMinWidth(480);
-        stage.setMinHeight(360);
-        com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
+        Button okBtn = new Button(I18n.get("common.ok"));
+        okBtn.getStyleClass().add("btn-success");
+        okBtn.setStyle("-fx-font-weight: bold; -fx-padding: 6 16;");
 
-        var result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == okButtonType) {
+        Button cancelBtn = new Button(I18n.get("common.cancel"));
+        cancelBtn.getStyleClass().add("btn-secondary");
+        cancelBtn.setStyle("-fx-padding: 6 16;");
+
+        btnBox.getChildren().addAll(okBtn, cancelBtn);
+
+        rootBox.getChildren().addAll(headerLabel, scrollPane, footerLabel, btnBox);
+
+        Scene scene = new Scene(rootBox, 500, 380);
+        scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
+        confirmStage.setScene(scene);
+        confirmStage.setMinWidth(420);
+        confirmStage.setMinHeight(300);
+
+        final boolean[] confirmed = {false};
+        okBtn.setOnAction(e -> {
+            confirmed[0] = true;
+            confirmStage.close();
+        });
+        cancelBtn.setOnAction(e -> confirmStage.close());
+
+        com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(confirmStage);
+        confirmStage.showAndWait();
+
+        if (confirmed[0]) {
             executeDownload(items.stream().filter(DownloadItem::isSelected).toList());
         }
     }
