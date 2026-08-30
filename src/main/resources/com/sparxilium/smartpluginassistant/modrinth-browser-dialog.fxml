@@ -62,7 +62,14 @@
                 <ComboBox fx:id="detailVersionCombo" maxWidth="Infinity"/>
             </VBox>
 
-            <Button fx:id="detailInstallBtn" text="下載並安裝" maxWidth="Infinity" styleClass="btn-success" onAction="#handleInstallSelectedVersion"/>
+            <Button fx:id="detailInstallBtn" text="選擇此版本" maxWidth="Infinity" styleClass="btn-primary" onAction="#handleSelectVersionForDownload"/>
         </VBox>
     </SplitPane>
+
+    <!-- Bottom Action Bar like Prism Launcher (Shopping Cart / Review and Download) -->
+    <HBox fx:id="bottomActionBar" spacing="12.0" alignment="CENTER_RIGHT" style="-fx-background-color: #1e1f22; -fx-padding: 10 4 2 4;">
+        <Label fx:id="selectedQueueLabel" text="" style="-fx-text-fill: #3574f0; -fx-font-weight: bold; -fx-font-size: 13px;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="reviewAndDownloadBtn" text="檢查並確認 (0)" onAction="#handleReviewAndDownload" styleClass="btn-success" disable="true" style="-fx-font-weight: bold; -fx-padding: 8 16; -fx-font-size: 13px;"/>
+    </HBox>
 </VBox>
