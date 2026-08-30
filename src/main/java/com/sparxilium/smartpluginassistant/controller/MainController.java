@@ -15,6 +15,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -28,7 +29,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class MainController {
-    // Top Bar
+    // Root & Top Bar
+    @FXML private BorderPane rootPane;
     @FXML private Label appTitleLabel;
     @FXML private Label appSubtitleLabel;
     @FXML private Button appSettingsBtn;
@@ -75,13 +77,60 @@ public class MainController {
         setupTableColumns();
         applyI18n();
         refreshInstanceList();
+        setupResponsiveLayout();
+    }
+
+    private void setupResponsiveLayout() {
+        if (rootPane == null) return;
+        rootPane.widthProperty().addListener((obs, oldW, newW) -> {
+            boolean isCompact = newW.doubleValue() < 980;
+            if (isCompact) {
+                if (!rootPane.getStyleClass().contains("compact-mode")) {
+                    rootPane.getStyleClass().add("compact-mode");
+                }
+            } else {
+                rootPane.getStyleClass().remove("compact-mode");
+            }
+            updateButtonLabels(isCompact);
+        });
+    }
+
+    private void updateButtonLabels(boolean isCompact) {
+        boolean isEn = "en".equalsIgnoreCase(I18n.getCurrentLang());
+        if (isCompact) {
+            // Icon only / shorter labels when window is small
+            appSettingsBtn.setText("⚙️");
+            addInstanceBtn.setText("+ " + (isEn ? "New" : "新增實例"));
+            instanceSettingsBtn.setText("⚙️");
+            openPluginsFolderBtn.setText("📂 " + (isEn ? "Folder" : "資料夾"));
+            exportZipBtn.setText("📦 ZIP");
+            deleteInstanceBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
+            browseModrinthBtn.setText("🔍 " + (isEn ? "Modrinth" : "Modrinth 插件"));
+            addByUrlBtn.setText("🔗 " + (isEn ? "URL" : "網址新增"));
+            checkUpdatesBtn.setText("🔄 " + (isEn ? "Check" : "檢查更新"));
+            updateAllBtn.setText("⚡ " + (isEn ? "Update All" : "全部更新"));
+            refreshPluginsBtn.setText("↻");
+            refreshInstancesBtn.setText("↻");
+        } else {
+            appSettingsBtn.setText(I18n.get("app_settings.title"));
+            addInstanceBtn.setText(I18n.get("app.add_instance"));
+            instanceSettingsBtn.setText(I18n.get("app.instance_settings"));
+            openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder"));
+            exportZipBtn.setText(I18n.get("app.export_zip"));
+            deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
+            browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
+            addByUrlBtn.setText(I18n.get("app.add_by_url"));
+            checkUpdatesBtn.setText(I18n.get("app.check_updates"));
+            updateAllBtn.setText(I18n.get("app.update_all"));
+            refreshPluginsBtn.setText(I18n.get("app.refresh_list"));
+            refreshInstancesBtn.setText(I18n.get("app.refresh"));
+        }
     }
 
     private void applyI18n() {
         appTitleLabel.setText(I18n.get("app.title"));
         appSubtitleLabel.setText(I18n.get("app.subtitle"));
-        if (appSettingsBtn != null) appSettingsBtn.setText(I18n.get("app_settings.title"));
-        addInstanceBtn.setText(I18n.get("app.add_instance"));
+        updateButtonLabels(rootPane != null && rootPane.getWidth() < 980);
 
         instanceListHeaderLabel.setText(I18n.get("app.instance_list"));
         refreshInstancesBtn.setText(I18n.get("app.refresh"));
