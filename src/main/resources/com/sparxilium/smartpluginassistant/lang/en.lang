@@ -68,6 +68,7 @@ settings.version=Minecraft Version:
 settings.compat_section=Check Incompatible Plugins Simultaneously (Compatibility):
 settings.no_compat_available=No extra downward compatible loaders for this core
 settings.warning=ℹ️ Note: Selecting compatible architectures here allows checking and downloading updates for these loaders during instance update checks.
+settings.compat_item={0} Plugin Compatibility Support
 settings.btn_save=Save Settings
 settings.btn_cancel=Cancel
 

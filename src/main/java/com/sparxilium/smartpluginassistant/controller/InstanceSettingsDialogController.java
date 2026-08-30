@@ -78,7 +78,7 @@ public class InstanceSettingsDialogController {
         List<String> currentSelected = instance != null ? instance.getExtraCompatibleLoaders() : List.of();
 
         for (String loaderOption : available) {
-            CheckBox cb = new CheckBox(loaderOption.toUpperCase() + " 插件相容支援");
+            CheckBox cb = new CheckBox(I18n.get("settings.compat_item", loaderOption.toUpperCase()));
             cb.setStyle("-fx-text-fill: #dfe1e5; -fx-font-weight: bold;");
             if (currentSelected.contains(loaderOption.toLowerCase())) {
                 cb.setSelected(true);
