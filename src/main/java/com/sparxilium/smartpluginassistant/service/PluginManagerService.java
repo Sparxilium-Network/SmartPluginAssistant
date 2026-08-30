@@ -48,16 +48,28 @@ public class PluginManagerService {
 
                 InstalledPlugin plugin = new InstalledPlugin(fileName, sha1, size, lastModified, enabled);
                 
-                // 1. Read exact version from inside jar (plugin.yml, paper-plugin.yml, bungeecord.yml, velocity-plugin.json)
-                String internalVersion = readPluginVersionFromJar(file);
-                if (internalVersion != null && !internalVersion.isBlank()) {
-                    plugin.setCurrentVersionNumber(internalVersion.trim());
-                } else {
-                    // 2. Fallback: deduce current version number from filename (e.g., EssentialsX-2.20.1.jar -> 2.20.1)
-                    String cleanName = fileName.replace(".jar.disabled", "").replace(".jar", "");
-                    int lastDash = cleanName.lastIndexOf('-');
-                    if (lastDash > 0 && lastDash < cleanName.length() - 1) {
-                        plugin.setCurrentVersionNumber(cleanName.substring(lastDash + 1));
+                // 1. Check download history record in metadata store
+                PluginMetadataStore.DownloadRecord record = PluginMetadataStore.findRecord(instanceManager, instance, fileName, sha1);
+                if (record != null) {
+                    if (record.versionNumber != null && !record.versionNumber.isBlank()) {
+                        plugin.setCurrentVersionNumber(record.versionNumber);
+                    }
+                    plugin.setProjectId(record.projectId);
+                    plugin.setVersionId(record.versionId);
+                }
+
+                // 2. Read exact version from inside jar (plugin.yml, paper-plugin.yml, bungeecord.yml, velocity-plugin.json) if not recorded
+                if (plugin.getCurrentVersionNumber().equals("Unknown")) {
+                    String internalVersion = readPluginVersionFromJar(file);
+                    if (internalVersion != null && !internalVersion.isBlank()) {
+                        plugin.setCurrentVersionNumber(internalVersion.trim());
+                    } else {
+                        // 3. Fallback: deduce current version number from filename (e.g., EssentialsX-2.20.1.jar -> 2.20.1)
+                        String cleanName = fileName.replace(".jar.disabled", "").replace(".jar", "");
+                        int lastDash = cleanName.lastIndexOf('-');
+                        if (lastDash > 0 && lastDash < cleanName.length() - 1) {
+                            plugin.setCurrentVersionNumber(cleanName.substring(lastDash + 1));
+                        }
                     }
                 }
 
@@ -86,9 +98,18 @@ public class PluginManagerService {
 
                             String latestVerNum = version.getVersionNumber();
                             String currentVerNum = plugin.getCurrentVersionNumber();
+                            String currentVerId = plugin.getVersionId();
 
-                            // Only treat as update if latestVerNum is actually newer than currentVerNum
-                            boolean isNewer = isNewerVersion(currentVerNum, latestVerNum);
+                            // 1. Direct ID comparison: If we know the exact installed version ID and it equals the returned version ID, it is the same version!
+                            boolean isSameVersion = currentVerId != null && currentVerId.equals(version.getId());
+                            
+                            // 2. Direct exact string comparison (including any platform tags/prefixes/suffixes)
+                            if (!isSameVersion && currentVerNum != null && currentVerNum.equalsIgnoreCase(latestVerNum)) {
+                                isSameVersion = true;
+                            }
+
+                            // 3. Normalized semantic comparison
+                            boolean isNewer = !isSameVersion && isNewerVersion(currentVerNum, latestVerNum);
 
                             if (isNewer) {
                                 plugin.setUpdateAvailable(true);
@@ -120,6 +141,14 @@ public class PluginManagerService {
                             } else {
                                 plugin.setUpdateAvailable(false);
                                 plugin.setLoaderIncompatible(false);
+                                // Save/refresh download record with exact version and projectId so we always have it recorded
+                                if (plugin.getProjectId() == null || plugin.getVersionId() == null) {
+                                    plugin.setProjectId(version.getProjectId());
+                                    plugin.setVersionId(version.getId());
+                                    plugin.setCurrentVersionNumber(version.getVersionNumber());
+                                    PluginMetadataStore.saveRecord(instanceManager, instance,
+                                            new PluginMetadataStore.DownloadRecord(version.getProjectId(), version.getId(), version.getVersionNumber(), plugin.getFileName(), hash));
+                                }
                                 if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
                                     plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
                                 }
@@ -143,10 +172,11 @@ public class PluginManagerService {
 
         Path pluginsDir = instanceManager.getPluginsDirectory(instance);
         Path oldFilePath = pluginsDir.resolve(plugin.getFileName());
-        String newName = plugin.getLatestFileName() != null ? plugin.getLatestFileName() : plugin.getFileName();
-        if (!plugin.isEnabled() && !newName.endsWith(".disabled")) {
-            newName = newName + ".disabled";
+        String rawName = plugin.getLatestFileName() != null ? plugin.getLatestFileName() : plugin.getFileName();
+        if (!plugin.isEnabled() && !rawName.endsWith(".disabled")) {
+            rawName = rawName + ".disabled";
         }
+        final String newName = rawName;
         Path newFilePath = pluginsDir.resolve(newName);
 
         return modrinthService.downloadFile(plugin.getLatestDownloadUrl(), newFilePath, null)
@@ -158,6 +188,16 @@ public class PluginManagerService {
                             e.printStackTrace();
                         }
                     }
+                    // Calculate new sha1 and save record to metadata store
+                    String newSha1 = calculateSha1(newFilePath.toFile());
+                    PluginMetadataStore.saveRecord(instanceManager, instance,
+                            new PluginMetadataStore.DownloadRecord(
+                                    plugin.getProjectId(),
+                                    plugin.getLatestVersionId(),
+                                    plugin.getLatestVersionNumber(),
+                                    newName,
+                                    newSha1
+                            ));
                 });
     }
 

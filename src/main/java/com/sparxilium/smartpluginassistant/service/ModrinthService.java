@@ -209,6 +209,27 @@ public class ModrinthService {
                 });
     }
 
+    public CompletableFuture<ModrinthVersion> getVersionByHash(String sha1Hash) {
+        String url = BASE_URL + "/version_file/" + URLEncoder.encode(sha1Hash, StandardCharsets.UTF_8) + "?algorithm=sha1";
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("User-Agent", USER_AGENT)
+                .GET()
+                .build();
+
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> {
+                    if (response.statusCode() != 200) {
+                        return null;
+                    }
+                    try {
+                        return objectMapper.readValue(response.body(), ModrinthVersion.class);
+                    } catch (Exception e) {
+                        return null;
+                    }
+                });
+    }
+
     public CompletableFuture<List<ModrinthVersion>> getProjectVersions(String idOrSlug, String loader, String mcVersion) {
         List<String> loaders = (loader != null && !loader.equalsIgnoreCase("all") && !loader.isBlank()) ? List.of(loader) : Collections.emptyList();
         return getProjectVersions(idOrSlug, loaders, mcVersion);

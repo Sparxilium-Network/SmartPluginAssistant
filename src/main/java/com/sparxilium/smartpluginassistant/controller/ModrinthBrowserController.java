@@ -8,6 +8,8 @@ import com.sparxilium.smartpluginassistant.model.ServerInstance;
 import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;
 import com.sparxilium.smartpluginassistant.service.ModrinthService;
+import com.sparxilium.smartpluginassistant.service.PluginManagerService;
+import com.sparxilium.smartpluginassistant.service.PluginMetadataStore;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -541,6 +543,8 @@ public class ModrinthBrowserController {
     }
 
     public static class DownloadItem {
+        private final String projectId;
+        private final String versionId;
         private final String title;
         private final String versionNumber;
         private final String fileName;
@@ -548,7 +552,9 @@ public class ModrinthBrowserController {
         private final String depType; // null for primary, "required", "optional"
         private boolean selected = true;
 
-        public DownloadItem(String title, String versionNumber, String fileName, String url, String depType) {
+        public DownloadItem(String projectId, String versionId, String title, String versionNumber, String fileName, String url, String depType) {
+            this.projectId = projectId;
+            this.versionId = versionId;
             this.title = title;
             this.versionNumber = versionNumber;
             this.fileName = fileName;
@@ -556,6 +562,8 @@ public class ModrinthBrowserController {
             this.depType = depType;
         }
 
+        public String getProjectId() { return projectId; }
+        public String getVersionId() { return versionId; }
         public String getTitle() { return title; }
         public String getVersionNumber() { return versionNumber; }
         public String getFileName() { return fileName; }
@@ -616,6 +624,8 @@ public class ModrinthBrowserController {
             if (primaryFile == null || primaryFile.getUrl() == null) continue;
 
             downloadList.add(new DownloadItem(
+                    cartItem.project.getProjectId(),
+                    targetVer.getId(),
                     cartItem.project.getTitle() != null ? cartItem.project.getTitle() : targetVer.getName(),
                     targetVer.getVersionNumber(),
                     primaryFile.getFilename(),
@@ -637,6 +647,8 @@ public class ModrinthBrowserController {
                                     boolean exists = downloadList.stream().anyMatch(d -> d.getFileName().equalsIgnoreCase(depFile.getFilename()));
                                     if (!exists) {
                                         downloadList.add(new DownloadItem(
+                                                depVer.getProjectId(),
+                                                depVer.getId(),
                                                 depVer.getName() != null ? depVer.getName() : depFile.getFilename(),
                                                 depVer.getVersionNumber(),
                                                 depFile.getFilename(),
@@ -662,6 +674,8 @@ public class ModrinthBrowserController {
                                         boolean exists = downloadList.stream().anyMatch(d -> d.getFileName().equalsIgnoreCase(depFile.getFilename()));
                                         if (!exists) {
                                             downloadList.add(new DownloadItem(
+                                                    depVer.getProjectId(),
+                                                    depVer.getId(),
                                                     depVer.getName() != null ? depVer.getName() : depFile.getFilename(),
                                                     depVer.getVersionNumber(),
                                                     depFile.getFilename(),
@@ -788,7 +802,18 @@ public class ModrinthBrowserController {
         List<java.util.concurrent.CompletableFuture<Path>> futures = new ArrayList<>();
         for (DownloadItem item : toDownload) {
             Path dest = pluginsDir.resolve(item.getFileName());
-            futures.add(modrinthService.downloadFile(item.getUrl(), dest, null));
+            futures.add(modrinthService.downloadFile(item.getUrl(), dest, null).thenApply(downloadedPath -> {
+                String sha1 = PluginManagerService.calculateSha1(downloadedPath.toFile());
+                PluginMetadataStore.saveRecord(instanceManager, currentInstance,
+                        new PluginMetadataStore.DownloadRecord(
+                                item.getProjectId(),
+                                item.getVersionId(),
+                                item.getVersionNumber(),
+                                item.getFileName(),
+                                sha1
+                        ));
+                return downloadedPath;
+            }));
         }
 
         java.util.concurrent.CompletableFuture.allOf(futures.toArray(new java.util.concurrent.CompletableFuture[0]))
