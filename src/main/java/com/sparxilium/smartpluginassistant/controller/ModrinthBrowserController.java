@@ -31,6 +31,7 @@ public class ModrinthBrowserController {
     @FXML private CheckBox ignoreVersionCheckBox;
     @FXML private CheckBox ignoreCompatCheckBox;
     @FXML private javafx.scene.layout.HBox compatFilterBox;
+    @FXML private Label compatTitleLabel;
     @FXML private javafx.scene.layout.HBox compatCheckboxesContainer;
     @FXML private Button searchBtn;
     @FXML private ScrollPane resultsScrollPane;
@@ -76,7 +77,6 @@ public class ModrinthBrowserController {
 
         applyI18n();
         refreshInstalledMap();
-        setupCompatibilityCheckboxes();
 
         loaderFilterCombo.getItems().addAll(I18n.get("modrinth.all"), "folia", "purpur", "paper", "spigot", "velocity", "bungeecord", "fabric", "sponge");
         if (instance != null && instance.getLoader() != null) {
@@ -84,6 +84,8 @@ public class ModrinthBrowserController {
         } else {
             loaderFilterCombo.setValue("paper");
         }
+
+        setupCompatibilityCheckboxes();
 
         loaderFilterCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             setupCompatibilityCheckboxes();
@@ -177,10 +179,19 @@ public class ModrinthBrowserController {
 
         String selectedLoader = loaderFilterCombo.getValue();
         if (selectedLoader == null || selectedLoader.equalsIgnoreCase("all") || selectedLoader.contains("全部")) {
+            Label allLabel = new Label(I18n.get("modrinth.all_loaders_selected"));
+            allLabel.setStyle("-fx-text-fill: #8b8e96; -fx-font-size: 11px; -fx-font-style: italic;");
+            compatCheckboxesContainer.getChildren().add(allLabel);
             return;
         }
 
         List<String> available = ServerInstance.getAvailableCompatibleLoadersFor(selectedLoader);
+        if (available.isEmpty()) {
+            // If current loader has no standard downward compatible loader (e.g. spigot/sponge/fabric), provide other common server loaders to choose
+            List<String> allOtherLoaders = List.of("folia", "purpur", "paper", "spigot", "bukkit", "velocity", "bungeecord", "fabric", "sponge");
+            available = allOtherLoaders.stream().filter(l -> !l.equalsIgnoreCase(selectedLoader)).toList();
+        }
+
         for (String loaderOption : available) {
             CheckBox cb = new CheckBox(loaderOption.toUpperCase());
             cb.setStyle("-fx-text-fill: #dfe1e5; -fx-font-weight: bold; -fx-font-size: 11px;");
@@ -196,6 +207,9 @@ public class ModrinthBrowserController {
         searchField.setPromptText(I18n.get("modrinth.search_prompt"));
         ignoreVersionCheckBox.setText(I18n.get("modrinth.ignore_version"));
         ignoreCompatCheckBox.setText(I18n.get("modrinth.ignore_compat"));
+        if (compatTitleLabel != null) {
+            compatTitleLabel.setText(I18n.get("modrinth.include_loaders"));
+        }
         searchBtn.setText(I18n.get("modrinth.btn_search"));
         statusLabel.setText(I18n.get("app.status_ready"));
     }

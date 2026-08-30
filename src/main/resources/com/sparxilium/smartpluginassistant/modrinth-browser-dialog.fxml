@@ -28,7 +28,7 @@
 
         <!-- Compatibility Inclusion Checkboxes when Ignore Compatibility is enabled -->
         <HBox fx:id="compatFilterBox" spacing="12.0" alignment="CENTER_LEFT" style="-fx-background-color: #2b2d30; -fx-padding: 6 10; -fx-background-radius: 4;" visible="false" managed="false">
-            <Label text="包含相容架構 (Include Loaders):" style="-fx-text-fill: #3574f0; -fx-font-weight: bold; -fx-font-size: 11px;"/>
+            <Label fx:id="compatTitleLabel" text="包含相容架構 (Include Loaders):" style="-fx-text-fill: #3574f0; -fx-font-weight: bold; -fx-font-size: 11px;"/>
             <HBox fx:id="compatCheckboxesContainer" spacing="10.0" alignment="CENTER_LEFT"/>
         </HBox>
     </VBox>
