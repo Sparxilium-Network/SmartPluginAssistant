@@ -32,13 +32,16 @@ app.update_all_failed=批次更新發生錯誤: {0}
 app.updating_plugin=正在更新 {0}...
 app.update_success=更新完成！
 app.update_failed=更新失敗: {0}
-app.confirm_delete_plugin=確定要刪除 {0} 嗎？
-
+app.btn_batch_enable=啟用選取
+app.btn_batch_disable=停用選取
+app.btn_batch_delete=🗑️ 刪除選取
+app.confirm_batch_delete=確定要刪除選取的 {0} 個插件檔案嗎？
+table.col_select=選取
 table.col_name=檔案名稱 / 插件
 table.col_current_version=目前版本
 table.col_last_modified=最後修改時間
-table.col_status=狀態
 table.col_update=版本狀態
+table.col_status=狀態
 table.col_actions=操作
 table.status_enabled=已啟用
 table.status_disabled=已停用
@@ -59,9 +62,11 @@ settings.loader=伺服器核心 (Loader):
 settings.version=Minecraft 版本:
 settings.compat_section=額外載入器相容性 (Compatibility Selection):
 settings.no_compat_available=此核心無可額外向下相容的伺服器核心
-settings.warning=⚠️ 警告：勾選額外相容載入器後，部分非原生開發之插件可能存在 API 差異、非同步問題或效能衝突，使用前請注意相容性風險！
+settings.warning=ℹ️ 說明：開啟相容性支援後，即便插件官方尚未標註支援您目前的核心，也會在檢查更新與搜尋時納入並允許下載更新；若未勾選則會嚴格檢查並跳過不相容之更新。
 settings.btn_save=儲存設定
 settings.btn_cancel=取消
+
+table.incompatible_loader_warn=⚠️ 架構不相容 (僅支援 {0})
 
 app_settings.title=應用程式設定
 app_settings.language=介面語言 (Language):

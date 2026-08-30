@@ -15,10 +15,11 @@ import java.util.List;
 
 public class InstanceManager {
     private static final String APP_DATA_DIR_NAME = ".smartpluginassistant";
-    private static final String INSTANCES_FILE_NAME = "instances.json";
+    private static final String INSTANCE_CONFIG_FILE_NAME = "instance.json";
+    private static final String LEGACY_INSTANCES_FILE_NAME = "instances.json";
 
     private final Path rootDataDir;
-    private final Path instancesFile;
+    private final Path defaultInstancesDir;
     private final ObjectMapper objectMapper;
     private final List<ServerInstance> instances = new ArrayList<>();
 
@@ -28,7 +29,7 @@ public class InstanceManager {
 
         String userHome = System.getProperty("user.home");
         this.rootDataDir = Paths.get(userHome, APP_DATA_DIR_NAME);
-        this.instancesFile = rootDataDir.resolve(INSTANCES_FILE_NAME);
+        this.defaultInstancesDir = rootDataDir.resolve("instances");
 
         initStorage();
         loadInstances();
@@ -39,7 +40,6 @@ public class InstanceManager {
             if (!Files.exists(rootDataDir)) {
                 Files.createDirectories(rootDataDir);
             }
-            Path defaultInstancesDir = rootDataDir.resolve("instances");
             if (!Files.exists(defaultInstancesDir)) {
                 Files.createDirectories(defaultInstancesDir);
             }
@@ -50,28 +50,81 @@ public class InstanceManager {
 
     public synchronized void loadInstances() {
         instances.clear();
-        if (Files.exists(instancesFile)) {
-            try {
-                List<ServerInstance> loaded = objectMapper.readValue(instancesFile.toFile(), new TypeReference<List<ServerInstance>>() {});
-                if (loaded != null) {
-                    instances.addAll(loaded);
+
+        // 1. Scan default instances directory for subdirectories containing instance.json (or auto-discover)
+        if (Files.exists(defaultInstancesDir) && Files.isDirectory(defaultInstancesDir)) {
+            try (var stream = Files.list(defaultInstancesDir)) {
+                List<Path> dirs = stream.filter(Files::isDirectory).toList();
+                for (Path dir : dirs) {
+                    Path configFile = dir.resolve(INSTANCE_CONFIG_FILE_NAME);
+                    if (Files.exists(configFile)) {
+                        try {
+                            ServerInstance inst = objectMapper.readValue(configFile.toFile(), ServerInstance.class);
+                            if (inst != null) {
+                                if (inst.getId() == null || inst.getId().isBlank()) {
+                                    inst.setId(dir.getFileName().toString());
+                                }
+                                if (inst.getName() == null || inst.getName().isBlank()) {
+                                    inst.setName(dir.getFileName().toString());
+                                }
+                                instances.add(inst);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error reading instance config from " + configFile + ": " + e.getMessage());
+                        }
+                    } else {
+                        // Discovered a folder without instance.json -> auto initialize instance.json
+                        String dirName = dir.getFileName().toString();
+                        ServerInstance discovered = new ServerInstance(dirName, "paper", "1.21.1");
+                        discovered.setId(dirName);
+                        saveInstanceConfig(discovered);
+                        instances.add(discovered);
+                    }
                 }
             } catch (IOException e) {
-                System.err.println("Error reading instances.json: " + e.getMessage());
+                System.err.println("Error scanning instances directory: " + e.getMessage());
             }
         }
 
+        // 2. Backward compatibility: if instances list is empty, check legacy instances.json to migrate
+        Path legacyFile = rootDataDir.resolve(LEGACY_INSTANCES_FILE_NAME);
+        if (instances.isEmpty() && Files.exists(legacyFile)) {
+            try {
+                List<ServerInstance> legacyList = objectMapper.readValue(legacyFile.toFile(), new TypeReference<List<ServerInstance>>() {});
+                if (legacyList != null) {
+                    for (ServerInstance inst : legacyList) {
+                        createInstance(inst);
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error migrating legacy instances.json: " + e.getMessage());
+            }
+        }
+
+        // 3. Fallback: if still empty, create default Survival-Server instance
         if (instances.isEmpty()) {
             ServerInstance defaultInstance = new ServerInstance("Survival-Server", "paper", "1.21.1");
             createInstance(defaultInstance);
         }
     }
 
-    public synchronized void saveInstances() {
+    public synchronized void saveInstanceConfig(ServerInstance instance) {
+        if (instance == null) return;
+        Path instancePath = getInstanceDirectory(instance);
         try {
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(instancesFile.toFile(), instances);
+            if (!Files.exists(instancePath)) {
+                Files.createDirectories(instancePath);
+            }
+            Path configFile = instancePath.resolve(INSTANCE_CONFIG_FILE_NAME);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(configFile.toFile(), instance);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public synchronized void saveInstances() {
+        for (ServerInstance instance : instances) {
+            saveInstanceConfig(instance);
         }
     }
 
@@ -79,6 +132,7 @@ public class InstanceManager {
         if (instance.getId() == null || instance.getId().isBlank()) {
             instance.setId(ServerInstance.sanitizeFileName(instance.getName()));
         }
+        instance.setConfigVersion(ServerInstance.CURRENT_CONFIG_VERSION);
         instance.setCreatedAt(LocalDateTime.now());
         instance.setLastModifiedAt(LocalDateTime.now());
 
@@ -90,33 +144,33 @@ public class InstanceManager {
             e.printStackTrace();
         }
 
+        saveInstanceConfig(instance);
+
+        // Replace if already exists with same ID, else add
+        instances.removeIf(i -> i.getId().equals(instance.getId()));
         instances.add(instance);
-        saveInstances();
         return instance;
     }
 
     public synchronized void updateInstance(ServerInstance instance) {
         instance.setLastModifiedAt(LocalDateTime.now());
-        saveInstances();
+        saveInstanceConfig(instance);
     }
 
     public synchronized void deleteInstance(ServerInstance instance) {
-        // Also clean up default instance directory if it was under instances/
-        if (instance.getCustomDirectory() == null || instance.getCustomDirectory().isBlank()) {
-            Path dir = getInstanceDirectory(instance);
-            try {
-                if (Files.exists(dir)) {
-                    // Try to delete files inside
-                    try (var stream = Files.walk(dir)) {
-                        stream.sorted(java.util.Comparator.reverseOrder())
-                              .map(Path::toFile)
-                              .forEach(java.io.File::delete);
-                    }
+        // Delete instance directory and its files completely
+        Path dir = getInstanceDirectory(instance);
+        try {
+            if (Files.exists(dir)) {
+                try (var stream = Files.walk(dir)) {
+                    stream.sorted(java.util.Comparator.reverseOrder())
+                          .map(Path::toFile)
+                          .forEach(java.io.File::delete);
                 }
-            } catch (Exception ignored) {}
-        }
+            }
+        } catch (Exception ignored) {}
+
         instances.removeIf(i -> i.getId().equals(instance.getId()));
-        saveInstances();
     }
 
     public List<ServerInstance> getInstances() {

@@ -6,6 +6,9 @@ import java.util.UUID;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ServerInstance {
+    public static final int CURRENT_CONFIG_VERSION = 1;
+
+    private int configVersion = CURRENT_CONFIG_VERSION;
     private String id;
     private String name;
     private String loader; // paper, spigot, purpur, folia, velocity, bungeecord, etc.
@@ -96,6 +99,14 @@ public class ServerInstance {
         if (name == null || name.trim().isEmpty()) return false;
         // Check if contains illegal filename characters
         return !name.matches(".*[\\\\/:*?\"<>|].*");
+    }
+
+    public int getConfigVersion() {
+        return configVersion;
+    }
+
+    public void setConfigVersion(int configVersion) {
+        this.configVersion = configVersion;
     }
 
     public String getId() {

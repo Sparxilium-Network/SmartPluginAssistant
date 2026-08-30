@@ -14,6 +14,9 @@ public class InstalledPlugin {
     private long fileSizeBytes;
     private long lastModifiedTime;
     private boolean enabled;
+    private boolean selected;
+    private boolean loaderIncompatible;
+    private String supportedLoadersSummary;
 
     private boolean updateAvailable;
     private String latestVersionNumber;
@@ -124,6 +127,30 @@ public class InstalledPlugin {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
+
+    public boolean isLoaderIncompatible() {
+        return loaderIncompatible;
+    }
+
+    public void setLoaderIncompatible(boolean loaderIncompatible) {
+        this.loaderIncompatible = loaderIncompatible;
+    }
+
+    public String getSupportedLoadersSummary() {
+        return supportedLoadersSummary;
+    }
+
+    public void setSupportedLoadersSummary(String supportedLoadersSummary) {
+        this.supportedLoadersSummary = supportedLoadersSummary;
     }
 
     public boolean isUpdateAvailable() {

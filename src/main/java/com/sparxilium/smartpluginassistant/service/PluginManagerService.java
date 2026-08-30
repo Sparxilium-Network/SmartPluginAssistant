@@ -91,12 +91,22 @@ public class PluginManagerService {
                                 }
                             }
 
+                            if (version.getLoaders() != null && !version.getLoaders().isEmpty()) {
+                                String primaryLoader = instance.getLoader() != null ? instance.getLoader().toLowerCase() : "paper";
+                                boolean supportsPrimary = version.getLoaders().stream().anyMatch(l -> l.equalsIgnoreCase(primaryLoader));
+                                plugin.setLoaderIncompatible(!supportsPrimary);
+                                plugin.setSupportedLoadersSummary(String.join(", ", version.getLoaders()));
+                            } else {
+                                plugin.setLoaderIncompatible(false);
+                            }
+
                             if (primaryFile != null) {
                                 plugin.setLatestDownloadUrl(primaryFile.getUrl());
                                 plugin.setLatestFileName(primaryFile.getFilename());
                             }
                         } else {
                             plugin.setUpdateAvailable(false);
+                            plugin.setLoaderIncompatible(false);
                             if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
                                 plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
                             }

@@ -54,11 +54,15 @@ public class MainController {
     @FXML private Button checkUpdatesBtn;
     @FXML private Button updateAllBtn;
     @FXML private Button refreshPluginsBtn;
+    @FXML private Button batchEnableBtn;
+    @FXML private Button batchDisableBtn;
+    @FXML private Button batchDeleteBtn;
     @FXML private Label statusLabel;
     @FXML private ProgressIndicator globalProgress;
 
     // Plugins Table
     @FXML private TableView<InstalledPlugin> pluginTableView;
+    @FXML private TableColumn<InstalledPlugin, Boolean> colSelect;
     @FXML private TableColumn<InstalledPlugin, String> colName;
     @FXML private TableColumn<InstalledPlugin, String> colCurrentVersion;
     @FXML private TableColumn<InstalledPlugin, String> colLastModified;
@@ -110,6 +114,9 @@ public class MainController {
             addByUrlBtn.setText("🔗 " + (isEn ? "URL" : "網址新增"));
             checkUpdatesBtn.setText("🔄 " + (isEn ? "Check" : "檢查更新"));
             updateAllBtn.setText("⚡ " + (isEn ? "Update All" : "全部更新"));
+            batchEnableBtn.setText("✓ " + (isEn ? "Enable" : "啟用"));
+            batchDisableBtn.setText("⊘ " + (isEn ? "Disable" : "停用"));
+            batchDeleteBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
             refreshPluginsBtn.setText("↻");
             refreshInstancesBtn.setText("↻");
         } else {
@@ -123,6 +130,9 @@ public class MainController {
             addByUrlBtn.setText(I18n.get("app.add_by_url"));
             checkUpdatesBtn.setText(I18n.get("app.check_updates"));
             updateAllBtn.setText(I18n.get("app.update_all"));
+            batchEnableBtn.setText(I18n.get("app.btn_batch_enable"));
+            batchDisableBtn.setText(I18n.get("app.btn_batch_disable"));
+            batchDeleteBtn.setText(I18n.get("app.btn_batch_delete"));
             refreshPluginsBtn.setText(I18n.get("app.refresh_list"));
             refreshInstancesBtn.setText(I18n.get("app.refresh"));
         }
@@ -145,8 +155,12 @@ public class MainController {
         addByUrlBtn.setText(I18n.get("app.add_by_url"));
         checkUpdatesBtn.setText(I18n.get("app.check_updates"));
         updateAllBtn.setText(I18n.get("app.update_all"));
+        batchEnableBtn.setText(I18n.get("app.btn_batch_enable"));
+        batchDisableBtn.setText(I18n.get("app.btn_batch_disable"));
+        batchDeleteBtn.setText(I18n.get("app.btn_batch_delete"));
         refreshPluginsBtn.setText(I18n.get("app.refresh_list"));
 
+        colSelect.setText("");
         colName.setText(I18n.get("table.col_name"));
         colCurrentVersion.setText(I18n.get("table.col_current_version"));
         colLastModified.setText(I18n.get("table.col_last_modified"));
@@ -189,21 +203,62 @@ public class MainController {
     }
 
     private void setupTableColumns() {
+        // Select CheckBox column
+        colSelect.setCellValueFactory(cellData -> new javafx.beans.property.SimpleBooleanProperty(cellData.getValue().isSelected()));
+        colSelect.setCellFactory(column -> new TableCell<>() {
+            private final CheckBox checkBox = new CheckBox();
+            {
+                checkBox.setOnAction(e -> {
+                    InstalledPlugin p = getTableRow().getItem();
+                    if (p != null) {
+                        p.setSelected(checkBox.isSelected());
+                    }
+                });
+            }
+            @Override
+            protected void updateItem(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                } else {
+                    InstalledPlugin p = getTableRow().getItem();
+                    checkBox.setSelected(p.isSelected());
+                    setAlignment(javafx.geometry.Pos.CENTER);
+                    setGraphic(checkBox);
+                }
+            }
+        });
+
         colName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
         
+        // Current Version column with Architecture Incompatibility Warning Icon
         colCurrentVersion.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue().getCurrentVersionNumber()));
         colCurrentVersion.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
                     setGraphic(null);
                     setText(null);
                 } else {
-                    Label verLabel = new Label(item);
-                    verLabel.setStyle("-fx-text-fill: #9aa0a6; -fx-font-size: 11px;");
+                    InstalledPlugin plugin = getTableRow().getItem();
+                    HBox box = new HBox(6);
+                    box.setAlignment(javafx.geometry.Pos.CENTER);
+
+                    Label verLabel = new Label(item != null ? item : "-");
+                    verLabel.setStyle("-fx-text-fill: #bcbec4; -fx-font-size: 12px;");
+                    box.getChildren().add(verLabel);
+
+                    if (plugin.isLoaderIncompatible()) {
+                        Label warnIcon = new Label("⚠️");
+                        String tip = I18n.get("table.incompatible_loader_warn", 
+                                plugin.getSupportedLoadersSummary() != null ? plugin.getSupportedLoadersSummary() : "Other");
+                        Tooltip.install(warnIcon, new Tooltip(tip));
+                        box.getChildren().add(warnIcon);
+                    }
+
                     setAlignment(javafx.geometry.Pos.CENTER);
-                    setGraphic(verLabel);
+                    setGraphic(box);
                     setText(null);
                 }
             }
@@ -271,24 +326,14 @@ public class MainController {
             }
         });
 
+        // ColActions only has Update button (since Enable/Disable & Delete moved to Batch Checkbox actions)
         colActions.setCellFactory(column -> new TableCell<>() {
-            private final Button toggleBtn = new Button();
             private final Button updateBtn = new Button();
-            private final Button deleteBtn = new Button();
-            private final HBox actionsBox = new HBox(6, toggleBtn, updateBtn, deleteBtn);
+            private final HBox actionsBox = new HBox(6, updateBtn);
 
             {
                 updateBtn.getStyleClass().add("btn-primary");
-                deleteBtn.getStyleClass().add("btn-danger");
-                toggleBtn.getStyleClass().add("btn-secondary");
-
-                toggleBtn.setOnAction(e -> {
-                    InstalledPlugin plugin = getTableRow().getItem();
-                    if (plugin != null && currentSelectedInstance != null) {
-                        pluginManagerService.togglePluginEnabled(currentSelectedInstance, plugin);
-                        refreshPlugins();
-                    }
-                });
+                actionsBox.setAlignment(javafx.geometry.Pos.CENTER);
 
                 updateBtn.setOnAction(e -> {
                     InstalledPlugin plugin = getTableRow().getItem();
@@ -305,19 +350,6 @@ public class MainController {
                                 });
                     }
                 });
-
-                deleteBtn.setOnAction(e -> {
-                    InstalledPlugin plugin = getTableRow().getItem();
-                    if (plugin != null && currentSelectedInstance != null) {
-                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, I18n.get("app.confirm_delete_plugin", plugin.getFileName()), ButtonType.YES, ButtonType.NO);
-                        alert.showAndWait().ifPresent(btn -> {
-                            if (btn == ButtonType.YES) {
-                                pluginManagerService.deletePlugin(currentSelectedInstance, plugin);
-                                refreshPlugins();
-                            }
-                        });
-                    }
-                });
             }
 
             @Override
@@ -327,9 +359,7 @@ public class MainController {
                     setGraphic(null);
                 } else {
                     InstalledPlugin plugin = getTableRow().getItem();
-                    toggleBtn.setText(plugin.isEnabled() ? I18n.get("table.btn_disable") : I18n.get("table.btn_enable"));
                     updateBtn.setText(I18n.get("table.btn_update"));
-                    deleteBtn.setText(I18n.get("table.btn_delete"));
                     updateBtn.setVisible(plugin.isUpdateAvailable());
                     updateBtn.setManaged(plugin.isUpdateAvailable());
                     setGraphic(actionsBox);
@@ -397,6 +427,51 @@ public class MainController {
         addByUrlBtn.setDisable(disabled);
         checkUpdatesBtn.setDisable(disabled);
         refreshPluginsBtn.setDisable(disabled);
+        batchEnableBtn.setDisable(disabled);
+        batchDisableBtn.setDisable(disabled);
+        batchDeleteBtn.setDisable(disabled);
+    }
+
+    @FXML
+    private void handleBatchEnable() {
+        if (currentSelectedInstance == null) return;
+        List<InstalledPlugin> selected = installedPluginsList.stream().filter(InstalledPlugin::isSelected).toList();
+        if (selected.isEmpty()) return;
+        for (InstalledPlugin p : selected) {
+            if (!p.isEnabled()) {
+                pluginManagerService.togglePluginEnabled(currentSelectedInstance, p);
+            }
+        }
+        refreshPlugins();
+    }
+
+    @FXML
+    private void handleBatchDisable() {
+        if (currentSelectedInstance == null) return;
+        List<InstalledPlugin> selected = installedPluginsList.stream().filter(InstalledPlugin::isSelected).toList();
+        if (selected.isEmpty()) return;
+        for (InstalledPlugin p : selected) {
+            if (p.isEnabled()) {
+                pluginManagerService.togglePluginEnabled(currentSelectedInstance, p);
+            }
+        }
+        refreshPlugins();
+    }
+
+    @FXML
+    private void handleBatchDelete() {
+        if (currentSelectedInstance == null) return;
+        List<InstalledPlugin> selected = installedPluginsList.stream().filter(InstalledPlugin::isSelected).toList();
+        if (selected.isEmpty()) return;
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, I18n.get("app.confirm_batch_delete", selected.size()), ButtonType.YES, ButtonType.NO);
+        alert.showAndWait().ifPresent(btn -> {
+            if (btn == ButtonType.YES) {
+                for (InstalledPlugin p : selected) {
+                    pluginManagerService.deletePlugin(currentSelectedInstance, p);
+                }
+                refreshPlugins();
+            }
+        });
     }
 
     private void selectInstance(ServerInstance instance) {

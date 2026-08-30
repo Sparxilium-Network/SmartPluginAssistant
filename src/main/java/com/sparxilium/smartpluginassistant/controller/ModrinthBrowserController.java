@@ -309,6 +309,28 @@ public class ModrinthBrowserController {
             titleBox.getChildren().add(installedBadge);
         }
 
+        // Top right architecture incompatibility badge when searching with extra compatibility
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        titleBox.getChildren().add(spacer);
+
+        if (currentInstance != null && !currentInstance.getExtraCompatibleLoaders().isEmpty()) {
+            String primaryLoader = currentInstance.getLoader().toLowerCase();
+            List<String> categories = hit.getCategories() != null ? hit.getCategories() : Collections.emptyList();
+            List<String> supportedLoaders = categories.stream()
+                    .map(String::toLowerCase)
+                    .filter(c -> List.of("folia", "paper", "spigot", "bukkit", "purpur", "velocity", "bungeecord", "fabric", "sponge").contains(c))
+                    .toList();
+
+            boolean supportsPrimary = supportedLoaders.contains(primaryLoader);
+            if (!supportsPrimary && !supportedLoaders.isEmpty()) {
+                Label archBadge = new Label("⚠️ " + String.join(", ", supportedLoaders));
+                archBadge.setStyle("-fx-background-color: #d35400; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 1 6; -fx-background-radius: 4; -fx-font-size: 10px;");
+                Tooltip.install(archBadge, new Tooltip("目前伺服器核心為 " + primaryLoader + "，此插件僅標註支援: " + String.join(", ", supportedLoaders)));
+                titleBox.getChildren().add(archBadge);
+            }
+        }
+
         Label descLabel = new Label(hit.getDescription());
         descLabel.setStyle("-fx-text-fill: #bcbec4; -fx-font-size: 12px;");
         descLabel.setWrapText(true);
