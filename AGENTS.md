@@ -25,3 +25,5 @@
 * **規範**：每一次完成程式碼或檔案的修改/新增後，必須進行 Git Commit。
 * **提交訊息**：Commit Message 必須清晰描述本次修改的具體內容與相關資料，例如修復的 Bug、新增的功能、修改的類別或對應的設計考量。
 
+## 4. 檔案修改工具使用限制 (File Editing Restrictions)
+* **規範**：修改檔案時，應優先使用專用的檔案編輯工具（例如 `replace_file_content` 或 `write_to_file`），除非必要，否則不要調用命令列（Shell/Terminal 命令）來編輯或修改檔案內容。
