@@ -55,6 +55,8 @@ public class MainController {
     @FXML private Button checkUpdatesBtn;
     @FXML private Button updateAllBtn;
     @FXML private Button refreshPluginsBtn;
+    @FXML private TextField pluginSearchField;
+    @FXML private ComboBox<String> pluginFilterCombo;
     @FXML private Button batchEnableBtn;
     @FXML private Button batchDisableBtn;
     @FXML private Button batchDeleteBtn;
@@ -76,13 +78,84 @@ public class MainController {
 
     private ServerInstance currentSelectedInstance;
     private final ObservableList<InstalledPlugin> installedPluginsList = FXCollections.observableArrayList();
+    private javafx.collections.transformation.FilteredList<InstalledPlugin> filteredPluginsList;
 
     @FXML
     public void initialize() {
         setupTableColumns();
+        setupFilterBindings();
         applyI18n();
         refreshInstanceList();
         setupResponsiveLayout();
+    }
+
+    private void setupFilterBindings() {
+        filteredPluginsList = new javafx.collections.transformation.FilteredList<>(installedPluginsList, p -> true);
+        javafx.collections.transformation.SortedList<InstalledPlugin> sortedList = new javafx.collections.transformation.SortedList<>(filteredPluginsList);
+        sortedList.comparatorProperty().bind(pluginTableView.comparatorProperty());
+        pluginTableView.setItems(sortedList);
+
+        if (pluginSearchField != null) {
+            pluginSearchField.textProperty().addListener((obs, oldV, newV) -> updatePluginFilterPredicate());
+        }
+        if (pluginFilterCombo != null) {
+            pluginFilterCombo.valueProperty().addListener((obs, oldV, newV) -> updatePluginFilterPredicate());
+        }
+    }
+
+    private void updatePluginFilterPredicate() {
+        if (filteredPluginsList == null) return;
+        String search = pluginSearchField != null && pluginSearchField.getText() != null ? pluginSearchField.getText().trim().toLowerCase() : "";
+        int filterIndex = pluginFilterCombo != null ? pluginFilterCombo.getSelectionModel().getSelectedIndex() : 0;
+        if (filterIndex < 0) filterIndex = 0;
+
+        final int currentFilter = filterIndex;
+
+        filteredPluginsList.setPredicate(plugin -> {
+            if (plugin == null) return false;
+
+            // Search keyword filter
+            if (!search.isEmpty()) {
+                boolean matchName = plugin.getFileName() != null && plugin.getFileName().toLowerCase().contains(search);
+                boolean matchPluginName = plugin.getPluginName() != null && plugin.getPluginName().toLowerCase().contains(search);
+                boolean matchVer = plugin.getCurrentVersionNumber() != null && plugin.getCurrentVersionNumber().toLowerCase().contains(search);
+                if (!matchName && !matchPluginName && !matchVer) {
+                    return false;
+                }
+            }
+
+            // Dropdown filter: 0=All, 1=Enabled, 2=Disabled, 3=Updates Available
+            switch (currentFilter) {
+                case 1:
+                    return plugin.isEnabled();
+                case 2:
+                    return !plugin.isEnabled();
+                case 3:
+                    return plugin.isUpdateAvailable();
+                default:
+                    return true;
+            }
+        });
+    }
+
+    private void updateFilterComboOptions() {
+        if (pluginFilterCombo == null) return;
+        int prevIndex = pluginFilterCombo.getSelectionModel().getSelectedIndex();
+        if (prevIndex < 0) prevIndex = 0;
+
+        long allCount = installedPluginsList.size();
+        long enabledCount = installedPluginsList.stream().filter(InstalledPlugin::isEnabled).count();
+        long disabledCount = installedPluginsList.stream().filter(p -> !p.isEnabled()).count();
+        long updatesCount = installedPluginsList.stream().filter(InstalledPlugin::isUpdateAvailable).count();
+
+        pluginFilterCombo.getItems().setAll(
+                I18n.get("app.filter_all", allCount),
+                I18n.get("app.filter_enabled", enabledCount),
+                I18n.get("app.filter_disabled", disabledCount),
+                I18n.get("app.filter_updates", updatesCount)
+        );
+
+        pluginFilterCombo.getSelectionModel().select(Math.min(prevIndex, pluginFilterCombo.getItems().size() - 1));
     }
 
     private void setupResponsiveLayout() {
@@ -166,6 +239,11 @@ public class MainController {
         colLastModified.setText(I18n.get("table.col_last_modified"));
         colUpdate.setText(I18n.get("table.col_update"));
         colActions.setText(I18n.get("table.col_actions"));
+
+        if (pluginSearchField != null) {
+            pluginSearchField.setPromptText(I18n.get("app.search_plugins_prompt"));
+        }
+        updateFilterComboOptions();
 
         if (currentSelectedInstance == null) {
             selectedInstanceNameLabel.setText(I18n.get("app.no_instance_selected"));
@@ -520,6 +598,8 @@ public class MainController {
         addByUrlBtn.setDisable(disabled);
         checkUpdatesBtn.setDisable(disabled);
         refreshPluginsBtn.setDisable(disabled);
+        if (pluginSearchField != null) pluginSearchField.setDisable(disabled);
+        if (pluginFilterCombo != null) pluginFilterCombo.setDisable(disabled);
         batchEnableBtn.setDisable(disabled);
         batchDisableBtn.setDisable(disabled);
         batchDeleteBtn.setDisable(disabled);
@@ -661,6 +741,8 @@ public class MainController {
         List<InstalledPlugin> plugins = pluginManagerService.scanPlugins(currentSelectedInstance);
         installedPluginsList.setAll(plugins);
         updateAllBtn.setVisible(false);
+        updateFilterComboOptions();
+        updatePluginFilterPredicate();
         statusLabel.setText(I18n.get("app.plugin_count", plugins.size()));
     }
 
@@ -677,6 +759,8 @@ public class MainController {
         pluginManagerService.checkPluginUpdates(currentSelectedInstance, installedPluginsList)
                 .thenAccept(updatedList -> Platform.runLater(() -> {
                     globalProgress.setVisible(false);
+                    updateFilterComboOptions();
+                    updatePluginFilterPredicate();
                     pluginTableView.refresh();
 
                     long updateCount = updatedList.stream().filter(InstalledPlugin::isUpdateAvailable).count();

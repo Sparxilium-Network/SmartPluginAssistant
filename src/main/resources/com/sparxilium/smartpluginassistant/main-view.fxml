@@ -55,12 +55,18 @@
                 </HBox>
 
                 <!-- Plugin Actions Toolbar -->
-                <HBox alignment="CENTER_LEFT" spacing="10.0" style="-fx-background-color: #2b2d30; -fx-padding: 10; -fx-background-radius: 6;">
+                <HBox alignment="CENTER_LEFT" spacing="8.0" style="-fx-background-color: #2b2d30; -fx-padding: 8 10; -fx-background-radius: 6;">
                     <Button fx:id="browseModrinthBtn" text="🔍 瀏覽 Modrinth 插件" onAction="#handleOpenModrinthBrowser" styleClass="btn-primary"/>
                     <Button fx:id="addByUrlBtn" text="🔗 貼上網址新增" onAction="#handleAddByUrl" styleClass="btn-secondary"/>
                     <Button fx:id="checkUpdatesBtn" text="🔄 檢查所有更新" onAction="#handleCheckUpdates" styleClass="btn-secondary"/>
                     <Button fx:id="updateAllBtn" text="⚡ 一鍵全部更新" onAction="#handleUpdateAll" styleClass="btn-success" visible="false"/>
                     <Button fx:id="refreshPluginsBtn" text="重整清單" onAction="#refreshPlugins" styleClass="btn-secondary"/>
+
+                    <Separator orientation="VERTICAL" style="-fx-background-color: #393b40;"/>
+
+                    <!-- Local Plugin Search and State Filters -->
+                    <TextField fx:id="pluginSearchField" promptText="搜尋本機插件名稱..." prefWidth="160" style="-fx-font-size: 11px;"/>
+                    <ComboBox fx:id="pluginFilterCombo" prefWidth="130" style="-fx-font-size: 11px;"/>
 
                     <Separator orientation="VERTICAL" style="-fx-background-color: #393b40;"/>
 
