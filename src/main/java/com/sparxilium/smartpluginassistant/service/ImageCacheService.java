@@ -15,6 +15,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.Map;
@@ -56,38 +57,50 @@ public class ImageCacheService {
 
         CompletableFuture.runAsync(() -> {
             try {
-                String hash = hashUrl(url);
-                String ext = getExtension(url);
-                Path cachedFile = CACHE_DIR.resolve(hash + ext);
                 byte[] imageBytes = null;
-
-                if (Files.exists(cachedFile) && Files.size(cachedFile) > 0) {
+                if (url.startsWith("file:") || url.contains(":\\") || url.startsWith("/")) {
+                    // Local file handling
                     try {
-                        imageBytes = Files.readAllBytes(cachedFile);
-                    } catch (Exception e) {
-                        logger.warn("Failed to read cached image file: {}", cachedFile, e);
-                    }
-                }
-
-                if (imageBytes == null || imageBytes.length == 0) {
-                    logger.debug("Downloading image from URL: {}", url);
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create(url))
-                            .header("User-Agent", USER_AGENT)
-                            .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
-                            .GET()
-                            .build();
-
-                    HttpResponse<byte[]> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofByteArray());
-                    if (response.statusCode() == 200 && response.body() != null && response.body().length > 0) {
-                        imageBytes = response.body();
-                        try {
-                            Files.write(cachedFile, imageBytes);
-                        } catch (Exception e) {
-                            logger.warn("Failed to write image to disk cache: {}", cachedFile, e);
+                        Path localPath = url.startsWith("file:") ? Paths.get(URI.create(url)) : Paths.get(url);
+                        if (Files.exists(localPath)) {
+                            imageBytes = Files.readAllBytes(localPath);
                         }
-                    } else {
-                        logger.warn("Failed to download image from {}. HTTP Status: {}", url, response.statusCode());
+                    } catch (Exception e) {
+                        logger.warn("Failed to read local image: {}", url, e);
+                    }
+                } else {
+                    String hash = hashUrl(url);
+                    String ext = getExtension(url);
+                    Path cachedFile = CACHE_DIR.resolve(hash + ext);
+
+                    if (Files.exists(cachedFile) && Files.size(cachedFile) > 0) {
+                        try {
+                            imageBytes = Files.readAllBytes(cachedFile);
+                        } catch (Exception e) {
+                            logger.warn("Failed to read cached image file: {}", cachedFile, e);
+                        }
+                    }
+
+                    if (imageBytes == null || imageBytes.length == 0) {
+                        logger.debug("Downloading image from URL: {}", url);
+                        HttpRequest request = HttpRequest.newBuilder()
+                                .uri(URI.create(url))
+                                .header("User-Agent", USER_AGENT)
+                                .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+                                .GET()
+                                .build();
+
+                        HttpResponse<byte[]> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofByteArray());
+                        if (response.statusCode() == 200 && response.body() != null && response.body().length > 0) {
+                            imageBytes = response.body();
+                            try {
+                                Files.write(cachedFile, imageBytes);
+                            } catch (Exception e) {
+                                logger.warn("Failed to write image to disk cache: {}", cachedFile, e);
+                            }
+                        } else {
+                            logger.warn("Failed to download image from {}. HTTP Status: {}", url, response.statusCode());
+                        }
                     }
                 }
 
