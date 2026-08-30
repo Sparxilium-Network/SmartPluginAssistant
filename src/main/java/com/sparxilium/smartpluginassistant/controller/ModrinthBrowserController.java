@@ -53,6 +53,9 @@ public class ModrinthBrowserController {
     private List<ModrinthVersion> selectedProjectVersions;
     private final Map<String, ModrinthVersion> versionMap = new HashMap<>();
 
+    // Map of projectId/title/hash -> installed version number / filename
+    private final Map<String, String> installedPluginsMap = new HashMap<>();
+
     // Infinite scroll pagination state
     private static final int PAGE_SIZE = 20;
     private int currentOffset = 0;
@@ -67,6 +70,7 @@ public class ModrinthBrowserController {
         this.onPluginInstalledCallback = onPluginInstalledCallback;
 
         applyI18n();
+        refreshInstalledMap();
 
         loaderFilterCombo.getItems().addAll(I18n.get("modrinth.all"), "folia", "purpur", "paper", "spigot", "velocity", "bungeecord", "fabric", "sponge");
         if (instance != null && instance.getLoader() != null) {
@@ -102,6 +106,51 @@ public class ModrinthBrowserController {
                     }
                     performSearch();
                 }));
+    }
+
+    private void refreshInstalledMap() {
+        installedPluginsMap.clear();
+        if (currentInstance == null) return;
+        Path pluginsDir = instanceManager.getPluginsDirectory(currentInstance);
+        if (!java.nio.file.Files.exists(pluginsDir)) return;
+        try (var stream = java.nio.file.Files.list(pluginsDir)) {
+            stream.filter(p -> {
+                String n = p.getFileName().toString().toLowerCase();
+                return n.endsWith(".jar") || n.endsWith(".jar.disabled");
+            }).forEach(p -> {
+                String fileName = p.getFileName().toString();
+                String cleanName = fileName.replace(".jar.disabled", "").replace(".jar", "").toLowerCase();
+                // Map full clean filename as well as simplified name
+                installedPluginsMap.put(cleanName, fileName);
+                // Also parse standard name-version formats (e.g. EssentialsX-2.20.1 -> essentialsx => 2.20.1)
+                int dashIdx = cleanName.lastIndexOf('-');
+                if (dashIdx > 0 && dashIdx < cleanName.length() - 1) {
+                    String baseName = cleanName.substring(0, dashIdx);
+                    String ver = cleanName.substring(dashIdx + 1);
+                    installedPluginsMap.put(baseName, ver);
+                }
+            });
+        } catch (Exception ignored) {}
+    }
+
+    private String getInstalledVersionFor(ModrinthSearchResult hit) {
+        if (hit == null) return null;
+        if (hit.getProjectId() != null && installedPluginsMap.containsKey(hit.getProjectId().toLowerCase())) {
+            return installedPluginsMap.get(hit.getProjectId().toLowerCase());
+        }
+        if (hit.getSlug() != null && installedPluginsMap.containsKey(hit.getSlug().toLowerCase())) {
+            return installedPluginsMap.get(hit.getSlug().toLowerCase());
+        }
+        if (hit.getTitle() != null) {
+            String titleKey = hit.getTitle().toLowerCase().replaceAll("[^a-z0-9]", "");
+            for (Map.Entry<String, String> entry : installedPluginsMap.entrySet()) {
+                String installedKey = entry.getKey().replaceAll("[^a-z0-9]", "");
+                if (installedKey.equals(titleKey) || installedKey.startsWith(titleKey)) {
+                    return entry.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     private void applyI18n() {
@@ -252,6 +301,14 @@ public class ModrinthBrowserController {
         authorLabel.setStyle("-fx-text-fill: #8b8e96; -fx-font-size: 11px;");
         titleBox.getChildren().addAll(titleLabel, authorLabel);
 
+        // Check if installed in current instance
+        String installedVer = getInstalledVersionFor(hit);
+        if (installedVer != null) {
+            Label installedBadge = new Label(I18n.get("modrinth.installed_badge", installedVer));
+            installedBadge.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 1 6; -fx-background-radius: 4; -fx-font-size: 10px;");
+            titleBox.getChildren().add(installedBadge);
+        }
+
         Label descLabel = new Label(hit.getDescription());
         descLabel.setStyle("-fx-text-fill: #bcbec4; -fx-font-size: 12px;");
         descLabel.setWrapText(true);
@@ -347,6 +404,7 @@ public class ModrinthBrowserController {
                 .thenAccept(path -> Platform.runLater(() -> {
                     detailInstallBtn.setText(I18n.get("modrinth.btn_installed"));
                     detailInstallBtn.setStyle("-fx-background-color: #2ecc71;");
+                    refreshInstalledMap();
                     if (onPluginInstalledCallback != null) {
                         onPluginInstalledCallback.run();
                     }

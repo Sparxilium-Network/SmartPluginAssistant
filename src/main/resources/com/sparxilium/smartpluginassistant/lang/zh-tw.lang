@@ -97,6 +97,7 @@ modrinth.no_results=沒有找到符合條件的插件
 modrinth.btn_install=安裝
 modrinth.btn_installing=下載中...
 modrinth.btn_installed=✓ 已安裝
+modrinth.installed_badge=✓ 已安裝: {0}
 modrinth.fetching_versions=取得版本中...
 modrinth.install_failed=安裝失敗: {0}
 modrinth.no_versions=找不到適用於 {0} {1} 的版本！

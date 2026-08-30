@@ -97,6 +97,7 @@ modrinth.no_results=No plugins found matching criteria
 modrinth.btn_install=Install
 modrinth.btn_installing=Downloading...
 modrinth.btn_installed=✓ Installed
+modrinth.installed_badge=✓ Installed: {0}
 modrinth.fetching_versions=Fetching versions...
 modrinth.install_failed=Installation failed: {0}
 modrinth.no_versions=No version found for {0} {1}!
