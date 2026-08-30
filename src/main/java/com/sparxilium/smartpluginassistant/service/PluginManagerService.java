@@ -252,34 +252,50 @@ public class PluginManagerService {
         return null;
     }
 
+    public static String normalizeVersionNumber(String ver) {
+        if (ver == null) return "";
+        String clean = ver.trim();
+        // Extract version pattern like 2.6.21 or 1.20.4-v2
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+(\\.\\d+)+([\\w.-]*)?)").matcher(clean);
+        if (m.find()) {
+            return m.group(1).toLowerCase().replaceAll("^[vV]", "");
+        }
+        return clean.toLowerCase().replaceAll("^[vV]", "");
+    }
+
     public static boolean isNewerVersion(String currentVersion, String latestVersion) {
         if (latestVersion == null || latestVersion.isBlank()) return false;
         if (currentVersion == null || currentVersion.isBlank() || currentVersion.equals("-")) return true;
 
-        String cur = currentVersion.trim().toLowerCase().replaceAll("^[vV]", "");
-        String lat = latestVersion.trim().toLowerCase().replaceAll("^[vV]", "");
+        String curNorm = normalizeVersionNumber(currentVersion);
+        String latNorm = normalizeVersionNumber(latestVersion);
 
-        if (cur.equalsIgnoreCase(lat)) return false;
+        if (curNorm.equalsIgnoreCase(latNorm)) return false;
 
-        // Split semantic parts: 1.5.3 -> [1, 5, 3]
-        String[] curParts = cur.split("[.-]");
-        String[] latParts = lat.split("[.-]");
+        // Split semantic parts: 2.6.21 -> [2, 6, 21]
+        String[] curParts = curNorm.split("[.-]");
+        String[] latParts = latNorm.split("[.-]");
 
         int maxLen = Math.max(curParts.length, latParts.length);
         for (int i = 0; i < maxLen; i++) {
             String cPart = i < curParts.length ? curParts[i] : "0";
             String lPart = i < latParts.length ? latParts[i] : "0";
 
-            try {
-                int cNum = Integer.parseInt(cPart.replaceAll("\\D", ""));
-                int lNum = Integer.parseInt(lPart.replaceAll("\\D", ""));
-                if (lNum > cNum) return true;
-                if (lNum < cNum) return false;
-            } catch (NumberFormatException e) {
-                int cmp = lPart.compareTo(cPart);
-                if (cmp > 0) return true;
-                if (cmp < 0) return false;
+            String cDigits = cPart.replaceAll("\\D", "");
+            String lDigits = lPart.replaceAll("\\D", "");
+
+            if (!cDigits.isEmpty() && !lDigits.isEmpty()) {
+                try {
+                    int cNum = Integer.parseInt(cDigits);
+                    int lNum = Integer.parseInt(lDigits);
+                    if (lNum > cNum) return true;
+                    if (lNum < cNum) return false;
+                } catch (NumberFormatException ignored) {}
             }
+
+            int cmp = lPart.compareToIgnoreCase(cPart);
+            if (cmp > 0) return true;
+            if (cmp < 0) return false;
         }
         return false;
     }
