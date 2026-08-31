@@ -89,7 +89,9 @@ public class AddByUrlDialogController {
         logger.info("Parsed URL info: slug='{}', specificVersionId='{}'", urlInfo.projectSlug, urlInfo.specificVersionId);
 
         progressIndicator.setVisible(true);
+        progressIndicator.setManaged(true);
         previewContainer.setVisible(false);
+        previewContainer.setManaged(false);
         isPrereleaseOnly = false;
         isIncompatibleVersion = false;
 
@@ -183,6 +185,7 @@ public class AddByUrlDialogController {
 
     private void showPreview() {
         previewContainer.setVisible(true);
+        previewContainer.setManaged(true);
         projectTitleLabel.setText(resolvedProject.getTitle());
         authorLabel.setText(I18n.get("url.project_id", resolvedProject.getSlug()));
         descLabel.setText(resolvedProject.getDescription());
