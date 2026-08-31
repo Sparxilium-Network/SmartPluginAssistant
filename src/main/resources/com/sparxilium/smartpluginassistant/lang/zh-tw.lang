@@ -145,13 +145,13 @@ modrinth.resolving_deps=正在檢查依賴前置插件...
 common.ok=確定
 common.cancel=取消
 
-url.title=透過 Modrinth 網址新增插件
+url.title=透過網址新增插件 (Modrinth / Hangar)
 url.window_title=透過網址新增插件 - {0}
-url.hint=輸入 Modrinth 插件頁面網址 (例如: https://modrinth.com/plugin/viaversion) 或專案 ID
+url.hint=輸入 Modrinth 或 Hangar 插件/版本網址 (例如: https://hangar.papermc.io/William278/HuskHomes 或 https://modrinth.com/plugin/viaversion)
 url.btn_resolve=解析
 url.btn_download=下載並安裝至實例
 url.btn_close=關閉
-url.err_invalid_url=請輸入有效的 Modrinth 網址或 Slug！
+url.err_invalid_url=請輸入有效的 Modrinth / Hangar 網址或 Slug！
 url.err_resolve_failed=解析失敗: {0}
 url.err_download_failed=下載失敗: {0}
 url.download_complete=✓ 下載完成

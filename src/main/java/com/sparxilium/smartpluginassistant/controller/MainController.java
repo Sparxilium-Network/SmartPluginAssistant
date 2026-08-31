@@ -1003,7 +1003,7 @@ public class MainController {
             Parent root = loader.load();
 
             AddByUrlDialogController controller = loader.getController();
-            controller.init(currentSelectedInstance, modrinthService, instanceManager, this::refreshPlugins);
+            controller.init(currentSelectedInstance, modrinthService, hangarService, instanceManager, this::refreshPlugins);
 
             java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
             double w = prefs.getDouble("add_by_url_dialog_w", 620);

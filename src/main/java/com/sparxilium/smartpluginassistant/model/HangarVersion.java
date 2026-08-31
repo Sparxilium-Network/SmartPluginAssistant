@@ -36,9 +36,9 @@ public class HangarVersion {
     @JsonProperty("platformDependencies")
     private Map<String, List<String>> platformDependencies;
 
-    /** Map of plugin name -> HangarDependency */
+    /** Map of platform -> list of plugin dependencies */
     @JsonProperty("pluginDependencies")
-    private Map<String, HangarDependency> pluginDependencies;
+    private Map<String, List<HangarDependency>> pluginDependencies;
 
     @JsonProperty("description")
     private String description;
@@ -59,7 +59,7 @@ public class HangarVersion {
     public Channel getChannel() { return channel; }
     public Map<String, PlatformDownload> getDownloads() { return downloads; }
     public Map<String, List<String>> getPlatformDependencies() { return platformDependencies; }
-    public Map<String, HangarDependency> getPluginDependencies() { return pluginDependencies; }
+    public Map<String, List<HangarDependency>> getPluginDependencies() { return pluginDependencies; }
     public String getDescription() { return description; }
     public String getCreatedAt() { return createdAt; }
 

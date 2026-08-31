@@ -144,13 +144,13 @@ modrinth.resolving_deps=Checking plugin dependencies...
 common.ok=OK
 common.cancel=Cancel
 
-url.title=Add Plugin by Modrinth URL
+url.title=Add Plugin by URL (Modrinth / Hangar)
 url.window_title=Add Plugin by URL - {0}
-url.hint=Enter Modrinth plugin URL (e.g. https://modrinth.com/plugin/viaversion) or Project ID
+url.hint=Enter Modrinth or Hangar plugin/version URL (e.g. https://hangar.papermc.io/William278/HuskHomes or https://modrinth.com/plugin/viaversion)
 url.btn_resolve=Resolve
 url.btn_download=Download & Install
 url.btn_close=Close
-url.err_invalid_url=Please enter a valid Modrinth URL or Slug!
+url.err_invalid_url=Please enter a valid Modrinth / Hangar URL or Slug!
 url.err_resolve_failed=Resolve failed: {0}
 url.err_download_failed=Download failed: {0}
 url.download_complete=✓ Download Complete

@@ -164,10 +164,8 @@ public class HangarBrowserController {
         iconView.setFitHeight(40);
         iconView.setPreserveRatio(true);
         if (project.getAvatarUrl() != null && !project.getAvatarUrl().isBlank()) {
-            try {
-                Image img = new Image(project.getAvatarUrl(), true);
-                iconView.setImage(img);
-            } catch (Exception ignored) {}
+            com.sparxilium.smartpluginassistant.service.ImageCacheService.loadImageAsync(
+                    project.getAvatarUrl(), 40, 40, iconView::setImage);
         }
 
         VBox info = new VBox(2);
