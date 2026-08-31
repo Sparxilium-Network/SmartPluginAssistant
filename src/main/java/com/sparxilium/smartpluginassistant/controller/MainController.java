@@ -922,6 +922,43 @@ public class MainController {
     }
 
     @FXML
+    private void handleOpenHangarBrowser() {
+        if (currentSelectedInstance == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sparxilium/smartpluginassistant/hangar-browser-dialog.fxml"));
+            Parent root = loader.load();
+
+            HangarBrowserController controller = loader.getController();
+            controller.init(currentSelectedInstance, hangarService, instanceManager, this::refreshPlugins);
+
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double w = prefs.getDouble("hangar_dialog_w", 1080);
+            double h = prefs.getDouble("hangar_dialog_h", 720);
+
+            Stage stage = new Stage();
+            stage.setTitle(I18n.get("hangar.window_title", currentSelectedInstance.getName()));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            Scene scene = new Scene(root, w, h);
+            scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setMinWidth(900);
+            stage.setMinHeight(600);
+
+            stage.setOnCloseRequest(e -> {
+                if (!stage.isMaximized()) {
+                    prefs.putDouble("hangar_dialog_w", stage.getWidth());
+                    prefs.putDouble("hangar_dialog_h", stage.getHeight());
+                }
+            });
+
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
+            stage.showAndWait();
+        } catch (IOException e) {
+            logger.error("Failed to open Hangar browser", e);
+        }
+    }
+
+    @FXML
     private void handleOpenModrinthBrowser() {
         if (currentSelectedInstance == null) return;
         try {
