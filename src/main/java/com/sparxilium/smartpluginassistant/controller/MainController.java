@@ -68,6 +68,7 @@ public class MainController {
     @FXML private TableView<InstalledPlugin> pluginTableView;
     @FXML private TableColumn<InstalledPlugin, Boolean> colSelect;
     @FXML private TableColumn<InstalledPlugin, String> colName;
+    @FXML private TableColumn<InstalledPlugin, String> colPlatform;
     @FXML private TableColumn<InstalledPlugin, String> colCurrentVersion;
     @FXML private TableColumn<InstalledPlugin, String> colLastModified;
     @FXML private TableColumn<InstalledPlugin, String> colUpdate;
@@ -239,6 +240,7 @@ public class MainController {
 
         colSelect.setText("");
         colName.setText(I18n.get("table.col_name"));
+        if (colPlatform != null) colPlatform.setText(I18n.get("table.col_platform"));
         colCurrentVersion.setText(I18n.get("table.col_current_version"));
         colLastModified.setText(I18n.get("table.col_last_modified"));
         colUpdate.setText(I18n.get("table.col_update"));
@@ -342,6 +344,37 @@ public class MainController {
                     } else {
                         setStyle("-fx-text-fill: #ffffff;");
                     }
+                }
+            }
+        });
+
+        // Platform column (Modrinth / Local)
+        colPlatform.setCellValueFactory(cellData -> {
+            InstalledPlugin p = cellData.getValue();
+            boolean isModrinth = p.getProjectId() != null && !p.getProjectId().isBlank();
+            return new javafx.beans.property.SimpleStringProperty(isModrinth ? "Modrinth" : "Local");
+        });
+        colPlatform.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    InstalledPlugin plugin = getTableRow().getItem();
+                    boolean isModrinth = plugin.getProjectId() != null && !plugin.getProjectId().isBlank();
+                    Label platformBadge = new Label();
+                    if (isModrinth) {
+                        platformBadge.setText(I18n.get("table.platform_modrinth"));
+                        platformBadge.setStyle("-fx-background-color: #1bd96a; -fx-text-fill: #000000; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 2 8; -fx-background-radius: 10;");
+                    } else {
+                        platformBadge.setText(I18n.get("table.platform_local"));
+                        platformBadge.setStyle("-fx-background-color: #4e5157; -fx-text-fill: #bcbec4; -fx-font-size: 11px; -fx-padding: 2 8; -fx-background-radius: 10;");
+                    }
+                    setAlignment(javafx.geometry.Pos.CENTER);
+                    setGraphic(platformBadge);
+                    setText(null);
                 }
             }
         });

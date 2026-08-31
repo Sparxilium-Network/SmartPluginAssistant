@@ -83,11 +83,12 @@
                 <TableView fx:id="pluginTableView" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="colSelect" prefWidth="48.0" style="-fx-alignment: CENTER;" resizable="false"/>
-                        <TableColumn fx:id="colName" text="檔案名稱 / 插件" prefWidth="300.0"/>
-                        <TableColumn fx:id="colCurrentVersion" text="目前版本" prefWidth="140.0"/>
-                        <TableColumn fx:id="colLastModified" text="最後修改時間" prefWidth="180.0"/>
-                        <TableColumn fx:id="colUpdate" text="版本狀態" prefWidth="180.0"/>
-                        <TableColumn fx:id="colActions" text="操作" prefWidth="100.0"/>
+                        <TableColumn fx:id="colName" text="檔案名稱 / 插件" prefWidth="280.0"/>
+                        <TableColumn fx:id="colPlatform" text="託管平台" prefWidth="120.0" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="colCurrentVersion" text="目前版本" prefWidth="130.0"/>
+                        <TableColumn fx:id="colLastModified" text="最後修改時間" prefWidth="170.0"/>
+                        <TableColumn fx:id="colUpdate" text="版本狀態" prefWidth="170.0"/>
+                        <TableColumn fx:id="colActions" text="操作" prefWidth="90.0"/>
                     </columns>
                     <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
