@@ -853,13 +853,15 @@ public class ModrinthBrowserController {
             Path dest = pluginsDir.resolve(item.getFileName());
             futures.add(modrinthService.downloadFile(item.getUrl(), dest, null).thenApply(downloadedPath -> {
                 String sha1 = PluginManagerService.calculateSha1(downloadedPath.toFile());
+                String sha512 = PluginManagerService.calculateSha512(downloadedPath.toFile());
                 PluginMetadataStore.saveRecord(instanceManager, currentInstance,
                         new PluginMetadataStore.DownloadRecord(
                                 item.getProjectId(),
                                 item.getVersionId(),
                                 item.getVersionNumber(),
                                 item.getFileName(),
-                                sha1
+                                sha1,
+                                sha512
                         ));
                 return downloadedPath;
             }));

@@ -260,14 +260,14 @@ public class ModrinthService {
                 .thenCompose(f -> f);
     }
 
-    public CompletableFuture<Map<String, ModrinthVersion>> getVersionsByHashes(List<String> sha1Hashes) {
-        if (sha1Hashes == null || sha1Hashes.isEmpty()) {
+    public CompletableFuture<Map<String, ModrinthVersion>> getVersionsByHashes(List<String> hashes) {
+        if (hashes == null || hashes.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put("hashes", sha1Hashes);
-        payload.put("algorithm", "sha1");
+        payload.put("hashes", hashes);
+        payload.put("algorithm", "sha512");
 
         try {
             String jsonBody = objectMapper.writeValueAsString(payload);
@@ -296,8 +296,8 @@ public class ModrinthService {
         }
     }
 
-    public CompletableFuture<ModrinthVersion> getVersionByHash(String sha1Hash) {
-        String url = BASE_URL + "/version_file/" + URLEncoder.encode(sha1Hash, StandardCharsets.UTF_8) + "?algorithm=sha1";
+    public CompletableFuture<ModrinthVersion> getVersionByHash(String hash) {
+        String url = BASE_URL + "/version_file/" + URLEncoder.encode(hash, StandardCharsets.UTF_8) + "?algorithm=sha512";
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("User-Agent", USER_AGENT)
@@ -322,14 +322,14 @@ public class ModrinthService {
         return getProjectVersions(idOrSlug, loaders, mcVersion);
     }
 
-    public CompletableFuture<Map<String, ModrinthVersion>> checkUpdates(List<String> sha1Hashes, List<String> loaders, String mcVersion) {
-        if (sha1Hashes == null || sha1Hashes.isEmpty()) {
+    public CompletableFuture<Map<String, ModrinthVersion>> checkUpdates(List<String> hashes, List<String> loaders, String mcVersion) {
+        if (hashes == null || hashes.isEmpty()) {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put("hashes", sha1Hashes);
-        payload.put("algorithm", "sha1");
+        payload.put("hashes", hashes);
+        payload.put("algorithm", "sha512");
         if (loaders != null && !loaders.isEmpty()) {
             payload.put("loaders", loaders.stream().map(String::toLowerCase).toList());
         }
@@ -362,9 +362,9 @@ public class ModrinthService {
         }
     }
 
-    public CompletableFuture<Map<String, ModrinthVersion>> checkUpdates(List<String> sha1Hashes, String loader, String mcVersion) {
+    public CompletableFuture<Map<String, ModrinthVersion>> checkUpdates(List<String> hashes, String loader, String mcVersion) {
         List<String> loaders = (loader != null && !loader.equalsIgnoreCase("all") && !loader.isBlank()) ? List.of(loader) : Collections.emptyList();
-        return checkUpdates(sha1Hashes, loaders, mcVersion);
+        return checkUpdates(hashes, loaders, mcVersion);
     }
 
     public CompletableFuture<Path> downloadFile(String fileUrl, Path destination, Consumer<Double> progressCallback) {

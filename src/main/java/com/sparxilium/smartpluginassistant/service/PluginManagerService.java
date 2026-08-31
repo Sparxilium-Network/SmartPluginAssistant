@@ -49,11 +49,12 @@ public class PluginManagerService {
                 long size = file.length();
                 long lastModified = file.lastModified();
                 String sha1 = calculateSha1(file);
+                String sha512 = calculateSha512(file);
 
-                InstalledPlugin plugin = new InstalledPlugin(fileName, sha1, size, lastModified, enabled);
+                InstalledPlugin plugin = new InstalledPlugin(fileName, sha1, sha512, size, lastModified, enabled);
                 
                 // 1. Check download history record in metadata store
-                PluginMetadataStore.DownloadRecord record = PluginMetadataStore.findRecord(instanceManager, instance, fileName, sha1);
+                PluginMetadataStore.DownloadRecord record = PluginMetadataStore.findRecord(instanceManager, instance, fileName, sha1, sha512);
                 if (record != null) {
                     if (record.versionNumber != null && !record.versionNumber.isBlank()) {
                         plugin.setCurrentVersionNumber(record.versionNumber);
@@ -62,6 +63,11 @@ public class PluginManagerService {
                     plugin.setVersionId(record.versionId);
                     if (record.hostingPlatform != null) plugin.setHostingPlatform(record.hostingPlatform);
                     if (record.hangarNamespace != null) plugin.setHangarNamespace(record.hangarNamespace);
+                    // Update record if sha512 is missing in legacy record
+                    if (record.sha512 == null && sha512 != null) {
+                        record.sha512 = sha512;
+                        PluginMetadataStore.saveRecord(instanceManager, instance, record);
+                    }
                 }
 
                 // 2. Read exact version from inside jar (plugin.yml, paper-plugin.yml, bungeecord.yml, velocity-plugin.json) if not recorded
@@ -89,15 +95,15 @@ public class PluginManagerService {
     }
 
     public CompletableFuture<List<InstalledPlugin>> checkPluginUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
-        List<String> sha1List = plugins.stream()
-                .map(InstalledPlugin::getSha1)
+        List<String> hashesList = plugins.stream()
+                .map(p -> p.getSha512() != null ? p.getSha512() : p.getSha1())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        return modrinthService.checkUpdates(sha1List, instance.getEffectiveLoaders(), instance.getMcVersion())
+        return modrinthService.checkUpdates(hashesList, instance.getEffectiveLoaders(), instance.getMcVersion())
                 .thenApply(updateMap -> {
                     for (InstalledPlugin plugin : plugins) {
-                        String hash = plugin.getSha1();
+                        String hash = plugin.getSha512() != null ? plugin.getSha512() : plugin.getSha1();
                         if (hash != null && updateMap.containsKey(hash)) {
                             ModrinthVersion version = updateMap.get(hash);
                             ModrinthVersion.ModrinthFile primaryFile = version.getPrimaryFile();
@@ -148,13 +154,15 @@ public class PluginManagerService {
                             } else {
                                 plugin.setUpdateAvailable(false);
                                 plugin.setLoaderIncompatible(false);
-                                // Save/refresh download record with exact version and projectId so we always have it recorded
+                                // Save/refresh download record with exact version, sha1, sha512 and projectId
                                 if (plugin.getProjectId() == null || plugin.getVersionId() == null) {
                                     plugin.setProjectId(version.getProjectId());
                                     plugin.setVersionId(version.getId());
                                     plugin.setCurrentVersionNumber(version.getVersionNumber());
+                                    String sha1 = plugin.getSha1();
+                                    String sha512 = plugin.getSha512();
                                     PluginMetadataStore.saveRecord(instanceManager, instance,
-                                            new PluginMetadataStore.DownloadRecord(version.getProjectId(), version.getId(), version.getVersionNumber(), plugin.getFileName(), hash));
+                                            new PluginMetadataStore.DownloadRecord(version.getProjectId(), version.getId(), version.getVersionNumber(), plugin.getFileName(), sha1, sha512));
                                 }
                                 if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
                                     plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
@@ -281,14 +289,16 @@ public class PluginManagerService {
                             e.printStackTrace();
                         }
                     }
-                    // Calculate new sha1 and save record to metadata store
+                    // Calculate new sha1 and sha512, then save record to metadata store
                     String newSha1 = calculateSha1(newFilePath.toFile());
+                    String newSha512 = calculateSha512(newFilePath.toFile());
                     PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
                             plugin.getProjectId(),
                             plugin.getLatestVersionId(),
                             plugin.getLatestVersionNumber(),
                             newName,
-                            newSha1
+                            newSha1,
+                            newSha512
                     );
                     record.hostingPlatform = plugin.getHostingPlatform();
                     record.hangarNamespace = plugin.getHangarNamespace();
@@ -338,8 +348,16 @@ public class PluginManagerService {
     }
 
     public static String calculateSha1(File file) {
+        return calculateHash(file, "SHA-1");
+    }
+
+    public static String calculateSha512(File file) {
+        return calculateHash(file, "SHA-512");
+    }
+
+    public static String calculateHash(File file, String algorithm) {
         try (FileInputStream fis = new FileInputStream(file)) {
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            MessageDigest digest = MessageDigest.getInstance(algorithm);
             byte[] byteArray = new byte[8192];
             int bytesCount;
             while ((bytesCount = fis.read(byteArray)) != -1) {

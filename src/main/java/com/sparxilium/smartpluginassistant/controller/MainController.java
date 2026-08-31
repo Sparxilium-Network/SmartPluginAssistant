@@ -51,7 +51,8 @@ public class MainController {
     @FXML private VBox instanceDetailPanel;
     @FXML private Button instanceSettingsBtn;
     @FXML private Button openPluginsFolderBtn;
-    @FXML private Button exportZipBtn;
+    @FXML private Button exportInstanceZipBtn;
+    @FXML private Button exportPluginsZipBtn;
     @FXML private Button deleteInstanceBtn;
 
     // Toolbar
@@ -190,7 +191,8 @@ public class MainController {
             addInstanceBtn.setText("+ " + (isEn ? "New" : "新增實例"));
             instanceSettingsBtn.setText("⚙️");
             openPluginsFolderBtn.setText("📂 " + (isEn ? "Folder" : "資料夾"));
-            exportZipBtn.setText("📦 ZIP");
+            exportInstanceZipBtn.setText("📦 " + (isEn ? "Inst ZIP" : "實例 ZIP"));
+            exportPluginsZipBtn.setText("📦 " + (isEn ? "Plug ZIP" : "插件 ZIP"));
             deleteInstanceBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
             browseModrinthBtn.setText("🔍 " + (isEn ? "Modrinth" : "Modrinth 插件"));
             if (browseHangarBtn != null) browseHangarBtn.setText("🏪 " + (isEn ? "Hangar" : "Hangar 插件"));
@@ -208,7 +210,8 @@ public class MainController {
             addInstanceBtn.setText(I18n.get("app.add_instance"));
             instanceSettingsBtn.setText(I18n.get("app.instance_settings"));
             openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder"));
-            exportZipBtn.setText(I18n.get("app.export_zip"));
+            exportInstanceZipBtn.setText(I18n.get("app.export_instance_zip"));
+            exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip"));
             deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
             browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
             if (browseHangarBtn != null) browseHangarBtn.setText(I18n.get("app.browse_hangar"));
@@ -234,7 +237,8 @@ public class MainController {
 
         instanceSettingsBtn.setText(I18n.get("app.instance_settings"));
         openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder"));
-        exportZipBtn.setText(I18n.get("app.export_zip"));
+        exportInstanceZipBtn.setText(I18n.get("app.export_instance_zip"));
+        exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip"));
         deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
 
         browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
@@ -763,7 +767,8 @@ public class MainController {
     private void setInstanceButtonsDisabled(boolean disabled) {
         instanceSettingsBtn.setDisable(disabled);
         openPluginsFolderBtn.setDisable(disabled);
-        exportZipBtn.setDisable(disabled);
+        exportInstanceZipBtn.setDisable(disabled);
+        exportPluginsZipBtn.setDisable(disabled);
         deleteInstanceBtn.setDisable(disabled);
         browseModrinthBtn.setDisable(disabled);
         addByUrlBtn.setDisable(disabled);
@@ -844,26 +849,6 @@ public class MainController {
                 I18n.get("instance.mc_version", instance.getMcVersion()) + fuzzyText
         );
         refreshPlugins();
-    }
-
-    @FXML
-    private void handleExportInstanceZip() {
-        if (currentSelectedInstance == null) return;
-        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
-        fileChooser.setTitle(I18n.get("app.export_zip_title"));
-        fileChooser.setInitialFileName(currentSelectedInstance.getName() + ".zip");
-        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("ZIP Archive (*.zip)", "*.zip"));
-        java.io.File file = fileChooser.showSaveDialog(exportZipBtn.getScene().getWindow());
-        if (file != null) {
-            try {
-                instanceManager.exportInstanceToZip(currentSelectedInstance, file.toPath());
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, I18n.get("app.export_zip_success", currentSelectedInstance.getName(), file.getAbsolutePath()), ButtonType.OK);
-                alert.showAndWait();
-            } catch (Exception e) {
-                Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("app.export_zip_failed", e.getMessage()), ButtonType.OK);
-                alert.showAndWait();
-            }
-        }
     }
 
     @FXML
@@ -1214,7 +1199,64 @@ public class MainController {
         } catch (Exception e) {
             e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR, "無法開啟資料夾: " + e.getMessage(), ButtonType.OK);
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
             alert.showAndWait();
+        }
+    }
+
+    @FXML
+    private void handleExportInstanceZip() {
+        if (currentSelectedInstance == null) return;
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle(I18n.get("app.export_instance_zip_title"));
+        fileChooser.setInitialFileName(currentSelectedInstance.getName().replaceAll("[\\\\/:*?\"<>|]", "_") + "-instance.zip");
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("ZIP Archive (*.zip)", "*.zip"));
+
+        java.io.File targetFile = fileChooser.showSaveDialog(rootPane.getScene().getWindow());
+        if (targetFile != null) {
+            try {
+                instanceManager.exportInstanceToZip(currentSelectedInstance, targetFile.toPath());
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, I18n.get("app.export_instance_zip_success", currentSelectedInstance.getName(), targetFile.getAbsolutePath()), ButtonType.OK);
+                alert.setTitle(I18n.get("app.export_instance_zip_title"));
+                alert.setHeaderText(null);
+                com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
+                alert.showAndWait();
+            } catch (Exception e) {
+                logger.error("Failed to export instance to zip", e);
+                Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("app.export_zip_failed", e.getMessage()), ButtonType.OK);
+                alert.setTitle(I18n.get("app.export_instance_zip_title"));
+                alert.setHeaderText(null);
+                com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
+                alert.showAndWait();
+            }
+        }
+    }
+
+    @FXML
+    private void handleExportPluginsZip() {
+        if (currentSelectedInstance == null) return;
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle(I18n.get("app.export_plugins_zip_title"));
+        fileChooser.setInitialFileName(currentSelectedInstance.getName().replaceAll("[\\\\/:*?\"<>|]", "_") + "-plugins.zip");
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("ZIP Archive (*.zip)", "*.zip"));
+
+        java.io.File targetFile = fileChooser.showSaveDialog(rootPane.getScene().getWindow());
+        if (targetFile != null) {
+            try {
+                instanceManager.exportPluginsToZip(currentSelectedInstance, targetFile.toPath());
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, I18n.get("app.export_plugins_zip_success", currentSelectedInstance.getName(), targetFile.getAbsolutePath()), ButtonType.OK);
+                alert.setTitle(I18n.get("app.export_plugins_zip_title"));
+                alert.setHeaderText(null);
+                com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
+                alert.showAndWait();
+            } catch (Exception e) {
+                logger.error("Failed to export plugins to zip", e);
+                Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("app.export_zip_failed", e.getMessage()), ButtonType.OK);
+                alert.setTitle(I18n.get("app.export_plugins_zip_title"));
+                alert.setHeaderText(null);
+                com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
+                alert.showAndWait();
+            }
         }
     }
 

@@ -368,12 +368,14 @@ public class AddByUrlDialogController {
                 .thenAccept(path -> Platform.runLater(() -> {
                     try {
                         String sha1 = PluginManagerService.calculateSha1(path.toFile());
+                        String sha512 = PluginManagerService.calculateSha512(path.toFile());
                         PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
                                 resolvedHangarProject.getNamespaceString(),
                                 String.valueOf(targetHangarVersion.getId()),
                                 targetHangarVersion.getVersionNumber(),
                                 fileName,
-                                sha1
+                                sha1,
+                                sha512
                         );
                         record.hostingPlatform = "hangar";
                         record.hangarNamespace = resolvedHangarProject.getNamespaceString();
@@ -412,12 +414,17 @@ public class AddByUrlDialogController {
                 .thenAccept(path -> Platform.runLater(() -> {
                     try {
                         String sha1 = primaryFile.getHashes() != null ? primaryFile.getHashes().get("sha1") : null;
+                        String sha512 = primaryFile.getHashes() != null ? primaryFile.getHashes().get("sha512") : null;
+                        if (sha512 == null) {
+                            sha512 = PluginManagerService.calculateSha512(path.toFile());
+                        }
                         PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
                                 resolvedModrinthProject.getId(),
                                 targetModrinthVersion.getId(),
                                 targetModrinthVersion.getVersionNumber(),
                                 primaryFile.getFilename(),
-                                sha1
+                                sha1,
+                                sha512
                         );
                         record.hostingPlatform = "modrinth";
                         PluginMetadataStore.saveRecord(instanceManager, currentInstance, record);

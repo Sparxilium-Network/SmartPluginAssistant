@@ -211,7 +211,7 @@ public class InstanceManager {
         }
 
         try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(targetZipFile))) {
-            // Also write instance metadata config inside zip
+            // Write instance metadata config inside zip
             byte[] metadataBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(instance);
             java.util.zip.ZipEntry metaEntry = new java.util.zip.ZipEntry("instance.json");
             zos.putNextEntry(metaEntry);
@@ -222,6 +222,34 @@ public class InstanceManager {
                 List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
                 for (Path p : paths) {
                     String relativePath = instanceDir.relativize(p).toString().replace('\\', '/');
+                    // Skip if file is already instance.json at root level to prevent ZipException duplicate entry
+                    if ("instance.json".equalsIgnoreCase(relativePath)) {
+                        continue;
+                    }
+                    java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(relativePath);
+                    zos.putNextEntry(zipEntry);
+                    Files.copy(p, zos);
+                    zos.closeEntry();
+                }
+            }
+        }
+    }
+
+    public void exportPluginsToZip(ServerInstance instance, Path targetZipFile) throws IOException {
+        Path pluginsDir = getPluginsDirectory(instance);
+        if (!Files.exists(pluginsDir)) {
+            Files.createDirectories(pluginsDir);
+        }
+
+        if (targetZipFile.getParent() != null) {
+            Files.createDirectories(targetZipFile.getParent());
+        }
+
+        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(targetZipFile))) {
+            try (var stream = Files.walk(pluginsDir)) {
+                List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
+                for (Path p : paths) {
+                    String relativePath = pluginsDir.relativize(p).toString().replace('\\', '/');
                     java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(relativePath);
                     zos.putNextEntry(zipEntry);
                     Files.copy(p, zos);

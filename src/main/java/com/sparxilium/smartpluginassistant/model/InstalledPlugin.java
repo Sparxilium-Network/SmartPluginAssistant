@@ -36,8 +36,13 @@ public class InstalledPlugin {
     }
 
     public InstalledPlugin(String fileName, String sha1, long fileSizeBytes, long lastModifiedTime, boolean enabled) {
+        this(fileName, sha1, null, fileSizeBytes, lastModifiedTime, enabled);
+    }
+
+    public InstalledPlugin(String fileName, String sha1, String sha512, long fileSizeBytes, long lastModifiedTime, boolean enabled) {
         this.fileName = fileName;
         this.sha1 = sha1;
+        this.sha512 = sha512;
         this.fileSizeBytes = fileSizeBytes;
         this.lastModifiedTime = lastModifiedTime;
         this.enabled = enabled;

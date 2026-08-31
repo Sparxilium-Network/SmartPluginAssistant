@@ -69,6 +69,7 @@ public class ImportPluginsDialogController {
         private final StringProperty detectedInfo = new SimpleStringProperty("-");
         private final StringProperty modrinthStatus = new SimpleStringProperty("...");
         private String sha1;
+        private String sha512;
         private String projectId;
         private String versionId;
         private String versionNumber;
@@ -94,6 +95,8 @@ public class ImportPluginsDialogController {
 
         public String getSha1() { return sha1; }
         public void setSha1(String sha1) { this.sha1 = sha1; }
+        public String getSha512() { return sha512; }
+        public void setSha512(String sha512) { this.sha512 = sha512; }
         public String getProjectId() { return projectId; }
         public void setProjectId(String projectId) { this.projectId = projectId; }
         public String getVersionId() { return versionId; }
@@ -238,10 +241,15 @@ public class ImportPluginsDialogController {
                     Platform.runLater(() -> item.setDetectedInfo(descStr.isBlank() ? "-" : descStr));
                 }
 
-                // 2. Compute SHA-1
+                // 2. Compute SHA-1 and SHA-512
                 String sha1 = PluginManagerService.calculateSha1(item.getFile());
+                String sha512 = PluginManagerService.calculateSha512(item.getFile());
                 item.setSha1(sha1);
-                if (sha1 != null) {
+                item.setSha512(sha512);
+                if (sha512 != null) {
+                    hashMap.put(sha512.toLowerCase(), item);
+                    hashesToQuery.add(sha512.toLowerCase());
+                } else if (sha1 != null) {
                     hashMap.put(sha1.toLowerCase(), item);
                     hashesToQuery.add(sha1.toLowerCase());
                 }
@@ -341,7 +349,8 @@ public class ImportPluginsDialogController {
                                 item.getVersionId(),
                                 item.getVersionNumber(),
                                 item.getFileName(),
-                                item.getSha1()
+                                item.getSha1(),
+                                item.getSha512()
                         );
                         PluginMetadataStore.saveRecord(instanceManager, currentInstance, record);
                     }
