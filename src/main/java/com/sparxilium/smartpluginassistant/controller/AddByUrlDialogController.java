@@ -92,9 +92,8 @@ public class AddByUrlDialogController {
                     this.resolvedProject = project;
                     if (urlInfo.specificVersionId != null && !urlInfo.specificVersionId.isBlank()) {
                         // User specifically pasted a direct version URL (e.g. /version/4.11-7a2d09a)
-                        return modrinthService.getVersion(urlInfo.specificVersionId)
-                                .thenApply(List::of)
-                                .exceptionally(ex -> Collections.emptyList());
+                        return modrinthService.resolveVersionByProjectAndVersion(project.getId(), urlInfo.specificVersionId)
+                                .thenApply(ver -> ver != null ? List.of(ver) : Collections.<ModrinthVersion>emptyList());
                     } else {
                         // Query project versions
                         List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();

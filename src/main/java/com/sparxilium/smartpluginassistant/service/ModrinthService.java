@@ -209,6 +209,31 @@ public class ModrinthService {
                 });
     }
 
+    public CompletableFuture<ModrinthVersion> resolveVersionByProjectAndVersion(String projectIdOrSlug, String versionIdOrNumber) {
+        if (versionIdOrNumber == null || versionIdOrNumber.isBlank()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        // First try direct /version/{id}
+        return getVersion(versionIdOrNumber)
+                .handle((ver, ex) -> {
+                    if (ver != null) {
+                        return CompletableFuture.completedFuture(ver);
+                    }
+                    // If not found by ID (e.g. it's a version_number like 4.11-7a2d09a), fetch project all versions and match
+                    return getProjectVersions(projectIdOrSlug, Collections.emptyList(), null)
+                            .thenApply(list -> {
+                                for (ModrinthVersion v : list) {
+                                    if (versionIdOrNumber.equalsIgnoreCase(v.getVersionNumber()) ||
+                                        versionIdOrNumber.equalsIgnoreCase(v.getId())) {
+                                        return v;
+                                    }
+                                }
+                                return list.isEmpty() ? null : list.get(0);
+                            });
+                })
+                .thenCompose(f -> f);
+    }
+
     public CompletableFuture<ModrinthVersion> getVersionByHash(String sha1Hash) {
         String url = BASE_URL + "/version_file/" + URLEncoder.encode(sha1Hash, StandardCharsets.UTF_8) + "?algorithm=sha1";
         HttpRequest request = HttpRequest.newBuilder()
