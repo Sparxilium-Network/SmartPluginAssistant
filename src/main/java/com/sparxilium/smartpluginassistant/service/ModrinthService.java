@@ -209,11 +209,12 @@ public class ModrinthService {
                 });
     }
 
-    public CompletableFuture<ModrinthVersion> resolveVersionByProjectAndVersion(String projectIdOrSlug, String versionIdOrNumber) {
+    public CompletableFuture<ModrinthVersion> resolveVersionByProjectAndVersion(String projectIdOrSlug, String versionIdOrNumber, List<String> preferredLoaders) {
         if (versionIdOrNumber == null || versionIdOrNumber.isBlank()) {
             return CompletableFuture.completedFuture(null);
         }
-        logger.info("resolveVersionByProjectAndVersion: querying direct /version/{} or matching from project '{}'", versionIdOrNumber, projectIdOrSlug);
+        logger.info("resolveVersionByProjectAndVersion: querying direct /version/{} or matching from project '{}', preferredLoaders={}",
+                versionIdOrNumber, projectIdOrSlug, preferredLoaders);
         // First try direct /version/{id}
         return getVersion(versionIdOrNumber)
                 .handle((ver, ex) -> {
@@ -227,14 +228,30 @@ public class ModrinthService {
                     return getProjectVersions(projectIdOrSlug, Collections.emptyList(), null)
                             .thenApply(list -> {
                                 logger.info("resolveVersionByProjectAndVersion: project has {} total versions on Modrinth", list.size());
+                                List<ModrinthVersion> matchingVersions = new ArrayList<>();
                                 for (ModrinthVersion v : list) {
-                                    logger.debug("Checking version: number='{}', id='{}'", v.getVersionNumber(), v.getId());
                                     if (versionIdOrNumber.equalsIgnoreCase(v.getVersionNumber()) ||
                                         versionIdOrNumber.equalsIgnoreCase(v.getId())) {
-                                        logger.info("resolveVersionByProjectAndVersion: matched version by number/id -> number='{}', id='{}'", v.getVersionNumber(), v.getId());
-                                        return v;
+                                        matchingVersions.add(v);
                                     }
                                 }
+
+                                if (!matchingVersions.isEmpty()) {
+                                    // If multiple versions have same version_number (e.g. Spigot build vs Fabric build), prioritize preferred loader
+                                    if (preferredLoaders != null && !preferredLoaders.isEmpty()) {
+                                        for (ModrinthVersion mv : matchingVersions) {
+                                            if (mv.getLoaders() != null && mv.getLoaders().stream().anyMatch(l -> preferredLoaders.stream().anyMatch(pl -> pl.equalsIgnoreCase(l)))) {
+                                                logger.info("resolveVersionByProjectAndVersion: matched version with preferred loader: id='{}', loaders={}, files={}",
+                                                        mv.getId(), mv.getLoaders(), mv.getFiles() != null ? mv.getFiles().stream().map(ModrinthVersion.ModrinthFile::getFilename).toList() : "[]");
+                                                return mv;
+                                            }
+                                        }
+                                    }
+                                    ModrinthVersion first = matchingVersions.get(0);
+                                    logger.info("resolveVersionByProjectAndVersion: matched version (first candidate): id='{}', loaders={}", first.getId(), first.getLoaders());
+                                    return first;
+                                }
+
                                 logger.warn("resolveVersionByProjectAndVersion: no exact match found for '{}', returning first available version: {}",
                                         versionIdOrNumber, list.isEmpty() ? "none" : list.get(0).getVersionNumber());
                                 return list.isEmpty() ? null : list.get(0);

@@ -39,10 +39,9 @@
             <Label fx:id="descLabel" style="-fx-text-fill: #bcbec4; -fx-font-size: 12px;" wrapText="true"/>
             <Label fx:id="targetVersionLabel" style="-fx-text-fill: #2ecc71; -fx-font-weight: bold; -fx-font-size: 12px;" wrapText="true"/>
 
-            <!-- Pre-release / Incompatibility warning banner & confirmation checkbox -->
-            <VBox fx:id="prereleaseWarningBox" spacing="8.0" style="-fx-background-color: #3e2723; -fx-padding: 12; -fx-background-radius: 6; -fx-border-color: #d35400; -fx-border-radius: 6;" visible="false" managed="false">
-                <Label fx:id="prereleaseWarningLabel" text="⚠️ 提示：此版本與目前實例環境可能不完全相容。如需安裝請主動勾選確認！" style="-fx-text-fill: #ffb74d; -fx-font-size: 12px; -fx-font-weight: bold;" wrapText="true"/>
-                <CheckBox fx:id="prereleaseConfirmCheckBox" text="確認下載並安裝" style="-fx-text-fill: #ffffff; -fx-font-size: 12px; -fx-font-weight: bold;" wrapText="true"/>
+            <!-- Pre-release / Incompatibility warning banner (warning message only) -->
+            <VBox fx:id="prereleaseWarningBox" spacing="6.0" style="-fx-background-color: #3e2723; -fx-padding: 10 12; -fx-background-radius: 6; -fx-border-color: #d35400; -fx-border-radius: 6;" visible="false" managed="false">
+                <Label fx:id="prereleaseWarningLabel" text="⚠️ 提示：此版本與目前實例環境可能不完全相容。" style="-fx-text-fill: #ffb74d; -fx-font-size: 12px; -fx-font-weight: bold;" wrapText="true"/>
             </VBox>
 
             <HBox alignment="CENTER_RIGHT" spacing="10.0">

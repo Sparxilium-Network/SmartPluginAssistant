@@ -35,7 +35,6 @@ public class AddByUrlDialogController {
     @FXML private Label targetVersionLabel;
     @FXML private VBox prereleaseWarningBox;
     @FXML private Label prereleaseWarningLabel;
-    @FXML private CheckBox prereleaseConfirmCheckBox;
     @FXML private Button downloadBtn;
     @FXML private Button closeBtn;
     @FXML private ProgressIndicator progressIndicator;
@@ -55,14 +54,6 @@ public class AddByUrlDialogController {
         this.modrinthService = modrinthService;
         this.instanceManager = instanceManager;
         this.onPluginInstalledCallback = onPluginInstalledCallback;
-
-        if (prereleaseConfirmCheckBox != null) {
-            prereleaseConfirmCheckBox.selectedProperty().addListener((obs, oldV, newV) -> {
-                if (isPrereleaseOnly || isIncompatibleVersion) {
-                    downloadBtn.setDisable(!newV);
-                }
-            });
-        }
 
         applyI18n();
     }
@@ -99,14 +90,16 @@ public class AddByUrlDialogController {
                 .thenCompose(project -> {
                     this.resolvedProject = project;
                     logger.info("Fetched project: id='{}', title='{}', slug='{}'", project.getId(), project.getTitle(), project.getSlug());
+                    List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
+                    String mcVersion = currentInstance != null ? currentInstance.getMcVersion() : null;
 
                     if (urlInfo.specificVersionId != null && !urlInfo.specificVersionId.isBlank()) {
                         // User specifically pasted a direct version URL (e.g. /version/4.11-7a2d09a)
-                        logger.info("Resolving specific version '{}' for project '{}'...", urlInfo.specificVersionId, project.getId());
-                        return modrinthService.resolveVersionByProjectAndVersion(project.getId(), urlInfo.specificVersionId)
+                        logger.info("Resolving specific version '{}' for project '{}' with preferredLoaders={}...", urlInfo.specificVersionId, project.getId(), loaders);
+                        return modrinthService.resolveVersionByProjectAndVersion(project.getId(), urlInfo.specificVersionId, loaders)
                                 .thenApply(ver -> {
                                     if (ver != null) {
-                                        logger.info("Successfully resolved specific version: number='{}', id='{}'", ver.getVersionNumber(), ver.getId());
+                                        logger.info("Successfully resolved specific version: number='{}', id='{}', loaders={}", ver.getVersionNumber(), ver.getId(), ver.getLoaders());
                                         return List.of(ver);
                                     } else {
                                         logger.warn("Could not find specific version '{}', resolving all versions as fallback", urlInfo.specificVersionId);
@@ -115,8 +108,6 @@ public class AddByUrlDialogController {
                                 });
                     } else {
                         // Query project versions
-                        List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
-                        String mcVersion = currentInstance != null ? currentInstance.getMcVersion() : null;
                         logger.info("Fetching versions with loaders={}, mcVersion={}", loaders, mcVersion);
                         return modrinthService.getProjectVersions(project.getId(), loaders, mcVersion)
                                 .thenCompose(compatVersions -> {
@@ -131,6 +122,7 @@ public class AddByUrlDialogController {
                 })
                 .thenAccept(versions -> Platform.runLater(() -> {
                     progressIndicator.setVisible(false);
+                    progressIndicator.setManaged(false);
                     if (versions.isEmpty()) {
                         logger.warn("No versions returned at all for project '{}'", resolvedProject.getId());
                         showAlert(Alert.AlertType.WARNING, I18n.get("url.no_compat_version"));
@@ -177,6 +169,7 @@ public class AddByUrlDialogController {
                     Platform.runLater(() -> {
                         logger.error("Failed to resolve URL: " + input, ex);
                         progressIndicator.setVisible(false);
+                        progressIndicator.setManaged(false);
                         showAlert(Alert.AlertType.ERROR, I18n.get("url.err_resolve_failed", ex.getMessage()));
                     });
                     return null;
@@ -204,21 +197,17 @@ public class AddByUrlDialogController {
             prereleaseWarningBox.setVisible(true);
             prereleaseWarningBox.setManaged(true);
             prereleaseWarningLabel.setText(I18n.get("url.incompat_version_warn", verGameVers, verLoaders, instLoader, instMc));
-            prereleaseConfirmCheckBox.setText(I18n.get("url.incompat_confirm_check", targetVersion.getVersionNumber()));
-            prereleaseConfirmCheckBox.setSelected(false);
-            downloadBtn.setDisable(true);
         } else if (isPrereleaseOnly) {
             prereleaseWarningBox.setVisible(true);
             prereleaseWarningBox.setManaged(true);
             prereleaseWarningLabel.setText(I18n.get("url.prerelease_only_warn", verType));
-            prereleaseConfirmCheckBox.setText(I18n.get("url.prerelease_confirm_check", targetVersion.getVersionNumber()));
-            prereleaseConfirmCheckBox.setSelected(false);
-            downloadBtn.setDisable(true);
         } else {
             prereleaseWarningBox.setVisible(false);
             prereleaseWarningBox.setManaged(false);
-            downloadBtn.setDisable(false);
         }
+
+        // Always allow downloading without forcing a checkbox
+        downloadBtn.setDisable(false);
 
         if (resolvedProject.getIconUrl() != null && !resolvedProject.getIconUrl().isBlank()) {
             com.sparxilium.smartpluginassistant.service.ImageCacheService.loadImageAsync(
@@ -229,9 +218,6 @@ public class AddByUrlDialogController {
     @FXML
     private void handleDownload() {
         if (targetVersion == null || targetVersion.getPrimaryFile() == null) return;
-        if ((isPrereleaseOnly || isIncompatibleVersion) && prereleaseConfirmCheckBox != null && !prereleaseConfirmCheckBox.isSelected()) {
-            return;
-        }
 
         downloadBtn.setDisable(true);
         downloadBtn.setText(I18n.get("modrinth.btn_installing"));
