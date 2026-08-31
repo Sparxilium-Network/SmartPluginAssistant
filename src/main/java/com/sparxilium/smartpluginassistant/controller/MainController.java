@@ -52,6 +52,7 @@ public class MainController {
     // Toolbar
     @FXML private Button browseModrinthBtn;
     @FXML private Button addByUrlBtn;
+    @FXML private Button importPluginsBtn;
     @FXML private Button checkUpdatesBtn;
     @FXML private Button updateAllBtn;
     @FXML private Button refreshPluginsBtn;
@@ -185,6 +186,7 @@ public class MainController {
             deleteInstanceBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
             browseModrinthBtn.setText("🔍 " + (isEn ? "Modrinth" : "Modrinth 插件"));
             addByUrlBtn.setText("🔗 " + (isEn ? "URL" : "網址新增"));
+            if (importPluginsBtn != null) importPluginsBtn.setText("📂 " + (isEn ? "Import" : "匯入"));
             checkUpdatesBtn.setText("🔄 " + (isEn ? "Check" : "檢查更新"));
             updateAllBtn.setText("⚡ " + (isEn ? "Update All" : "全部更新"));
             batchEnableBtn.setText("✓ " + (isEn ? "Enable" : "啟用"));
@@ -201,6 +203,7 @@ public class MainController {
             deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
             browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
             addByUrlBtn.setText(I18n.get("app.add_by_url"));
+            if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
             checkUpdatesBtn.setText(I18n.get("app.check_updates"));
             updateAllBtn.setText(I18n.get("app.update_all"));
             batchEnableBtn.setText(I18n.get("app.btn_batch_enable"));
@@ -226,6 +229,7 @@ public class MainController {
 
         browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
         addByUrlBtn.setText(I18n.get("app.add_by_url"));
+        if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
         checkUpdatesBtn.setText(I18n.get("app.check_updates"));
         updateAllBtn.setText(I18n.get("app.update_all"));
         batchEnableBtn.setText(I18n.get("app.btn_batch_enable"));
@@ -877,6 +881,43 @@ public class MainController {
                 if (!stage.isMaximized()) {
                     prefs.putDouble("add_by_url_dialog_w", stage.getWidth());
                     prefs.putDouble("add_by_url_dialog_h", stage.getHeight());
+                }
+            });
+
+            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
+            stage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleOpenImportPlugins() {
+        if (currentSelectedInstance == null) return;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sparxilium/smartpluginassistant/import-plugins-dialog.fxml"));
+            Parent root = loader.load();
+
+            ImportPluginsDialogController controller = loader.getController();
+            controller.init(currentSelectedInstance, modrinthService, instanceManager, this::refreshPlugins);
+
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double w = prefs.getDouble("import_plugins_dialog_w", 860);
+            double h = prefs.getDouble("import_plugins_dialog_h", 620);
+
+            Stage stage = new Stage();
+            stage.setTitle(I18n.get("import.window_title", currentSelectedInstance.getName()));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            Scene scene = new Scene(root, w, h);
+            scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
+            stage.setScene(scene);
+            stage.setMinWidth(720);
+            stage.setMinHeight(480);
+
+            stage.setOnCloseRequest(e -> {
+                if (!stage.isMaximized()) {
+                    prefs.putDouble("import_plugins_dialog_w", stage.getWidth());
+                    prefs.putDouble("import_plugins_dialog_h", stage.getHeight());
                 }
             });
 

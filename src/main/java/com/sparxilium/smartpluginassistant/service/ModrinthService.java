@@ -260,6 +260,42 @@ public class ModrinthService {
                 .thenCompose(f -> f);
     }
 
+    public CompletableFuture<Map<String, ModrinthVersion>> getVersionsByHashes(List<String> sha1Hashes) {
+        if (sha1Hashes == null || sha1Hashes.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyMap());
+        }
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("hashes", sha1Hashes);
+        payload.put("algorithm", "sha1");
+
+        try {
+            String jsonBody = objectMapper.writeValueAsString(payload);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(BASE_URL + "/version_files"))
+                    .header("User-Agent", USER_AGENT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
+                    .build();
+
+            return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(response -> {
+                        if (response.statusCode() != 200) {
+                            logger.warn("getVersionsByHashes returned HTTP {}", response.statusCode());
+                            return Collections.<String, ModrinthVersion>emptyMap();
+                        }
+                        try {
+                            return objectMapper.readValue(response.body(), new TypeReference<Map<String, ModrinthVersion>>() {});
+                        } catch (Exception e) {
+                            logger.error("Failed to parse getVersionsByHashes response: {}", e.getMessage(), e);
+                            return Collections.<String, ModrinthVersion>emptyMap();
+                        }
+                    });
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
     public CompletableFuture<ModrinthVersion> getVersionByHash(String sha1Hash) {
         String url = BASE_URL + "/version_file/" + URLEncoder.encode(sha1Hash, StandardCharsets.UTF_8) + "?algorithm=sha1";
         HttpRequest request = HttpRequest.newBuilder()

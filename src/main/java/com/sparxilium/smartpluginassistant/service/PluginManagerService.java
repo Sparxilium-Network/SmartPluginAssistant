@@ -261,13 +261,28 @@ public class PluginManagerService {
         }
     }
 
-    public static String readPluginVersionFromJar(File jarFile) {
+    public static class JarPluginInfo {
+        public String name;
+        public String version;
+        public String description;
+
+        public JarPluginInfo(String name, String version, String description) {
+            this.name = name;
+            this.version = version;
+            this.description = description;
+        }
+    }
+
+    public static JarPluginInfo readJarPluginInfo(File jarFile) {
         if (!jarFile.exists() || !jarFile.getName().toLowerCase().contains(".jar")) {
             return null;
         }
 
+        String name = null;
+        String version = null;
+        String description = null;
+
         try (java.util.jar.JarFile jar = new java.util.jar.JarFile(jarFile)) {
-            // Check plugin.yml, paper-plugin.yml, bungeecord.yml, velocity-plugin.json
             String[] descriptors = {"plugin.yml", "paper-plugin.yml", "bungeecord.yml", "velocity-plugin.json", "fabric.mod.json", "mcmod.info"};
             for (String desc : descriptors) {
                 java.util.zip.ZipEntry entry = jar.getEntry(desc);
@@ -277,19 +292,41 @@ public class PluginManagerService {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             String trimmed = line.trim();
-                            if (trimmed.startsWith("version:") || trimmed.startsWith("\"version\":")) {
+                            if (name == null && (trimmed.startsWith("name:") || trimmed.startsWith("\"name\":") || trimmed.startsWith("\"id\":"))) {
+                                String n = trimmed.replaceFirst("(?i)^\"?(name|id)\"?\\s*:\\s*", "")
+                                        .replace("\"", "").replace("'", "").replace(",", "").trim();
+                                if (!n.isBlank() && !n.startsWith("${") && !n.equalsIgnoreCase("@name@")) {
+                                    name = n;
+                                }
+                            }
+                            if (version == null && (trimmed.startsWith("version:") || trimmed.startsWith("\"version\":"))) {
                                 String ver = trimmed.replaceFirst("(?i)^\"?version\"?\\s*:\\s*", "")
                                         .replace("\"", "").replace("'", "").replace(",", "").trim();
                                 if (!ver.isBlank() && !ver.startsWith("${") && !ver.equalsIgnoreCase("@version@")) {
-                                    return ver;
+                                    version = ver;
+                                }
+                            }
+                            if (description == null && (trimmed.startsWith("description:") || trimmed.startsWith("\"description\":"))) {
+                                String d = trimmed.replaceFirst("(?i)^\"?description\"?\\s*:\\s*", "")
+                                        .replace("\"", "").replace("'", "").replace(",", "").trim();
+                                if (!d.isBlank() && !d.startsWith("${")) {
+                                    description = d;
                                 }
                             }
                         }
                     }
                 }
+                if (name != null && version != null) break;
             }
         } catch (Exception ignored) {}
-        return null;
+
+        if (name == null && version == null) return null;
+        return new JarPluginInfo(name, version, description);
+    }
+
+    public static String readPluginVersionFromJar(File jarFile) {
+        JarPluginInfo info = readJarPluginInfo(jarFile);
+        return info != null ? info.version : null;
     }
 
     public static String normalizeVersionNumber(String ver) {
