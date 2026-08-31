@@ -34,6 +34,7 @@ public class ModrinthBrowserController {
     @FXML private ComboBox<String> versionFilterCombo;
     @FXML private CheckBox ignoreVersionCheckBox;
     @FXML private CheckBox ignoreCompatCheckBox;
+    @FXML private CheckBox allowPrereleaseCheckBox;
     @FXML private javafx.scene.layout.HBox compatFilterBox;
     @FXML private Label compatTitleLabel;
     @FXML private javafx.scene.layout.HBox compatCheckboxesContainer;
@@ -125,6 +126,14 @@ public class ModrinthBrowserController {
             compatFilterBox.setManaged(newVal);
             performSearch();
         });
+
+        if (allowPrereleaseCheckBox != null) {
+            allowPrereleaseCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
+                if (selectedResult != null) {
+                    showDetails(selectedResult);
+                }
+            });
+        }
 
         // Setup Infinite Scrolling on resultsScrollPane
         if (resultsScrollPane != null) {
@@ -230,6 +239,9 @@ public class ModrinthBrowserController {
         searchField.setPromptText(I18n.get("modrinth.search_prompt"));
         ignoreVersionCheckBox.setText(I18n.get("modrinth.ignore_version"));
         ignoreCompatCheckBox.setText(I18n.get("modrinth.ignore_compat"));
+        if (allowPrereleaseCheckBox != null) {
+            allowPrereleaseCheckBox.setText(I18n.get("modrinth.allow_prerelease"));
+        }
         if (compatTitleLabel != null) {
             compatTitleLabel.setText(I18n.get("modrinth.include_loaders"));
         }
@@ -494,13 +506,21 @@ public class ModrinthBrowserController {
 
         modrinthService.getProjectVersions(hit.getProjectId(), loaders, mcVersion)
                 .thenAccept(versions -> Platform.runLater(() -> {
-                    this.selectedProjectVersions = versions;
-                    if (versions.isEmpty()) {
+                    boolean allowPrerelease = allowPrereleaseCheckBox != null && allowPrereleaseCheckBox.isSelected();
+                    List<ModrinthVersion> filteredVersions = versions;
+                    if (!allowPrerelease) {
+                        filteredVersions = versions.stream()
+                                .filter(v -> "release".equalsIgnoreCase(v.getVersionType()))
+                                .toList();
+                    }
+
+                    this.selectedProjectVersions = filteredVersions;
+                    if (filteredVersions.isEmpty()) {
                         detailInstallBtn.setText(I18n.get("modrinth.no_versions", loaders, (mcVersion == null ? "Any" : mcVersion)));
                         return;
                     }
 
-                    for (ModrinthVersion version : versions) {
+                    for (ModrinthVersion version : filteredVersions) {
                         String displayStr = version.getVersionNumber() + " [" + version.getVersionType() + "]";
                         detailVersionCombo.getItems().add(displayStr);
                         versionMap.put(displayStr, version);

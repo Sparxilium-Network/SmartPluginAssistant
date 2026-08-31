@@ -31,8 +31,14 @@
                 <Label fx:id="authorLabel" style="-fx-text-fill: #8b8e96; -fx-font-size: 11px;"/>
             </VBox>
         </HBox>
-        <Label fx:id="descLabel" style="-fx-text-fill: #bcbec4; -fx-font-size: 12px;" wrapText="true"/>
         <Label fx:id="targetVersionLabel" style="-fx-text-fill: #2ecc71; -fx-font-weight: bold; -fx-font-size: 12px;"/>
+
+        <!-- Pre-release warning banner & confirmation checkbox (shown only when no release but beta/alpha exists) -->
+        <VBox fx:id="prereleaseWarningBox" spacing="6.0" style="-fx-background-color: #3e2723; -fx-padding: 8 10; -fx-background-radius: 4; -fx-border-color: #d35400; -fx-border-radius: 4;" visible="false" managed="false">
+            <Label fx:id="prereleaseWarningLabel" text="⚠️ 提示：無相容的正式版 (Release)，僅找到相容的測試版。如需安裝請主動勾選確認！" style="-fx-text-fill: #ffb74d; -fx-font-size: 11px; -fx-font-weight: bold;" wrapText="true"/>
+            <CheckBox fx:id="prereleaseConfirmCheckBox" text="確認下載並安裝此測試版本" style="-fx-text-fill: #ffffff; -fx-font-size: 11px;"/>
+        </VBox>
+
         <HBox alignment="CENTER_RIGHT" spacing="10.0">
             <Button fx:id="downloadBtn" text="下載並安裝至實例" onAction="#handleDownload" styleClass="btn-success"/>
         </HBox>

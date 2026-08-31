@@ -6,6 +6,7 @@ import com.sparxilium.smartpluginassistant.model.ServerInstance;
 import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;
 import com.sparxilium.smartpluginassistant.service.ModrinthService;
+import com.sparxilium.smartpluginassistant.service.PluginMetadataStore;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -28,6 +29,9 @@ public class AddByUrlDialogController {
     @FXML private Label authorLabel;
     @FXML private Label descLabel;
     @FXML private Label targetVersionLabel;
+    @FXML private VBox prereleaseWarningBox;
+    @FXML private Label prereleaseWarningLabel;
+    @FXML private CheckBox prereleaseConfirmCheckBox;
     @FXML private Button downloadBtn;
     @FXML private Button closeBtn;
     @FXML private ProgressIndicator progressIndicator;
@@ -39,12 +43,21 @@ public class AddByUrlDialogController {
 
     private ModrinthProject resolvedProject;
     private ModrinthVersion targetVersion;
+    private boolean isPrereleaseOnly = false;
 
     public void init(ServerInstance instance, ModrinthService modrinthService, InstanceManager instanceManager, Runnable onPluginInstalledCallback) {
         this.currentInstance = instance;
         this.modrinthService = modrinthService;
         this.instanceManager = instanceManager;
         this.onPluginInstalledCallback = onPluginInstalledCallback;
+
+        if (prereleaseConfirmCheckBox != null) {
+            prereleaseConfirmCheckBox.selectedProperty().addListener((obs, oldV, newV) -> {
+                if (isPrereleaseOnly) {
+                    downloadBtn.setDisable(!newV);
+                }
+            });
+        }
 
         applyI18n();
     }
@@ -68,6 +81,7 @@ public class AddByUrlDialogController {
 
         progressIndicator.setVisible(true);
         previewContainer.setVisible(false);
+        isPrereleaseOnly = false;
 
         modrinthService.getProject(slug)
                 .thenCompose(project -> {
@@ -85,7 +99,22 @@ public class AddByUrlDialogController {
                                 currentInstance.getMcVersion()));
                         return;
                     }
-                    this.targetVersion = versions.get(0);
+
+                    // Find first release version
+                    ModrinthVersion releaseVer = versions.stream()
+                            .filter(v -> "release".equalsIgnoreCase(v.getVersionType()))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (releaseVer != null) {
+                        this.targetVersion = releaseVer;
+                        this.isPrereleaseOnly = false;
+                    } else {
+                        // Only pre-release (beta/alpha) versions available
+                        this.targetVersion = versions.get(0);
+                        this.isPrereleaseOnly = true;
+                    }
+
                     showPreview();
                 }))
                 .exceptionally(ex -> {
@@ -105,7 +134,21 @@ public class AddByUrlDialogController {
 
         ModrinthVersion.ModrinthFile file = targetVersion.getPrimaryFile();
         String fileName = file != null ? file.getFilename() : "Unknown";
-        targetVersionLabel.setText(I18n.get("url.compat_version", targetVersion.getVersionNumber(), fileName));
+        String verType = targetVersion.getVersionType() != null ? targetVersion.getVersionType().toUpperCase() : "RELEASE";
+        targetVersionLabel.setText(I18n.get("url.compat_version", targetVersion.getVersionNumber() + " [" + verType + "]", fileName));
+
+        if (isPrereleaseOnly) {
+            prereleaseWarningBox.setVisible(true);
+            prereleaseWarningBox.setManaged(true);
+            prereleaseWarningLabel.setText(I18n.get("url.prerelease_only_warn", verType));
+            prereleaseConfirmCheckBox.setText(I18n.get("url.prerelease_confirm_check", targetVersion.getVersionNumber()));
+            prereleaseConfirmCheckBox.setSelected(false);
+            downloadBtn.setDisable(true);
+        } else {
+            prereleaseWarningBox.setVisible(false);
+            prereleaseWarningBox.setManaged(false);
+            downloadBtn.setDisable(false);
+        }
 
         if (resolvedProject.getIconUrl() != null && !resolvedProject.getIconUrl().isBlank()) {
             com.sparxilium.smartpluginassistant.service.ImageCacheService.loadImageAsync(
@@ -116,6 +159,9 @@ public class AddByUrlDialogController {
     @FXML
     private void handleDownload() {
         if (targetVersion == null || targetVersion.getPrimaryFile() == null) return;
+        if (isPrereleaseOnly && prereleaseConfirmCheckBox != null && !prereleaseConfirmCheckBox.isSelected()) {
+            return;
+        }
 
         downloadBtn.setDisable(true);
         downloadBtn.setText(I18n.get("modrinth.btn_installing"));
@@ -126,6 +172,19 @@ public class AddByUrlDialogController {
 
         modrinthService.downloadFile(primaryFile.getUrl(), dest, null)
                 .thenAccept(path -> Platform.runLater(() -> {
+                    // Record metadata for future update checks
+                    try {
+                        String sha1 = primaryFile.getHashes() != null ? primaryFile.getHashes().get("sha1") : null;
+                        PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
+                                resolvedProject.getId(),
+                                targetVersion.getId(),
+                                targetVersion.getVersionNumber(),
+                                primaryFile.getFilename(),
+                                sha1
+                        );
+                        PluginMetadataStore.saveRecord(instanceManager, currentInstance, record);
+                    } catch (Exception ignored) {}
+
                     downloadBtn.setText(I18n.get("url.download_complete"));
                     downloadBtn.setStyle("-fx-background-color: #2ecc71;");
                     if (onPluginInstalledCallback != null) {

@@ -23,6 +23,7 @@
             <ComboBox fx:id="versionFilterCombo" prefWidth="120"/>
             <CheckBox fx:id="ignoreVersionCheckBox" text="無視版本檢查" style="-fx-text-fill: #dfe1e5; -fx-font-weight: bold;"/>
             <CheckBox fx:id="ignoreCompatCheckBox" text="無視相容性" style="-fx-text-fill: #dfe1e5; -fx-font-weight: bold;"/>
+            <CheckBox fx:id="allowPrereleaseCheckBox" text="允許測試版 (Alpha/Beta)" style="-fx-text-fill: #e67e22; -fx-font-weight: bold;"/>
             <Button fx:id="searchBtn" text="搜尋" onAction="#handleSearch" styleClass="btn-primary"/>
         </HBox>
 
