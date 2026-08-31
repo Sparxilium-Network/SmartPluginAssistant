@@ -861,8 +861,8 @@ public class MainController {
             controller.init(currentSelectedInstance, modrinthService, instanceManager, this::refreshPlugins);
 
             java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
-            double w = prefs.getDouble("add_by_url_dialog_w", 560);
-            double h = prefs.getDouble("add_by_url_dialog_h", 420);
+            double w = prefs.getDouble("add_by_url_dialog_w", 620);
+            double h = prefs.getDouble("add_by_url_dialog_h", 480);
 
             Stage stage = new Stage();
             stage.setTitle(I18n.get("url.window_title", currentSelectedInstance.getName()));
@@ -870,8 +870,8 @@ public class MainController {
             Scene scene = new Scene(root, w, h);
             scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
             stage.setScene(scene);
-            stage.setMinWidth(480);
-            stage.setMinHeight(320);
+            stage.setMinWidth(540);
+            stage.setMinHeight(380);
 
             stage.setOnCloseRequest(e -> {
                 if (!stage.isMaximized()) {
