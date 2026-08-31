@@ -307,18 +307,41 @@ public class ModrinthService {
                 });
     }
 
-    public static String extractSlugOrId(String input) {
+    public static class ResolvedUrlInfo {
+        public String projectSlug;
+        public String specificVersionId; // null if not pointing to a specific version
+
+        public ResolvedUrlInfo(String projectSlug, String specificVersionId) {
+            this.projectSlug = projectSlug;
+            this.specificVersionId = specificVersionId;
+        }
+    }
+
+    public static ResolvedUrlInfo parseUrlInfo(String input) {
         if (input == null || input.isBlank()) return null;
         String trimmed = input.trim();
         if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
             String[] parts = trimmed.split("/");
-            for (int i = 0; i < parts.length - 1; i++) {
-                if (parts[i].equals("plugin") || parts[i].equals("mod") || parts[i].equals("project")) {
-                    return parts[i + 1].split("\\?")[0].split("#")[0];
+            String slug = null;
+            String verId = null;
+            for (int i = 0; i < parts.length; i++) {
+                if ((parts[i].equals("plugin") || parts[i].equals("mod") || parts[i].equals("project")) && i + 1 < parts.length) {
+                    slug = parts[i + 1].split("\\?")[0].split("#")[0];
+                }
+                if (parts[i].equals("version") && i + 1 < parts.length) {
+                    verId = parts[i + 1].split("\\?")[0].split("#")[0];
                 }
             }
-            return parts[parts.length - 1].split("\\?")[0].split("#")[0];
+            if (slug == null && parts.length > 0) {
+                slug = parts[parts.length - 1].split("\\?")[0].split("#")[0];
+            }
+            return new ResolvedUrlInfo(slug, verId);
         }
-        return trimmed;
+        return new ResolvedUrlInfo(trimmed, null);
+    }
+
+    public static String extractSlugOrId(String input) {
+        ResolvedUrlInfo info = parseUrlInfo(input);
+        return info != null ? info.projectSlug : null;
     }
 }

@@ -58,8 +58,8 @@ public class ImageCacheService {
         CompletableFuture.runAsync(() -> {
             try {
                 byte[] imageBytes = null;
-                boolean isLocalFile = url.startsWith("file:") || url.contains(":\\") || url.contains(":/") || url.startsWith("/");
-                if (isLocalFile) {
+                boolean isRemoteHttp = url.startsWith("http://") || url.startsWith("https://");
+                if (!isRemoteHttp) {
                     // Local file handling
                     try {
                         Path localPath;

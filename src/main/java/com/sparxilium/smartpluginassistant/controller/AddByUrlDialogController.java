@@ -16,7 +16,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class AddByUrlDialogController {
     @FXML private Label titleLabel;
@@ -44,6 +46,7 @@ public class AddByUrlDialogController {
     private ModrinthProject resolvedProject;
     private ModrinthVersion targetVersion;
     private boolean isPrereleaseOnly = false;
+    private boolean isIncompatibleVersion = false;
 
     public void init(ServerInstance instance, ModrinthService modrinthService, InstanceManager instanceManager, Runnable onPluginInstalledCallback) {
         this.currentInstance = instance;
@@ -53,7 +56,7 @@ public class AddByUrlDialogController {
 
         if (prereleaseConfirmCheckBox != null) {
             prereleaseConfirmCheckBox.selectedProperty().addListener((obs, oldV, newV) -> {
-                if (isPrereleaseOnly) {
+                if (isPrereleaseOnly || isIncompatibleVersion) {
                     downloadBtn.setDisable(!newV);
                 }
             });
@@ -73,8 +76,8 @@ public class AddByUrlDialogController {
     @FXML
     private void handleResolve() {
         String input = urlField.getText().trim();
-        String slug = ModrinthService.extractSlugOrId(input);
-        if (slug == null || slug.isEmpty()) {
+        ModrinthService.ResolvedUrlInfo urlInfo = ModrinthService.parseUrlInfo(input);
+        if (urlInfo == null || urlInfo.projectSlug == null || urlInfo.projectSlug.isEmpty()) {
             showAlert(Alert.AlertType.WARNING, I18n.get("url.err_invalid_url"));
             return;
         }
@@ -82,37 +85,66 @@ public class AddByUrlDialogController {
         progressIndicator.setVisible(true);
         previewContainer.setVisible(false);
         isPrereleaseOnly = false;
+        isIncompatibleVersion = false;
 
-        modrinthService.getProject(slug)
+        modrinthService.getProject(urlInfo.projectSlug)
                 .thenCompose(project -> {
                     this.resolvedProject = project;
-                    List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : java.util.Collections.emptyList();
-                    String mcVersion = currentInstance != null ? currentInstance.getMcVersion() : null;
-                    return modrinthService.getProjectVersions(project.getId(), loaders, mcVersion);
+                    if (urlInfo.specificVersionId != null && !urlInfo.specificVersionId.isBlank()) {
+                        // User specifically pasted a direct version URL (e.g. /version/4.11-7a2d09a)
+                        return modrinthService.getVersion(urlInfo.specificVersionId)
+                                .thenApply(List::of)
+                                .exceptionally(ex -> Collections.emptyList());
+                    } else {
+                        // Query project versions
+                        List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
+                        String mcVersion = currentInstance != null ? currentInstance.getMcVersion() : null;
+                        return modrinthService.getProjectVersions(project.getId(), loaders, mcVersion)
+                                .thenCompose(compatVersions -> {
+                                    if (!compatVersions.isEmpty()) {
+                                        return CompletableFuture.completedFuture(compatVersions);
+                                    }
+                                    // If no strictly compatible versions found, fetch ANY project versions as fallback!
+                                    return modrinthService.getProjectVersions(project.getId(), Collections.emptyList(), null);
+                                });
+                    }
                 })
                 .thenAccept(versions -> Platform.runLater(() -> {
                     progressIndicator.setVisible(false);
                     if (versions.isEmpty()) {
-                        showAlert(Alert.AlertType.WARNING, I18n.get("url.no_compat_version",
-                                resolvedProject.getTitle(),
-                                (currentInstance != null ? currentInstance.getEffectiveLoaders() : ""),
-                                currentInstance.getMcVersion()));
+                        showAlert(Alert.AlertType.WARNING, I18n.get("url.no_compat_version"));
                         return;
                     }
 
-                    // Find first release version
-                    ModrinthVersion releaseVer = versions.stream()
-                            .filter(v -> "release".equalsIgnoreCase(v.getVersionType()))
-                            .findFirst()
-                            .orElse(null);
+                    List<String> currentLoaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
+                    String currentMc = currentInstance != null ? currentInstance.getMcVersion() : null;
 
-                    if (releaseVer != null) {
-                        this.targetVersion = releaseVer;
-                        this.isPrereleaseOnly = false;
+                    // If user pointed to a specific version or fallback was used, check compatibility
+                    ModrinthVersion candidate = versions.get(0);
+
+                    // Check if current version matches instance loaders and game version
+                    boolean matchesLoader = currentLoaders.isEmpty() || candidate.getLoaders() == null ||
+                            candidate.getLoaders().stream().anyMatch(l -> currentLoaders.stream().anyMatch(cl -> cl.equalsIgnoreCase(l)));
+                    boolean matchesGameVer = currentMc == null || candidate.getGameVersions() == null ||
+                            candidate.getGameVersions().contains(currentMc);
+
+                    boolean isRelease = "release".equalsIgnoreCase(candidate.getVersionType());
+
+                    if (matchesLoader && matchesGameVer) {
+                        if (isRelease) {
+                            this.targetVersion = candidate;
+                            this.isPrereleaseOnly = false;
+                            this.isIncompatibleVersion = false;
+                        } else {
+                            this.targetVersion = candidate;
+                            this.isPrereleaseOnly = true;
+                            this.isIncompatibleVersion = false;
+                        }
                     } else {
-                        // Only pre-release (beta/alpha) versions available
-                        this.targetVersion = versions.get(0);
-                        this.isPrereleaseOnly = true;
+                        // Incompatible version (e.g. huskHomes on different MC/loader or specific version pasted)
+                        this.targetVersion = candidate;
+                        this.isIncompatibleVersion = true;
+                        this.isPrereleaseOnly = false;
                     }
 
                     showPreview();
@@ -137,7 +169,19 @@ public class AddByUrlDialogController {
         String verType = targetVersion.getVersionType() != null ? targetVersion.getVersionType().toUpperCase() : "RELEASE";
         targetVersionLabel.setText(I18n.get("url.compat_version", targetVersion.getVersionNumber() + " [" + verType + "]", fileName));
 
-        if (isPrereleaseOnly) {
+        if (isIncompatibleVersion) {
+            String verLoaders = targetVersion.getLoaders() != null ? String.join(", ", targetVersion.getLoaders()) : "-";
+            String verGameVers = targetVersion.getGameVersions() != null ? String.join(", ", targetVersion.getGameVersions()) : "-";
+            String instLoader = currentInstance != null ? currentInstance.getLoader() : "-";
+            String instMc = currentInstance != null ? currentInstance.getMcVersion() : "-";
+
+            prereleaseWarningBox.setVisible(true);
+            prereleaseWarningBox.setManaged(true);
+            prereleaseWarningLabel.setText(I18n.get("url.incompat_version_warn", verGameVers, verLoaders, instLoader, instMc));
+            prereleaseConfirmCheckBox.setText(I18n.get("url.incompat_confirm_check", targetVersion.getVersionNumber()));
+            prereleaseConfirmCheckBox.setSelected(false);
+            downloadBtn.setDisable(true);
+        } else if (isPrereleaseOnly) {
             prereleaseWarningBox.setVisible(true);
             prereleaseWarningBox.setManaged(true);
             prereleaseWarningLabel.setText(I18n.get("url.prerelease_only_warn", verType));
@@ -159,7 +203,7 @@ public class AddByUrlDialogController {
     @FXML
     private void handleDownload() {
         if (targetVersion == null || targetVersion.getPrimaryFile() == null) return;
-        if (isPrereleaseOnly && prereleaseConfirmCheckBox != null && !prereleaseConfirmCheckBox.isSelected()) {
+        if ((isPrereleaseOnly || isIncompatibleVersion) && prereleaseConfirmCheckBox != null && !prereleaseConfirmCheckBox.isSelected()) {
             return;
         }
 
