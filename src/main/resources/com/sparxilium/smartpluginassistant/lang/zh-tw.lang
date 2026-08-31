@@ -185,3 +185,23 @@ import.modrinth_matched_name=🔍 名稱匹配: {0}
 import.modrinth_unlinked=未連結 (本機插件)
 import.no_jars_found=所選目錄中未找到任何 .jar 插件檔案！
 import.no_selection=請先勾選至少一個要匯入的插件檔案！
+
+table.platform_hangar=Hangar
+app.browse_hangar=🏪 瀏覽 Hangar 插件
+
+hangar.title=Hangar 插件中心 (PaperMC)
+hangar.window_title=瀏覽 Hangar 插件 - {0}
+hangar.ready=準備就緒
+hangar.btn_search=搜尋
+hangar.btn_select_version=選擇此版本
+hangar.btn_review_download=確認並下載 ({0})
+hangar.cart_selected=已選取 {0} 個插件
+hangar.searching=搜尋中...
+hangar.found_results=找到 {0} 個插件
+hangar.no_results=沒有找到符合條件的插件
+hangar.search_failed=搜尋失敗: {0}
+hangar.no_versions=找不到適用的版本
+hangar.fetching_versions=取得版本中...
+hangar.downloading=下載中...
+hangar.download_complete=下載完成！成功下載 {0} 個插件。
+hangar.download_failed_count={0} 個下載失敗。

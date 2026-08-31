@@ -193,6 +193,15 @@
     -fx-font-size: 11px;
 }
 
+.badge-hangar {
+    -fx-background-color: #2f4476;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 2 8;
+    -fx-background-radius: 10;
+    -fx-font-size: 11px;
+}
+
 .text-input {
     -fx-background-color: #2b2d30;
     -fx-text-fill: #dfe1e5;

@@ -41,6 +41,14 @@ public class PluginMetadataStore {
         @JsonProperty("downloadedAt")
         public LocalDateTime downloadedAt;
 
+        /** "modrinth", "hangar", or "local" */
+        @JsonProperty("hostingPlatform")
+        public String hostingPlatform;
+
+        /** For Hangar plugins: "author/slug" e.g. "William278/HuskHomes" */
+        @JsonProperty("hangarNamespace")
+        public String hangarNamespace;
+
         public DownloadRecord() {}
 
         public DownloadRecord(String projectId, String versionId, String versionNumber, String fileName, String sha1) {

@@ -184,3 +184,23 @@ import.modrinth_matched_name=🔍 Name matched: {0}
 import.modrinth_unlinked=Unlinked (Local Plugin)
 import.no_jars_found=No .jar plugin files found in the selected folder!
 import.no_selection=Please select at least one plugin file to import!
+
+table.platform_hangar=Hangar
+app.browse_hangar=🏪 Browse Hangar
+
+hangar.title=Hangar Plugin Hub (PaperMC)
+hangar.window_title=Browse Hangar Plugins - {0}
+hangar.ready=Ready
+hangar.btn_search=Search
+hangar.btn_select_version=Select Version
+hangar.btn_review_download=Review & Download ({0})
+hangar.cart_selected={0} plugins selected
+hangar.searching=Searching...
+hangar.found_results=Found {0} plugins
+hangar.no_results=No plugins matched your criteria
+hangar.search_failed=Search failed: {0}
+hangar.no_versions=No compatible versions found
+hangar.fetching_versions=Fetching versions...
+hangar.downloading=Downloading...
+hangar.download_complete=Download complete! Successfully downloaded {0} plugins.
+hangar.download_failed_count={0} downloads failed.

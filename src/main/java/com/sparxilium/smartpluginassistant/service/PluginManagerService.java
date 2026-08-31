@@ -1,5 +1,6 @@
 package com.sparxilium.smartpluginassistant.service;
 
+import com.sparxilium.smartpluginassistant.model.HangarVersion;
 import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
 import com.sparxilium.smartpluginassistant.model.ModrinthVersion;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
@@ -16,12 +17,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class PluginManagerService {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PluginManagerService.class);
     private final InstanceManager instanceManager;
     private final ModrinthService modrinthService;
+    private final HangarService hangarService;
 
     public PluginManagerService(InstanceManager instanceManager, ModrinthService modrinthService) {
         this.instanceManager = instanceManager;
         this.modrinthService = modrinthService;
+        this.hangarService = new HangarService();
     }
 
     public List<InstalledPlugin> scanPlugins(ServerInstance instance) {
@@ -56,6 +60,8 @@ public class PluginManagerService {
                     }
                     plugin.setProjectId(record.projectId);
                     plugin.setVersionId(record.versionId);
+                    if (record.hostingPlatform != null) plugin.setHostingPlatform(record.hostingPlatform);
+                    if (record.hangarNamespace != null) plugin.setHangarNamespace(record.hangarNamespace);
                 }
 
                 // 2. Read exact version from inside jar (plugin.yml, paper-plugin.yml, bungeecord.yml, velocity-plugin.json) if not recorded
@@ -166,6 +172,92 @@ public class PluginManagerService {
                 });
     }
 
+    /**
+     * Check updates for Hangar plugins.
+     * Hangar does not support hash-based lookup, so we use the stored hangarNamespace
+     * to query the latest version from Hangar API and compare version numbers.
+     */
+    public CompletableFuture<List<InstalledPlugin>> checkHangarPluginUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
+        String platform = HangarService.toPlatformKey(instance.getLoader());
+        String mcVersion = instance.getMcVersion();
+
+        // Only process plugins with a known Hangar namespace
+        List<InstalledPlugin> hangarPlugins = plugins.stream()
+                .filter(p -> p.getHangarNamespace() != null && !p.getHangarNamespace().isBlank())
+                .collect(Collectors.toList());
+
+        if (hangarPlugins.isEmpty()) {
+            logger.info("checkHangarPluginUpdates: no Hangar plugins to check");
+            return CompletableFuture.completedFuture(plugins);
+        }
+
+        logger.info("checkHangarPluginUpdates: checking {} Hangar plugins on platform={}, mc={}", hangarPlugins.size(), platform, mcVersion);
+
+        // Fire one request per Hangar plugin (Hangar has no batch update endpoint)
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        for (InstalledPlugin plugin : hangarPlugins) {
+            String[] parts = plugin.getHangarNamespace().split("/", 2);
+            if (parts.length < 2) continue;
+            String author = parts[0];
+            String slug = parts[1];
+
+            CompletableFuture<Void> f = hangarService.getVersions(author, slug, platform, null, 0, 5)
+                    .thenAccept(page -> {
+                        if (page.versions().isEmpty()) {
+                            logger.info("checkHangarPluginUpdates: no versions found for {}", plugin.getHangarNamespace());
+                            return;
+                        }
+                        // Find the newest stable version (unless allowPrereleases is on)
+                        HangarVersion latest = null;
+                        for (HangarVersion v : page.versions()) {
+                            if (!instance.isAllowPrereleases() && v.isUnstable()) continue;
+                            latest = v;
+                            break;
+                        }
+                        if (latest == null) latest = page.versions().get(0);
+
+                        String latestVerNum = latest.getVersionNumber();
+                        String currentVerNum = plugin.getCurrentVersionNumber();
+                        boolean isNewer = isNewerVersion(currentVerNum, latestVerNum);
+                        logger.info("checkHangarPluginUpdates: {} current={} latest={} isNewer={}", plugin.getHangarNamespace(), currentVerNum, latestVerNum, isNewer);
+
+                        if (isNewer) {
+                            plugin.setUpdateAvailable(true);
+                            plugin.setLatestVersionNumber(latestVerNum);
+                            plugin.setLatestVersionType(latest.getVersionType());
+
+                            // Get download URL
+                            HangarVersion.PlatformDownload pd = latest.getPaperDownload();
+                            if (pd != null && pd.downloadUrl != null) {
+                                plugin.setLatestDownloadUrl(pd.downloadUrl);
+                                if (pd.fileInfo != null) plugin.setLatestFileName(pd.fileInfo.name);
+                            }
+
+                            // Supported game versions
+                            List<String> gameVers = latest.getPaperVersions();
+                            if (!gameVers.isEmpty()) {
+                                if (gameVers.size() > 2) {
+                                    plugin.setSupportedGameVersions(gameVers.get(0) + " ~ " + gameVers.get(gameVers.size() - 1));
+                                } else {
+                                    plugin.setSupportedGameVersions(String.join(", ", gameVers));
+                                }
+                            }
+                        } else {
+                            plugin.setUpdateAvailable(false);
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        logger.warn("checkHangarPluginUpdates: error checking {}: {}", plugin.getHangarNamespace(), ex.getMessage());
+                        return null;
+                    });
+            futures.add(f);
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> plugins);
+    }
+
     public CompletableFuture<Void> updatePlugin(ServerInstance instance, InstalledPlugin plugin) {
         if (!plugin.isUpdateAvailable() || plugin.getLatestDownloadUrl() == null) {
             return CompletableFuture.completedFuture(null);
@@ -191,14 +283,16 @@ public class PluginManagerService {
                     }
                     // Calculate new sha1 and save record to metadata store
                     String newSha1 = calculateSha1(newFilePath.toFile());
-                    PluginMetadataStore.saveRecord(instanceManager, instance,
-                            new PluginMetadataStore.DownloadRecord(
-                                    plugin.getProjectId(),
-                                    plugin.getLatestVersionId(),
-                                    plugin.getLatestVersionNumber(),
-                                    newName,
-                                    newSha1
-                            ));
+                    PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
+                            plugin.getProjectId(),
+                            plugin.getLatestVersionId(),
+                            plugin.getLatestVersionNumber(),
+                            newName,
+                            newSha1
+                    );
+                    record.hostingPlatform = plugin.getHostingPlatform();
+                    record.hangarNamespace = plugin.getHangarNamespace();
+                    PluginMetadataStore.saveRecord(instanceManager, instance, record);
                 });
     }
 

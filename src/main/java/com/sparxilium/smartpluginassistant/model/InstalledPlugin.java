@@ -26,6 +26,11 @@ public class InstalledPlugin {
     private String latestFileName;
     private String supportedGameVersions = "-";
 
+    // Hosting platform tracking ("modrinth" / "hangar" / "local")
+    private String hostingPlatform;
+    // For Hangar plugins: "author/slug" e.g. "William278/HuskHomes"
+    private String hangarNamespace;
+
     public InstalledPlugin() {
         this.enabled = true;
     }
@@ -215,5 +220,21 @@ public class InstalledPlugin {
         if (fileSizeBytes < 1024) return fileSizeBytes + " B";
         if (fileSizeBytes < 1024 * 1024) return String.format("%.1f KB", fileSizeBytes / 1024.0);
         return String.format("%.2f MB", fileSizeBytes / (1024.0 * 1024.0));
+    }
+
+    public String getHostingPlatform() {
+        return hostingPlatform;
+    }
+
+    public void setHostingPlatform(String hostingPlatform) {
+        this.hostingPlatform = hostingPlatform;
+    }
+
+    public String getHangarNamespace() {
+        return hangarNamespace;
+    }
+
+    public void setHangarNamespace(String hangarNamespace) {
+        this.hangarNamespace = hangarNamespace;
     }
 }

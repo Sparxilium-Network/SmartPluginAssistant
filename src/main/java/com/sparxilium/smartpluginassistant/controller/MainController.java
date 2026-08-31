@@ -2,6 +2,7 @@ package com.sparxilium.smartpluginassistant.controller;
 
 import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
+import com.sparxilium.smartpluginassistant.service.HangarService;
 import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;
 import com.sparxilium.smartpluginassistant.service.ModrinthService;
@@ -32,6 +33,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class MainController {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(MainController.class);
+
     // Root & Top Bar
     @FXML private BorderPane rootPane;
     @FXML private Label appTitleLabel;
@@ -53,6 +56,7 @@ public class MainController {
 
     // Toolbar
     @FXML private Button browseModrinthBtn;
+    @FXML private Button browseHangarBtn;
     @FXML private Button addByUrlBtn;
     @FXML private Button importPluginsBtn;
     @FXML private Button checkUpdatesBtn;
@@ -78,6 +82,7 @@ public class MainController {
 
     private final InstanceManager instanceManager = new InstanceManager();
     private final ModrinthService modrinthService = new ModrinthService();
+    private final HangarService hangarService = new HangarService();
     private final PluginManagerService pluginManagerService = new PluginManagerService(instanceManager, modrinthService);
 
     private ServerInstance currentSelectedInstance;
@@ -188,6 +193,7 @@ public class MainController {
             exportZipBtn.setText("📦 ZIP");
             deleteInstanceBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
             browseModrinthBtn.setText("🔍 " + (isEn ? "Modrinth" : "Modrinth 插件"));
+            if (browseHangarBtn != null) browseHangarBtn.setText("🏪 " + (isEn ? "Hangar" : "Hangar 插件"));
             addByUrlBtn.setText("🔗 " + (isEn ? "URL" : "網址新增"));
             if (importPluginsBtn != null) importPluginsBtn.setText("📂 " + (isEn ? "Import" : "匯入"));
             checkUpdatesBtn.setText("🔄 " + (isEn ? "Check" : "檢查更新"));
@@ -205,6 +211,7 @@ public class MainController {
             exportZipBtn.setText(I18n.get("app.export_zip"));
             deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
             browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
+            if (browseHangarBtn != null) browseHangarBtn.setText(I18n.get("app.browse_hangar"));
             addByUrlBtn.setText(I18n.get("app.add_by_url"));
             if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
             checkUpdatesBtn.setText(I18n.get("app.check_updates"));
@@ -231,6 +238,7 @@ public class MainController {
         deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
 
         browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
+        if (browseHangarBtn != null) browseHangarBtn.setText(I18n.get("app.browse_hangar"));
         addByUrlBtn.setText(I18n.get("app.add_by_url"));
         if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
         checkUpdatesBtn.setText(I18n.get("app.check_updates"));
@@ -387,11 +395,11 @@ public class MainController {
             }
         });
 
-        // Platform column (Modrinth / Local)
+        // Platform column (Modrinth / Hangar / Local)
         colPlatform.setCellValueFactory(cellData -> {
             InstalledPlugin p = cellData.getValue();
-            boolean isModrinth = p.getProjectId() != null && !p.getProjectId().isBlank();
-            return new javafx.beans.property.SimpleStringProperty(isModrinth ? "Modrinth" : "Local");
+            String platform = resolvePlatform(p);
+            return new javafx.beans.property.SimpleStringProperty(platform);
         });
         colPlatform.setCellFactory(column -> new TableCell<>() {
             @Override
@@ -402,11 +410,14 @@ public class MainController {
                     setText(null);
                 } else {
                     InstalledPlugin plugin = getTableRow().getItem();
-                    boolean isModrinth = plugin.getProjectId() != null && !plugin.getProjectId().isBlank();
+                    String platform = resolvePlatform(plugin);
                     Label platformBadge = new Label();
-                    if (isModrinth) {
+                    if ("modrinth".equals(platform)) {
                         platformBadge.setText(I18n.get("table.platform_modrinth"));
                         platformBadge.setStyle("-fx-background-color: #1bd96a; -fx-text-fill: #000000; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 2 8; -fx-background-radius: 10;");
+                    } else if ("hangar".equals(platform)) {
+                        platformBadge.setText(I18n.get("table.platform_hangar"));
+                        platformBadge.getStyleClass().add("badge-hangar");
                     } else {
                         platformBadge.setText(I18n.get("table.platform_local"));
                         platformBadge.setStyle("-fx-background-color: #4e5157; -fx-text-fill: #bcbec4; -fx-font-size: 11px; -fx-padding: 2 8; -fx-background-radius: 10;");
@@ -828,6 +839,17 @@ public class MainController {
         statusLabel.setText(I18n.get("app.plugin_count", plugins.size()));
     }
 
+    /** Resolve the hosting platform string for a plugin ("modrinth", "hangar", "local") */
+    private String resolvePlatform(InstalledPlugin p) {
+        if (p.getHostingPlatform() != null && !p.getHostingPlatform().isBlank()) {
+            return p.getHostingPlatform().toLowerCase();
+        }
+        // Legacy: if no explicit hostingPlatform, infer from projectId (Modrinth) or hangarNamespace
+        if (p.getHangarNamespace() != null && !p.getHangarNamespace().isBlank()) return "hangar";
+        if (p.getProjectId() != null && !p.getProjectId().isBlank()) return "modrinth";
+        return "local";
+    }
+
     @FXML
     private void handleCheckUpdates() {
         if (currentSelectedInstance == null || installedPluginsList.isEmpty()) {
@@ -838,7 +860,11 @@ public class MainController {
         globalProgress.setVisible(true);
         statusLabel.setText(I18n.get("app.checking_updates"));
 
-        pluginManagerService.checkPluginUpdates(currentSelectedInstance, installedPluginsList)
+        List<InstalledPlugin> pluginsCopy = new java.util.ArrayList<>(installedPluginsList);
+
+        // First check Modrinth plugins, then chain Hangar plugins
+        pluginManagerService.checkPluginUpdates(currentSelectedInstance, pluginsCopy)
+                .thenCompose(updatedList -> pluginManagerService.checkHangarPluginUpdates(currentSelectedInstance, updatedList))
                 .thenAccept(updatedList -> Platform.runLater(() -> {
                     globalProgress.setVisible(false);
                     updateFilterComboOptions();
