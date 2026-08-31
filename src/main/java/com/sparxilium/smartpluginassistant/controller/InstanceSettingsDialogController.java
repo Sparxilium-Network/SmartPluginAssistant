@@ -22,6 +22,8 @@ public class InstanceSettingsDialogController {
     @FXML private Label compatSectionLabel;
     @FXML private VBox checkBoxesContainer;
     @FXML private Label warningLabel;
+    @FXML private CheckBox allowPrereleaseCheckBox;
+    @FXML private Label allowPrereleaseHintLabel;
     @FXML private Button cancelBtn;
     @FXML private Button saveBtn;
 
@@ -38,6 +40,8 @@ public class InstanceSettingsDialogController {
 
         loaderComboBox.getItems().addAll("folia", "purpur", "paper", "spigot", "velocity", "bungeecord", "fabric", "sponge");
         loaderComboBox.setValue(instance.getLoader());
+
+        allowPrereleaseCheckBox.setSelected(instance.isAllowPrereleases());
 
         new com.sparxilium.smartpluginassistant.service.ModrinthService().fetchGameVersions()
                 .thenAccept(versions -> javafx.application.Platform.runLater(() -> {
@@ -56,6 +60,8 @@ public class InstanceSettingsDialogController {
         versionLabel.setText(I18n.get("settings.version"));
         compatSectionLabel.setText(I18n.get("settings.compat_section"));
         warningLabel.setText(I18n.get("settings.warning"));
+        allowPrereleaseCheckBox.setText(I18n.get("settings.allow_prerelease"));
+        allowPrereleaseHintLabel.setText(I18n.get("settings.allow_prerelease_hint"));
         cancelBtn.setText(I18n.get("settings.btn_cancel"));
         saveBtn.setText(I18n.get("settings.btn_save"));
     }
@@ -103,6 +109,7 @@ public class InstanceSettingsDialogController {
         if (instance != null) {
             instance.setLoader(loaderComboBox.getValue());
             instance.setMcVersion(versionComboBox.getValue());
+            instance.setAllowPrereleases(allowPrereleaseCheckBox.isSelected());
 
             List<String> selectedLoaders = new ArrayList<>();
             for (Map.Entry<String, CheckBox> entry : loaderCheckBoxMap.entrySet()) {

@@ -115,6 +115,7 @@ public class PluginManagerService {
                                 plugin.setUpdateAvailable(true);
                                 plugin.setLatestVersionId(version.getId());
                                 plugin.setLatestVersionNumber(latestVerNum);
+                                plugin.setLatestVersionType(version.getVersionType());
                                 plugin.setProjectId(version.getProjectId());
 
                                 if (version.getGameVersions() != null && !version.getGameVersions().isEmpty()) {

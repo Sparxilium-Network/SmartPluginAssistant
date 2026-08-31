@@ -21,6 +21,7 @@ public class InstalledPlugin {
     private boolean updateAvailable;
     private String latestVersionNumber;
     private String latestVersionId;
+    private String latestVersionType; // release, beta, alpha
     private String latestDownloadUrl;
     private String latestFileName;
     private String supportedGameVersions = "-";
@@ -175,6 +176,14 @@ public class InstalledPlugin {
 
     public void setLatestVersionId(String latestVersionId) {
         this.latestVersionId = latestVersionId;
+    }
+
+    public String getLatestVersionType() {
+        return latestVersionType;
+    }
+
+    public void setLatestVersionType(String latestVersionType) {
+        this.latestVersionType = latestVersionType;
     }
 
     public String getLatestDownloadUrl() {

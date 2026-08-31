@@ -17,14 +17,17 @@
 
 ## 🏗️ 2. 核心架構與設計模式
 
-### 2.1 實例管理與目錄結構 (`InstanceManager`)
+### 2.1 實例管理、目錄結構與設定 (`InstanceManager` & `InstanceSettingsDialogController`)
 * **資料儲存路徑**：
   * Windows / Linux / macOS：`~/.smartpluginassistant/`
 * **實例配置儲存**：
   * 每個實例獨立存放在 `~/.smartpluginassistant/instances/<instance_id>/`
-  * 實例配置檔案為 `instance.json`
-  * 實例自訂圖示為 `icon.png`（由 `ImageCacheService` 支援免重啟即時驅逐快取）
-  * 插件儲存於 `plugins/` 目錄（或使用者自訂的外部插件目錄）
+  * 實例配置檔案為 `instance.json`，包含核心架構 (`loader`)、MC 版本 (`mcVersion`)、向下相容核心清單 (`extraCompatibleLoaders`) 以及 **允許測試版本檢查 (`allowPrereleases`)**。
+  * 實例自訂圖示為 `icon.png`（由 `ImageCacheService` 支援免重啟即時驅逐快取）。
+  * 插件儲存於 `plugins/` 目錄（或使用者自訂的外部插件目錄）。
+* **測試版 (Alpha/Beta) 檢查與警告標記**：
+  * 若在實例設定中勾選「允許測試版本 (Alpha / Beta) 檢查與更新」，檢查更新時會納入 Alpha 與 Beta 發布版本。
+  * 主畫面版本狀態若檢測到新版為測試版，會顯示專屬警示徽章：`⚠️ 測試版: <版本號> (beta/alpha)`，讓使用者明確知曉版本穩定度。
 
 ### 2.2 插件元數據與下載歷史記錄 (`PluginMetadataStore`)
 * 存放於各實例 `plugins/.plugin_metadata.json`。

@@ -480,8 +480,16 @@ public class MainController {
                     InstalledPlugin plugin = getTableRow().getItem();
                     setAlignment(javafx.geometry.Pos.CENTER);
                     if (plugin.isUpdateAvailable()) {
-                        Label updateBadge = new Label(I18n.get("table.has_update", plugin.getLatestVersionNumber()));
-                        updateBadge.getStyleClass().add("badge-update");
+                        String verType = plugin.getLatestVersionType();
+                        boolean isPrerelease = verType != null && (verType.equalsIgnoreCase("beta") || verType.equalsIgnoreCase("alpha"));
+                        Label updateBadge = new Label();
+                        if (isPrerelease) {
+                            updateBadge.setText(I18n.get("table.has_update_prerelease", plugin.getLatestVersionNumber(), verType));
+                            updateBadge.getStyleClass().add("badge-update-prerelease");
+                        } else {
+                            updateBadge.setText(I18n.get("table.has_update", plugin.getLatestVersionNumber()));
+                            updateBadge.getStyleClass().add("badge-update");
+                        }
                         setGraphic(updateBadge);
                     } else {
                         Label currentBadge = new Label(I18n.get("table.latest_version"));

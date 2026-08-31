@@ -16,6 +16,7 @@ public class ServerInstance {
     private String customDirectory; // optional custom path, else default instances/<id>
     private String icon; // icon name or color
     private java.util.List<String> extraCompatibleLoaders = new java.util.ArrayList<>();
+    private boolean allowPrereleases = false; // allow beta and alpha updates
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
 
@@ -25,6 +26,7 @@ public class ServerInstance {
         this.loader = "paper";
         this.mcVersion = "1.21.1";
         this.extraCompatibleLoaders = new java.util.ArrayList<>();
+        this.allowPrereleases = false;
     }
 
     public java.util.List<String> getExtraCompatibleLoaders() {
@@ -155,6 +157,14 @@ public class ServerInstance {
 
     public void setIcon(String icon) {
         this.icon = icon;
+    }
+
+    public boolean isAllowPrereleases() {
+        return allowPrereleases;
+    }
+
+    public void setAllowPrereleases(boolean allowPrereleases) {
+        this.allowPrereleases = allowPrereleases;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -184,6 +184,15 @@
     -fx-font-size: 11px;
 }
 
+.badge-update-prerelease {
+    -fx-background-color: #d35400;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 2 6;
+    -fx-background-radius: 4;
+    -fx-font-size: 11px;
+}
+
 .text-input {
     -fx-background-color: #2b2d30;
     -fx-text-fill: #dfe1e5;
