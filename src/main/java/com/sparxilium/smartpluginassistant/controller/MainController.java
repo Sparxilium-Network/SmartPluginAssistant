@@ -26,7 +26,9 @@ import javafx.stage.Stage;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public class MainController {
@@ -301,6 +303,33 @@ public class MainController {
     }
 
     private void setupTableColumns() {
+        // Configure TableView to support MULTIPLE selection (Ctrl / Shift clicking)
+        pluginTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        // Synchronize row selection with plugin.selected property
+        pluginTableView.getSelectionModel().getSelectedItems().addListener((javafx.collections.ListChangeListener<InstalledPlugin>) c -> {
+            Set<InstalledPlugin> currentSelectedSet = new HashSet<>(pluginTableView.getSelectionModel().getSelectedItems());
+            for (InstalledPlugin p : installedPluginsList) {
+                p.setSelected(currentSelectedSet.contains(p));
+            }
+            pluginTableView.refresh();
+        });
+
+        // Space bar key to toggle selection of selected rows
+        pluginTableView.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.SPACE) {
+                var selected = pluginTableView.getSelectionModel().getSelectedItems();
+                if (!selected.isEmpty()) {
+                    boolean anyUnchecked = selected.stream().anyMatch(p -> !p.isSelected());
+                    for (InstalledPlugin p : selected) {
+                        p.setSelected(anyUnchecked);
+                    }
+                    pluginTableView.refresh();
+                    e.consume();
+                }
+            }
+        });
+
         // Select CheckBox column
         colSelect.setCellValueFactory(cellData -> new javafx.beans.property.SimpleBooleanProperty(cellData.getValue().isSelected()));
         colSelect.setCellFactory(column -> new TableCell<>() {
@@ -310,6 +339,16 @@ public class MainController {
                     InstalledPlugin p = getTableRow().getItem();
                     if (p != null) {
                         p.setSelected(checkBox.isSelected());
+                        if (checkBox.isSelected()) {
+                            if (!pluginTableView.getSelectionModel().getSelectedItems().contains(p)) {
+                                pluginTableView.getSelectionModel().select(p);
+                            }
+                        } else {
+                            int idx = pluginTableView.getItems().indexOf(p);
+                            if (idx >= 0) {
+                                pluginTableView.getSelectionModel().clearSelection(idx);
+                            }
+                        }
                     }
                 });
             }
@@ -494,8 +533,6 @@ public class MainController {
                 }
             }
         });
-
-        pluginTableView.setItems(installedPluginsList);
     }
 
     public void refreshInstanceList() {
