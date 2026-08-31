@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class AddByUrlDialogController {
+    private static final org.apache.logging.log4j.Logger logger = org.apache.logging.log4j.LogManager.getLogger(AddByUrlDialogController.class);
+
     @FXML private Label titleLabel;
     @FXML private Label hintLabel;
     @FXML private TextField urlField;
@@ -76,11 +78,15 @@ public class AddByUrlDialogController {
     @FXML
     private void handleResolve() {
         String input = urlField.getText().trim();
+        logger.info("Resolving Modrinth URL input: '{}'", input);
         ModrinthService.ResolvedUrlInfo urlInfo = ModrinthService.parseUrlInfo(input);
         if (urlInfo == null || urlInfo.projectSlug == null || urlInfo.projectSlug.isEmpty()) {
+            logger.warn("Failed to parse project slug from URL: '{}'", input);
             showAlert(Alert.AlertType.WARNING, I18n.get("url.err_invalid_url"));
             return;
         }
+
+        logger.info("Parsed URL info: slug='{}', specificVersionId='{}'", urlInfo.projectSlug, urlInfo.specificVersionId);
 
         progressIndicator.setVisible(true);
         previewContainer.setVisible(false);
@@ -90,20 +96,33 @@ public class AddByUrlDialogController {
         modrinthService.getProject(urlInfo.projectSlug)
                 .thenCompose(project -> {
                     this.resolvedProject = project;
+                    logger.info("Fetched project: id='{}', title='{}', slug='{}'", project.getId(), project.getTitle(), project.getSlug());
+
                     if (urlInfo.specificVersionId != null && !urlInfo.specificVersionId.isBlank()) {
                         // User specifically pasted a direct version URL (e.g. /version/4.11-7a2d09a)
+                        logger.info("Resolving specific version '{}' for project '{}'...", urlInfo.specificVersionId, project.getId());
                         return modrinthService.resolveVersionByProjectAndVersion(project.getId(), urlInfo.specificVersionId)
-                                .thenApply(ver -> ver != null ? List.of(ver) : Collections.<ModrinthVersion>emptyList());
+                                .thenApply(ver -> {
+                                    if (ver != null) {
+                                        logger.info("Successfully resolved specific version: number='{}', id='{}'", ver.getVersionNumber(), ver.getId());
+                                        return List.of(ver);
+                                    } else {
+                                        logger.warn("Could not find specific version '{}', resolving all versions as fallback", urlInfo.specificVersionId);
+                                        return Collections.<ModrinthVersion>emptyList();
+                                    }
+                                });
                     } else {
                         // Query project versions
                         List<String> loaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
                         String mcVersion = currentInstance != null ? currentInstance.getMcVersion() : null;
+                        logger.info("Fetching versions with loaders={}, mcVersion={}", loaders, mcVersion);
                         return modrinthService.getProjectVersions(project.getId(), loaders, mcVersion)
                                 .thenCompose(compatVersions -> {
                                     if (!compatVersions.isEmpty()) {
+                                        logger.info("Found {} compatible versions", compatVersions.size());
                                         return CompletableFuture.completedFuture(compatVersions);
                                     }
-                                    // If no strictly compatible versions found, fetch ANY project versions as fallback!
+                                    logger.warn("No strictly compatible versions found, fetching ANY project versions as fallback");
                                     return modrinthService.getProjectVersions(project.getId(), Collections.emptyList(), null);
                                 });
                     }
@@ -111,6 +130,7 @@ public class AddByUrlDialogController {
                 .thenAccept(versions -> Platform.runLater(() -> {
                     progressIndicator.setVisible(false);
                     if (versions.isEmpty()) {
+                        logger.warn("No versions returned at all for project '{}'", resolvedProject.getId());
                         showAlert(Alert.AlertType.WARNING, I18n.get("url.no_compat_version"));
                         return;
                     }
@@ -118,10 +138,10 @@ public class AddByUrlDialogController {
                     List<String> currentLoaders = currentInstance != null ? currentInstance.getEffectiveLoaders() : Collections.emptyList();
                     String currentMc = currentInstance != null ? currentInstance.getMcVersion() : null;
 
-                    // If user pointed to a specific version or fallback was used, check compatibility
                     ModrinthVersion candidate = versions.get(0);
+                    logger.info("Evaluating candidate version: number='{}', type='{}', loaders={}, mcVersions={}",
+                            candidate.getVersionNumber(), candidate.getVersionType(), candidate.getLoaders(), candidate.getGameVersions());
 
-                    // Check if current version matches instance loaders and game version
                     boolean matchesLoader = currentLoaders.isEmpty() || candidate.getLoaders() == null ||
                             candidate.getLoaders().stream().anyMatch(l -> currentLoaders.stream().anyMatch(cl -> cl.equalsIgnoreCase(l)));
                     boolean matchesGameVer = currentMc == null || candidate.getGameVersions() == null ||
@@ -146,10 +166,14 @@ public class AddByUrlDialogController {
                         this.isPrereleaseOnly = false;
                     }
 
+                    logger.info("Candidate evaluated: isRelease={}, isPrereleaseOnly={}, isIncompatibleVersion={}",
+                            isRelease, isPrereleaseOnly, isIncompatibleVersion);
+
                     showPreview();
                 }))
                 .exceptionally(ex -> {
                     Platform.runLater(() -> {
+                        logger.error("Failed to resolve URL: " + input, ex);
                         progressIndicator.setVisible(false);
                         showAlert(Alert.AlertType.ERROR, I18n.get("url.err_resolve_failed", ex.getMessage()));
                     });

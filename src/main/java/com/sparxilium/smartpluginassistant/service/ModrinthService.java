@@ -213,21 +213,30 @@ public class ModrinthService {
         if (versionIdOrNumber == null || versionIdOrNumber.isBlank()) {
             return CompletableFuture.completedFuture(null);
         }
+        logger.info("resolveVersionByProjectAndVersion: querying direct /version/{} or matching from project '{}'", versionIdOrNumber, projectIdOrSlug);
         // First try direct /version/{id}
         return getVersion(versionIdOrNumber)
                 .handle((ver, ex) -> {
                     if (ver != null) {
+                        logger.info("resolveVersionByProjectAndVersion: direct /version/{} hit!", versionIdOrNumber);
                         return CompletableFuture.completedFuture(ver);
                     }
+                    logger.info("resolveVersionByProjectAndVersion: direct getVersion failed, fetching all versions for project '{}' to match '{}'...",
+                            projectIdOrSlug, versionIdOrNumber);
                     // If not found by ID (e.g. it's a version_number like 4.11-7a2d09a), fetch project all versions and match
                     return getProjectVersions(projectIdOrSlug, Collections.emptyList(), null)
                             .thenApply(list -> {
+                                logger.info("resolveVersionByProjectAndVersion: project has {} total versions on Modrinth", list.size());
                                 for (ModrinthVersion v : list) {
+                                    logger.debug("Checking version: number='{}', id='{}'", v.getVersionNumber(), v.getId());
                                     if (versionIdOrNumber.equalsIgnoreCase(v.getVersionNumber()) ||
                                         versionIdOrNumber.equalsIgnoreCase(v.getId())) {
+                                        logger.info("resolveVersionByProjectAndVersion: matched version by number/id -> number='{}', id='{}'", v.getVersionNumber(), v.getId());
                                         return v;
                                     }
                                 }
+                                logger.warn("resolveVersionByProjectAndVersion: no exact match found for '{}', returning first available version: {}",
+                                        versionIdOrNumber, list.isEmpty() ? "none" : list.get(0).getVersionNumber());
                                 return list.isEmpty() ? null : list.get(0);
                             });
                 })
