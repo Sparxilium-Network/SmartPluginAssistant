@@ -66,6 +66,10 @@ table.btn_update=更新
 table.btn_delete=刪除
 table.has_update=有新版: {0}
 table.latest_version=最新版本
+table.ctx_enable=啟用插件
+table.ctx_disable=停用插件
+table.ctx_delete=刪除插件
+app.confirm_single_delete=確定要刪除插件檔案「{0}」嗎？
 
 instance.core=核心: {0}
 instance.mc_version=MC 版本: {0}

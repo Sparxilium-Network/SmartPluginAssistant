@@ -67,6 +67,10 @@ table.btn_delete=Delete
 table.has_update=New version: {0}
 table.has_update_prerelease=⚠️ Pre-release: {0} ({1})
 table.latest_version=Latest
+table.ctx_enable=Enable Plugin
+table.ctx_disable=Disable Plugin
+table.ctx_delete=Delete Plugin
+app.confirm_single_delete=Are you sure you want to delete plugin "{0}"?
 
 instance.core=Loader: {0}
 instance.mc_version=MC Version: {0}

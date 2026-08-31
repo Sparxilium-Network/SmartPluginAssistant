@@ -512,7 +512,62 @@ public class MainController {
             }
         });
 
-        // ColActions only has Update button (since Enable/Disable & Delete moved to Batch Checkbox actions)
+        // Row Factory with ContextMenu (Enable/Disable, Delete)
+        pluginTableView.setRowFactory(tv -> {
+            TableRow<InstalledPlugin> row = new TableRow<>();
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem toggleItem = new MenuItem();
+            MenuItem deleteItem = new MenuItem();
+
+            toggleItem.setOnAction(e -> {
+                InstalledPlugin plugin = row.getItem();
+                if (plugin != null && currentSelectedInstance != null) {
+                    pluginManagerService.togglePluginEnabled(currentSelectedInstance, plugin);
+                    pluginTableView.refresh();
+                    updateFilterComboOptions();
+                    updatePluginFilterPredicate();
+                }
+            });
+
+            deleteItem.setOnAction(e -> {
+                InstalledPlugin plugin = row.getItem();
+                if (plugin != null && currentSelectedInstance != null) {
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    alert.setTitle(I18n.get("table.ctx_delete"));
+                    alert.setHeaderText(null);
+                    alert.setContentText(I18n.get("app.confirm_single_delete", plugin.getFileName()));
+                    com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar((Stage) alert.getDialogPane().getScene().getWindow());
+                    alert.showAndWait().ifPresent(btnType -> {
+                        if (btnType == ButtonType.OK) {
+                            pluginManagerService.deletePlugin(currentSelectedInstance, plugin);
+                            installedPluginsList.remove(plugin);
+                            updateFilterComboOptions();
+                            updatePluginFilterPredicate();
+                            statusLabel.setText(I18n.get("app.plugin_count", installedPluginsList.size()));
+                        }
+                    });
+                }
+            });
+
+            contextMenu.getItems().addAll(toggleItem, deleteItem);
+
+            contextMenu.setOnShowing(e -> {
+                InstalledPlugin plugin = row.getItem();
+                if (plugin != null) {
+                    toggleItem.setText(plugin.isEnabled() ? I18n.get("table.ctx_disable") : I18n.get("table.ctx_enable"));
+                    deleteItem.setText(I18n.get("table.ctx_delete"));
+                }
+            });
+
+            row.contextMenuProperty().bind(
+                    javafx.beans.binding.Bindings.when(row.emptyProperty())
+                            .then((ContextMenu) null)
+                            .otherwise(contextMenu)
+            );
+            return row;
+        });
+
+        // ColActions only has Update button (since Enable/Disable & Delete moved to Batch Checkbox actions and Right-click menu)
         colActions.setCellFactory(column -> new TableCell<>() {
             private final Button updateBtn = new Button();
             private final HBox actionsBox = new HBox(6, updateBtn);
@@ -528,7 +583,31 @@ public class MainController {
                         pluginManagerService.updatePlugin(currentSelectedInstance, plugin)
                                 .thenAccept(v -> Platform.runLater(() -> {
                                     statusLabel.setText(I18n.get("app.update_success"));
-                                    refreshPlugins();
+                                    // Update the single plugin in-place without wiping updateAvailable on other plugins
+                                    String rawName = plugin.getLatestFileName() != null ? plugin.getLatestFileName() : plugin.getFileName();
+                                    if (!plugin.isEnabled() && !rawName.endsWith(".disabled")) {
+                                        rawName = rawName + ".disabled";
+                                    }
+                                    plugin.setFileName(rawName);
+                                    if (plugin.getLatestVersionNumber() != null) {
+                                        plugin.setCurrentVersionNumber(plugin.getLatestVersionNumber());
+                                    }
+                                    plugin.setUpdateAvailable(false);
+                                    plugin.setLatestDownloadUrl(null);
+                                    plugin.setLatestFileName(null);
+                                    plugin.setLastModifiedTime(System.currentTimeMillis());
+
+                                    // Refresh view and update counters
+                                    pluginTableView.refresh();
+                                    updateFilterComboOptions();
+                                    updatePluginFilterPredicate();
+
+                                    long remainingUpdates = installedPluginsList.stream().filter(InstalledPlugin::isUpdateAvailable).count();
+                                    if (remainingUpdates > 0) {
+                                        updateAllBtn.setVisible(true);
+                                    } else {
+                                        updateAllBtn.setVisible(false);
+                                    }
                                 }))
                                 .exceptionally(ex -> {
                                     Platform.runLater(() -> statusLabel.setText(I18n.get("app.update_failed", ex.getMessage())));
