@@ -47,6 +47,7 @@ public class HangarBrowserController {
     @FXML private ComboBox<String> detailVersionCombo;
     @FXML private Label channelLabel;
     @FXML private Button detailInstallBtn;
+    @FXML private Button openInBrowserBtn;
 
     @FXML private HBox bottomActionBar;
     @FXML private Label selectedQueueLabel;
@@ -90,6 +91,10 @@ public class HangarBrowserController {
         statusLabel.setText(I18n.get("hangar.ready"));
         if (allowPrereleaseCheckBox != null)
             allowPrereleaseCheckBox.setText(I18n.get("modrinth.allow_prerelease"));
+        if (openInBrowserBtn != null) {
+            openInBrowserBtn.setText(I18n.get("modrinth.btn_open_web"));
+            Tooltip.install(openInBrowserBtn, new Tooltip(I18n.get("modrinth.btn_open_web")));
+        }
     }
 
     private void setupPlatformFilter() {
@@ -287,6 +292,30 @@ public class HangarBrowserController {
         refreshCart();
         // Refresh card list
         rebuildResultCards();
+    }
+
+    @FXML
+    private void handleOpenWebPage() {
+        if (selectedProject == null) return;
+        String ns = selectedProject.getNamespaceString();
+        if (ns == null || ns.isBlank()) return;
+        String url = "https://hangar.papermc.io/" + ns;
+        try {
+            if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
+                java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+            } else {
+                String os = System.getProperty("os.name").toLowerCase();
+                if (os.contains("win")) {
+                    new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url).start();
+                } else if (os.contains("mac")) {
+                    new ProcessBuilder("open", url).start();
+                } else {
+                    new ProcessBuilder("xdg-open", url).start();
+                }
+            }
+        } catch (Exception ex) {
+            logger.warn("Failed to open Hangar web page in external browser: {}", url, ex);
+        }
     }
 
     private void rebuildResultCards() {

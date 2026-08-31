@@ -532,13 +532,12 @@ public class MainController {
             deleteItem.setOnAction(e -> {
                 InstalledPlugin plugin = row.getItem();
                 if (plugin != null && currentSelectedInstance != null) {
-                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION, I18n.get("app.confirm_single_delete", plugin.getFileName()), ButtonType.YES, ButtonType.NO);
                     alert.setTitle(I18n.get("table.ctx_delete"));
                     alert.setHeaderText(null);
-                    alert.setContentText(I18n.get("app.confirm_single_delete", plugin.getFileName()));
-                    com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar((Stage) alert.getDialogPane().getScene().getWindow());
+                    com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
                     alert.showAndWait().ifPresent(btnType -> {
-                        if (btnType == ButtonType.OK) {
+                        if (btnType == ButtonType.YES) {
                             pluginManagerService.deletePlugin(currentSelectedInstance, plugin);
                             installedPluginsList.remove(plugin);
                             updateFilterComboOptions();
@@ -809,6 +808,9 @@ public class MainController {
         List<InstalledPlugin> selected = installedPluginsList.stream().filter(InstalledPlugin::isSelected).toList();
         if (selected.isEmpty()) return;
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, I18n.get("app.confirm_batch_delete", selected.size()), ButtonType.YES, ButtonType.NO);
+        alert.setTitle(I18n.get("app.btn_batch_delete"));
+        alert.setHeaderText(null);
+        com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
         alert.showAndWait().ifPresent(btn -> {
             if (btn == ButtonType.YES) {
                 for (InstalledPlugin p : selected) {
@@ -1220,6 +1222,9 @@ public class MainController {
     private void handleDeleteCurrentInstance() {
         if (currentSelectedInstance == null) return;
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, I18n.get("app.confirm_delete_instance", currentSelectedInstance.getName()), ButtonType.YES, ButtonType.NO);
+        alert.setTitle(I18n.get("app.delete_instance"));
+        alert.setHeaderText(null);
+        com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
         alert.showAndWait().ifPresent(btn -> {
             if (btn == ButtonType.YES) {
                 instanceManager.deleteInstance(currentSelectedInstance);

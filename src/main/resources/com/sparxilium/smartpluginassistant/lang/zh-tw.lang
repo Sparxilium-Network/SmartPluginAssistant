@@ -131,6 +131,7 @@ modrinth.btn_install=安裝
 modrinth.btn_installing=下載中...
 modrinth.btn_select=選擇版本
 modrinth.btn_selected=✓ 已選取
+modrinth.btn_open_web=🌐 在瀏覽器中開啟
 modrinth.selected_version_tag=已選版本:
 modrinth.btn_cancel_selection=取消選取
 modrinth.btn_review_and_download=檢查並確認 ({0})

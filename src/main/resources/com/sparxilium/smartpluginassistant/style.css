@@ -227,11 +227,17 @@
 /* JavaFX Dialog & DialogPane Dark Mode Styling */
 .dialog-pane {
     -fx-background-color: #1e1f22;
+    -fx-border-color: #393b40;
+    -fx-border-width: 1px;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
 }
 .dialog-pane > .button-bar > .container {
     -fx-background-color: #1e1f22;
 }
-.dialog-pane > .content.label {
+.dialog-pane > .content.label,
+.dialog-pane > .content .label,
+.dialog-pane .label {
     -fx-text-fill: #dfe1e5;
 }
 .dialog-pane:header .header-panel {
@@ -242,4 +248,23 @@
 }
 .dialog-pane > .content {
     -fx-background-color: #1e1f22;
+}
+.dialog-pane .button {
+    -fx-background-color: #2b2d30;
+    -fx-text-fill: #dfe1e5;
+    -fx-border-color: #393b40;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+.dialog-pane .button:hover {
+    -fx-background-color: #3574f0;
+    -fx-text-fill: #ffffff;
+}
+.dialog-pane .button:default {
+    -fx-background-color: #3574f0;
+    -fx-text-fill: #ffffff;
+}
+.dialog-pane .button:default:hover {
+    -fx-background-color: #3064d0;
 }

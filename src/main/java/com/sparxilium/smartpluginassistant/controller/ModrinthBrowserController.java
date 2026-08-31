@@ -51,6 +51,7 @@ public class ModrinthBrowserController {
     @FXML private Label detailDescLabel;
     @FXML private ComboBox<String> detailVersionCombo;
     @FXML private Button detailInstallBtn;
+    @FXML private Button openInBrowserBtn;
 
     // Bottom Action Bar
     @FXML private HBox bottomActionBar;
@@ -247,6 +248,10 @@ public class ModrinthBrowserController {
         }
         searchBtn.setText(I18n.get("modrinth.btn_search"));
         statusLabel.setText(I18n.get("app.status_ready"));
+        if (openInBrowserBtn != null) {
+            openInBrowserBtn.setText(I18n.get("modrinth.btn_open_web"));
+            Tooltip.install(openInBrowserBtn, new Tooltip(I18n.get("modrinth.btn_open_web")));
+        }
     }
 
     @FXML
@@ -611,6 +616,30 @@ public class ModrinthBrowserController {
         updateDetailButtonState();
         updateBottomActionBar();
         rerenderResults();
+    }
+
+    @FXML
+    private void handleOpenWebPage() {
+        if (selectedResult == null) return;
+        String slug = selectedResult.getSlug() != null ? selectedResult.getSlug() : selectedResult.getProjectId();
+        if (slug == null || slug.isBlank()) return;
+        String url = "https://modrinth.com/plugin/" + slug;
+        try {
+            if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
+                java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+            } else {
+                String os = System.getProperty("os.name").toLowerCase();
+                if (os.contains("win")) {
+                    new ProcessBuilder("rundll32", "url.dll,FileProtocolHandler", url).start();
+                } else if (os.contains("mac")) {
+                    new ProcessBuilder("open", url).start();
+                } else {
+                    new ProcessBuilder("xdg-open", url).start();
+                }
+            }
+        } catch (Exception ex) {
+            logger.warn("Failed to open web page in external browser: {}", url, ex);
+        }
     }
 
     private void updateBottomActionBar() {

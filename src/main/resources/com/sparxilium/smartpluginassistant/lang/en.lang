@@ -130,6 +130,7 @@ modrinth.btn_install=Install
 modrinth.btn_installing=Downloading...
 modrinth.btn_select=Select Version
 modrinth.btn_selected=✓ Selected
+modrinth.btn_open_web=🌐 Open in Browser
 modrinth.selected_version_tag=Selected:
 modrinth.btn_cancel_selection=Deselect
 modrinth.btn_review_and_download=Review & Download ({0})

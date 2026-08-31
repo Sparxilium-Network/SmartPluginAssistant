@@ -22,6 +22,18 @@ public class WindowsTitleBarTheme {
         int DwmSetWindowAttribute(WinDef.HWND hwnd, int dwAttribute, Pointer pvAttribute, int cbAttribute);
     }
 
+    public static void applyDarkTitleBar(javafx.scene.control.Dialog<?> dialog) {
+        if (dialog == null) return;
+        try {
+            dialog.getDialogPane().getStylesheets().add(
+                    WindowsTitleBarTheme.class.getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm()
+            );
+        } catch (Exception ignored) {}
+
+        javafx.stage.Stage stage = (javafx.stage.Stage) dialog.getDialogPane().getScene().getWindow();
+        applyDarkTitleBar(stage);
+    }
+
     public static void applyDarkTitleBar(Stage stage) {
         String os = System.getProperty("os.name", "").toLowerCase();
         if (!os.contains("win")) {
