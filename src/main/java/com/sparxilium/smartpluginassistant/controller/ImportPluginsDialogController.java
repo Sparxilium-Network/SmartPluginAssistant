@@ -241,17 +241,12 @@ public class ImportPluginsDialogController {
                     Platform.runLater(() -> item.setDetectedInfo(descStr.isBlank() ? "-" : descStr));
                 }
 
-                // 2. Compute SHA-1 and SHA-512
-                String sha1 = PluginManagerService.calculateSha1(item.getFile());
+                // 2. Compute SHA-512
                 String sha512 = PluginManagerService.calculateSha512(item.getFile());
-                item.setSha1(sha1);
                 item.setSha512(sha512);
                 if (sha512 != null) {
                     hashMap.put(sha512.toLowerCase(), item);
                     hashesToQuery.add(sha512.toLowerCase());
-                } else if (sha1 != null) {
-                    hashMap.put(sha1.toLowerCase(), item);
-                    hashesToQuery.add(sha1.toLowerCase());
                 }
             }
 
@@ -349,7 +344,6 @@ public class ImportPluginsDialogController {
                                 item.getVersionId(),
                                 item.getVersionNumber(),
                                 item.getFileName(),
-                                item.getSha1(),
                                 item.getSha512()
                         );
                         PluginMetadataStore.saveRecord(instanceManager, currentInstance, record);

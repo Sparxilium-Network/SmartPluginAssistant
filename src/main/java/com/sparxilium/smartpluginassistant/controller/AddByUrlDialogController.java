@@ -367,14 +367,12 @@ public class AddByUrlDialogController {
         hangarService.downloadFile(pd.downloadUrl, dest, null)
                 .thenAccept(path -> Platform.runLater(() -> {
                     try {
-                        String sha1 = PluginManagerService.calculateSha1(path.toFile());
                         String sha512 = PluginManagerService.calculateSha512(path.toFile());
                         PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
                                 resolvedHangarProject.getNamespaceString(),
                                 String.valueOf(targetHangarVersion.getId()),
                                 targetHangarVersion.getVersionNumber(),
                                 fileName,
-                                sha1,
                                 sha512
                         );
                         record.hostingPlatform = "hangar";
@@ -413,7 +411,6 @@ public class AddByUrlDialogController {
         modrinthService.downloadFile(primaryFile.getUrl(), dest, null)
                 .thenAccept(path -> Platform.runLater(() -> {
                     try {
-                        String sha1 = primaryFile.getHashes() != null ? primaryFile.getHashes().get("sha1") : null;
                         String sha512 = primaryFile.getHashes() != null ? primaryFile.getHashes().get("sha512") : null;
                         if (sha512 == null) {
                             sha512 = PluginManagerService.calculateSha512(path.toFile());
@@ -423,7 +420,6 @@ public class AddByUrlDialogController {
                                 targetModrinthVersion.getId(),
                                 targetModrinthVersion.getVersionNumber(),
                                 primaryFile.getFilename(),
-                                sha1,
                                 sha512
                         );
                         record.hostingPlatform = "modrinth";

@@ -35,9 +35,6 @@ public class PluginMetadataStore {
         @JsonProperty("fileName")
         public String fileName;
 
-        @JsonProperty("sha1")
-        public String sha1;
-
         @JsonProperty("sha512")
         public String sha512;
 
@@ -54,16 +51,11 @@ public class PluginMetadataStore {
 
         public DownloadRecord() {}
 
-        public DownloadRecord(String projectId, String versionId, String versionNumber, String fileName, String sha1) {
-            this(projectId, versionId, versionNumber, fileName, sha1, null);
-        }
-
-        public DownloadRecord(String projectId, String versionId, String versionNumber, String fileName, String sha1, String sha512) {
+        public DownloadRecord(String projectId, String versionId, String versionNumber, String fileName, String sha512) {
             this.projectId = projectId;
             this.versionId = versionId;
             this.versionNumber = versionNumber;
             this.fileName = fileName;
-            this.sha1 = sha1;
             this.sha512 = sha512;
             this.downloadedAt = LocalDateTime.now();
         }
@@ -88,16 +80,13 @@ public class PluginMetadataStore {
     }
 
     public static synchronized void saveRecord(InstanceManager instanceManager, ServerInstance instance, DownloadRecord record) {
-        if (record == null || (record.fileName == null && record.sha1 == null && record.sha512 == null)) return;
+        if (record == null || (record.fileName == null && record.sha512 == null)) return;
         Map<String, DownloadRecord> records = loadRecords(instanceManager, instance);
 
         if (record.fileName != null) {
             records.put(record.fileName.toLowerCase(), record);
             String cleanName = record.fileName.replace(".disabled", "").toLowerCase();
             records.put(cleanName, record);
-        }
-        if (record.sha1 != null && !record.sha1.isBlank()) {
-            records.put(record.sha1.toLowerCase(), record);
         }
         if (record.sha512 != null && !record.sha512.isBlank()) {
             records.put(record.sha512.toLowerCase(), record);
@@ -115,17 +104,10 @@ public class PluginMetadataStore {
         }
     }
 
-    public static synchronized DownloadRecord findRecord(InstanceManager instanceManager, ServerInstance instance, String fileName, String sha1) {
-        return findRecord(instanceManager, instance, fileName, sha1, null);
-    }
-
-    public static synchronized DownloadRecord findRecord(InstanceManager instanceManager, ServerInstance instance, String fileName, String sha1, String sha512) {
+    public static synchronized DownloadRecord findRecord(InstanceManager instanceManager, ServerInstance instance, String fileName, String sha512) {
         Map<String, DownloadRecord> records = loadRecords(instanceManager, instance);
         if (sha512 != null && records.containsKey(sha512.toLowerCase())) {
             return records.get(sha512.toLowerCase());
-        }
-        if (sha1 != null && records.containsKey(sha1.toLowerCase())) {
-            return records.get(sha1.toLowerCase());
         }
         if (fileName != null) {
             String lower = fileName.toLowerCase();

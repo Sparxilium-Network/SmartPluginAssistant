@@ -361,13 +361,13 @@ public class HangarBrowserController {
             String finalFileName = fileName;
             var f = hangarService.downloadFile(pd.downloadUrl, dest, null)
                     .thenAccept(path -> {
-                        String sha1 = PluginManagerService.calculateSha1(path.toFile());
+                        String sha512 = PluginManagerService.calculateSha512(path.toFile());
                         PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
                                 item.project.getNamespaceString(), // use namespace as projectId
                                 String.valueOf(item.version.getId()),
                                 item.version.getVersionNumber(),
                                 finalFileName,
-                                sha1
+                                sha512
                         );
                         record.hostingPlatform = "hangar";
                         record.hangarNamespace = item.project.getNamespaceString();

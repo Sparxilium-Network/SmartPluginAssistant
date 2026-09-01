@@ -48,13 +48,12 @@ public class PluginManagerService {
                 boolean enabled = !fileName.endsWith(".disabled");
                 long size = file.length();
                 long lastModified = file.lastModified();
-                String sha1 = calculateSha1(file);
                 String sha512 = calculateSha512(file);
 
-                InstalledPlugin plugin = new InstalledPlugin(fileName, sha1, sha512, size, lastModified, enabled);
+                InstalledPlugin plugin = new InstalledPlugin(fileName, sha512, size, lastModified, enabled);
                 
                 // 1. Check download history record in metadata store
-                PluginMetadataStore.DownloadRecord record = PluginMetadataStore.findRecord(instanceManager, instance, fileName, sha1, sha512);
+                PluginMetadataStore.DownloadRecord record = PluginMetadataStore.findRecord(instanceManager, instance, fileName, sha512);
                 if (record != null) {
                     if (record.versionNumber != null && !record.versionNumber.isBlank()) {
                         plugin.setCurrentVersionNumber(record.versionNumber);
@@ -96,14 +95,14 @@ public class PluginManagerService {
 
     public CompletableFuture<List<InstalledPlugin>> checkPluginUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
         List<String> hashesList = plugins.stream()
-                .map(p -> p.getSha512() != null ? p.getSha512() : p.getSha1())
+                .map(InstalledPlugin::getSha512)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         return modrinthService.checkUpdates(hashesList, instance.getEffectiveLoaders(), instance.getMcVersion())
                 .thenApply(updateMap -> {
                     for (InstalledPlugin plugin : plugins) {
-                        String hash = plugin.getSha512() != null ? plugin.getSha512() : plugin.getSha1();
+                        String hash = plugin.getSha512();
                         if (hash != null && updateMap.containsKey(hash)) {
                             ModrinthVersion version = updateMap.get(hash);
                             ModrinthVersion.ModrinthFile primaryFile = version.getPrimaryFile();
@@ -154,15 +153,14 @@ public class PluginManagerService {
                             } else {
                                 plugin.setUpdateAvailable(false);
                                 plugin.setLoaderIncompatible(false);
-                                // Save/refresh download record with exact version, sha1, sha512 and projectId
+                                // Save/refresh download record with exact version, sha512 and projectId
                                 if (plugin.getProjectId() == null || plugin.getVersionId() == null) {
                                     plugin.setProjectId(version.getProjectId());
                                     plugin.setVersionId(version.getId());
                                     plugin.setCurrentVersionNumber(version.getVersionNumber());
-                                    String sha1 = plugin.getSha1();
                                     String sha512 = plugin.getSha512();
                                     PluginMetadataStore.saveRecord(instanceManager, instance,
-                                            new PluginMetadataStore.DownloadRecord(version.getProjectId(), version.getId(), version.getVersionNumber(), plugin.getFileName(), sha1, sha512));
+                                            new PluginMetadataStore.DownloadRecord(version.getProjectId(), version.getId(), version.getVersionNumber(), plugin.getFileName(), sha512));
                                 }
                                 if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
                                     plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
@@ -289,15 +287,13 @@ public class PluginManagerService {
                             e.printStackTrace();
                         }
                     }
-                    // Calculate new sha1 and sha512, then save record to metadata store
-                    String newSha1 = calculateSha1(newFilePath.toFile());
+                    // Calculate new sha512, then save record to metadata store
                     String newSha512 = calculateSha512(newFilePath.toFile());
                     PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(
                             plugin.getProjectId(),
                             plugin.getLatestVersionId(),
                             plugin.getLatestVersionNumber(),
                             newName,
-                            newSha1,
                             newSha512
                     );
                     record.hostingPlatform = plugin.getHostingPlatform();
