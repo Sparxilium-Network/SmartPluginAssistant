@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class UpgradeUserStorageMetadata {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UpgradeUserStorageMetadata.class);
     private static final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
     public static void main(String[] args) {
@@ -116,7 +117,7 @@ public class UpgradeUserStorageMetadata {
                 System.out.println("Upgraded metadata for instance: " + instDir.getFileName() + " (" + newRecords.size() + " entries)");
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred during upgrade", e);
         }
     }
 }

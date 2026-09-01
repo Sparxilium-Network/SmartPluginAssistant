@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import com.sparxilium.smartpluginassistant.service.I18n;
 
 import java.io.IOException;
 import java.util.prefs.Preferences;
@@ -28,7 +29,7 @@ public class HelloApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("/com/sparxilium/smartpluginassistant/main-view.fxml"));
         Scene scene = new Scene(fxmlLoader.load(), savedWidth, savedHeight);
         scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
-        stage.setTitle("Smart Plugin Assistant - 伺服器插件管理器");
+        stage.setTitle(I18n.get("app.title") + " - " + I18n.get("app.subtitle"));
         stage.setScene(scene);
         stage.setMinWidth(900);
         stage.setMinHeight(640);

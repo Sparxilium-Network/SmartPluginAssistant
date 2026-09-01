@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InstanceManager {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InstanceManager.class);
     private static final String APP_DATA_DIR_NAME = ".smartpluginassistant";
     private static final String INSTANCE_CONFIG_FILE_NAME = "instance.json";
     private static final String LEGACY_INSTANCES_FILE_NAME = "instances.json";
@@ -44,7 +45,7 @@ public class InstanceManager {
                 Files.createDirectories(defaultInstancesDir);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -118,7 +119,7 @@ public class InstanceManager {
             Path configFile = instancePath.resolve(INSTANCE_CONFIG_FILE_NAME);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(configFile.toFile(), instance);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -141,7 +142,7 @@ public class InstanceManager {
         try {
             Files.createDirectories(pluginsPath);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
 
         saveInstanceConfig(instance);
@@ -190,7 +191,7 @@ public class InstanceManager {
             try {
                 Files.createDirectories(dir);
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Exception occurred", e);
             }
         }
         return dir;

@@ -176,7 +176,7 @@ public class AddByUrlDialogController {
         previewContainer.setVisible(true);
         previewContainer.setManaged(true);
         projectTitleLabel.setText(resolvedHangarProject.getName());
-        authorLabel.setText("by " + resolvedHangarProject.getAuthor() + " • Hangar");
+        authorLabel.setText(I18n.get("url.author_hangar", resolvedHangarProject.getAuthor()));
         descLabel.setText(resolvedHangarProject.getDescription());
 
         HangarVersion.PlatformDownload pd = targetHangarVersion.getPaperDownload();
@@ -309,7 +309,7 @@ public class AddByUrlDialogController {
         previewContainer.setVisible(true);
         previewContainer.setManaged(true);
         projectTitleLabel.setText(resolvedModrinthProject.getTitle());
-        authorLabel.setText(I18n.get("url.project_id", resolvedModrinthProject.getSlug()) + " • Modrinth");
+        authorLabel.setText(I18n.get("url.author_modrinth", I18n.get("url.project_id", resolvedModrinthProject.getSlug())));
         descLabel.setText(resolvedModrinthProject.getDescription());
 
         ModrinthVersion.ModrinthFile file = targetModrinthVersion.getPrimaryFile();

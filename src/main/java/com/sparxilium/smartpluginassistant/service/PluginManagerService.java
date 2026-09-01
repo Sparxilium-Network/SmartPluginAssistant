@@ -87,7 +87,7 @@ public class PluginManagerService {
                 plugins.add(plugin);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
 
         return plugins;
@@ -284,7 +284,7 @@ public class PluginManagerService {
                         try {
                             Files.deleteIfExists(oldFilePath);
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            logger.error("Exception occurred", e);
                         }
                     }
                     // Calculate new sha512, then save record to metadata store
@@ -327,7 +327,7 @@ public class PluginManagerService {
             plugin.setEnabled(newEnabled);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
             return false;
         }
     }
@@ -338,7 +338,7 @@ public class PluginManagerService {
         try {
             return Files.deleteIfExists(filePath);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
             return false;
         }
     }

@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class I18n {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(I18n.class);
     private static final String DEFAULT_LANG = "zh-tw";
     private static final Map<String, String> currentMessages = new HashMap<>();
     private static final StringProperty currentLangProperty = new SimpleStringProperty(DEFAULT_LANG);
@@ -42,7 +43,7 @@ public class I18n {
                 System.err.println("Language file not found: " + resourcePath);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Exception occurred loading language", e);
         }
         currentLangProperty.set(langCode);
     }

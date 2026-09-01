@@ -194,23 +194,23 @@ public class MainController {
         if (isCompact) {
             // Icon only / shorter labels when window is small
             appSettingsBtn.setText("⚙️");
-            addInstanceBtn.setText("+ " + (isEn ? "New" : "新增實例"));
+            addInstanceBtn.setText(I18n.get("app.add_instance_compact"));
             instanceSettingsBtn.setText("⚙️");
-            openPluginsFolderBtn.setText("📂 " + (isEn ? "Folder" : "資料夾"));
-            exportInstanceZipBtn.setText("📦 " + (isEn ? "Inst ZIP" : "實例 ZIP"));
-            exportPluginsZipBtn.setText("📦 " + (isEn ? "Plug ZIP" : "插件 ZIP"));
-            if (exportScriptBtn != null) exportScriptBtn.setText("📜 " + (isEn ? "Script" : "腳本"));
-            deleteInstanceBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
-            if (browseMenuBtn != null) browseMenuBtn.setText("🔍 " + (isEn ? "Browse" : "瀏覽插件"));
-            if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText("🔍 " + (isEn ? "Modrinth Plugins" : "瀏覽 Modrinth 插件"));
-            if (browseHangarMenuItem != null) browseHangarMenuItem.setText("🏪 " + (isEn ? "Hangar Plugins" : "瀏覽 Hangar 插件"));
-            addByUrlBtn.setText("🔗 " + (isEn ? "URL" : "網址新增"));
-            if (importPluginsBtn != null) importPluginsBtn.setText("📂 " + (isEn ? "Import" : "匯入"));
-            checkUpdatesBtn.setText("🔄 " + (isEn ? "Check" : "檢查更新"));
-            updateAllBtn.setText("⚡ " + (isEn ? "Update All" : "全部更新"));
-            batchEnableBtn.setText("✓ " + (isEn ? "Enable" : "啟用"));
-            batchDisableBtn.setText("⊘ " + (isEn ? "Disable" : "停用"));
-            batchDeleteBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
+            openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder_compact"));
+            exportInstanceZipBtn.setText(I18n.get("app.export_instance_zip_compact"));
+            exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip_compact"));
+            if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script_compact"));
+            deleteInstanceBtn.setText(I18n.get("app.delete_instance_compact"));
+            if (browseMenuBtn != null) browseMenuBtn.setText(I18n.get("app.browse_online_compact"));
+            if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText(I18n.get("app.browse_modrinth_compact"));
+            if (browseHangarMenuItem != null) browseHangarMenuItem.setText(I18n.get("app.browse_hangar_compact"));
+            addByUrlBtn.setText(I18n.get("app.add_by_url_compact"));
+            if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins_compact"));
+            checkUpdatesBtn.setText(I18n.get("app.check_updates_compact"));
+            updateAllBtn.setText(I18n.get("app.update_all_compact"));
+            batchEnableBtn.setText(I18n.get("app.btn_batch_enable_compact"));
+            batchDisableBtn.setText(I18n.get("app.btn_batch_disable_compact"));
+            batchDeleteBtn.setText(I18n.get("app.btn_batch_delete_compact"));
             refreshPluginsBtn.setText("↻");
             refreshInstancesBtn.setText("↻");
         } else {
@@ -322,7 +322,7 @@ public class MainController {
             com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -903,7 +903,7 @@ public class MainController {
                 refreshInstanceList();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -1070,7 +1070,7 @@ public class MainController {
             com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -1107,7 +1107,7 @@ public class MainController {
             com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -1144,7 +1144,7 @@ public class MainController {
             com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -1185,7 +1185,7 @@ public class MainController {
                 refreshInstanceList();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Exception occurred", e);
         }
     }
 
@@ -1210,8 +1210,8 @@ public class MainController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR, "無法開啟資料夾: " + e.getMessage(), ButtonType.OK);
+            logger.error("Exception occurred", e);
+            Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("app.open_folder_error", e.getMessage()), ButtonType.OK);
             com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
             alert.showAndWait();
         }

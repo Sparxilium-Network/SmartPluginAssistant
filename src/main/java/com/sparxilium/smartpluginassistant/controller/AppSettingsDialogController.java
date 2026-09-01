@@ -23,12 +23,12 @@ public class AppSettingsDialogController {
         applyI18n();
 
         langComboBox.getItems().clear();
-        langComboBox.getItems().addAll("繁體中文 (zh-tw)", "English (en)");
+        langComboBox.getItems().addAll(I18n.get("app_settings.lang_zh_tw"), I18n.get("app_settings.lang_en"));
 
-        if ("en".equals(I18n.getCurrentLang())) {
-            langComboBox.setValue("English (en)");
+        if ("en".equalsIgnoreCase(I18n.getCurrentLang())) {
+            langComboBox.setValue(I18n.get("app_settings.lang_en"));
         } else {
-            langComboBox.setValue("繁體中文 (zh-tw)");
+            langComboBox.setValue(I18n.get("app_settings.lang_zh_tw"));
         }
 
         langComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {

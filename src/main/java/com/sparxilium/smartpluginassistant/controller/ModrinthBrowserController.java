@@ -460,7 +460,7 @@ public class ModrinthBrowserController {
             if (!supportsPrimary && !supportedLoaders.isEmpty()) {
                 Label archBadge = new Label("⚠️ " + String.join(", ", supportedLoaders));
                 archBadge.setStyle("-fx-background-color: #d35400; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 1 6; -fx-background-radius: 4; -fx-font-size: 10px;");
-                Tooltip.install(archBadge, new Tooltip("目前伺服器核心為 " + primaryLoader + "，此插件僅標註支援: " + String.join(", ", supportedLoaders)));
+                Tooltip.install(archBadge, new Tooltip(I18n.get("modrinth.arch_support_tooltip", primaryLoader, String.join(", ", supportedLoaders))));
                 titleBox.getChildren().add(archBadge);
             }
         }
@@ -647,7 +647,7 @@ public class ModrinthBrowserController {
         reviewAndDownloadBtn.setText(I18n.get("modrinth.btn_review_and_download", count));
         reviewAndDownloadBtn.setDisable(count == 0);
         if (count > 0) {
-            selectedQueueLabel.setText(I18n.get("modrinth.selected_version_tag") + " " + count + " 個項目");
+            selectedQueueLabel.setText(I18n.get("modrinth.selected_version_tag") + " " + I18n.get("modrinth.selected_items", count));
         } else {
             selectedQueueLabel.setText("");
         }
