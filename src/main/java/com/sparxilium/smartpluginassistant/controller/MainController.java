@@ -45,6 +45,7 @@ public class MainController {
     @FXML private Label appSubtitleLabel;
     @FXML private Button appSettingsBtn;
     @FXML private Button addInstanceBtn;
+    @FXML private SplitPane mainSplitPane;
 
     // Instance sidebar
     @FXML private Label instanceListHeaderLabel;
@@ -96,8 +97,23 @@ public class MainController {
     private final ObservableList<InstalledPlugin> installedPluginsList = FXCollections.observableArrayList();
     private javafx.collections.transformation.FilteredList<InstalledPlugin> filteredPluginsList;
 
+    private static final String PREF_MAIN_SPLIT_POSITION = "main_split_position";
+
     @FXML
     public void initialize() {
+        if (mainSplitPane != null) {
+            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
+            double savedPos = prefs.getDouble(PREF_MAIN_SPLIT_POSITION, 0.25);
+            mainSplitPane.setDividerPositions(savedPos);
+            
+            Platform.runLater(() -> {
+                if (!mainSplitPane.getDividers().isEmpty()) {
+                    mainSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldV, newV) -> {
+                        prefs.putDouble(PREF_MAIN_SPLIT_POSITION, newV.doubleValue());
+                    });
+                }
+            });
+        }
         setupTableColumns();
         setupFilterBindings();
         applyI18n();

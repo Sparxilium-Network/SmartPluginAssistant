@@ -26,7 +26,7 @@
     </top>
 
     <center>
-        <SplitPane dividerPositions="0.25" style="-fx-background-color: transparent;">
+        <SplitPane fx:id="mainSplitPane" dividerPositions="0.25" style="-fx-background-color: transparent;">
             <!-- Left Instances Panel -->
             <VBox spacing="10.0" styleClass="sidebar">
                 <HBox alignment="CENTER_LEFT">
