@@ -258,4 +258,128 @@ public class InstanceManager {
             }
         }
     }
+
+    public static class ScriptItem {
+        public final String fileName;
+        public final String downloadUrl;
+        public final String expectedSha512;
+        public final String platform;
+        public final String version;
+        public final boolean enabled;
+
+        public ScriptItem(String fileName, String downloadUrl, String expectedSha512, String platform, String version, boolean enabled) {
+            this.fileName = fileName;
+            this.downloadUrl = downloadUrl;
+            this.expectedSha512 = expectedSha512;
+            this.platform = platform;
+            this.version = version;
+            this.enabled = enabled;
+        }
+    }
+
+    public void exportPluginsScript(ServerInstance instance, List<ScriptItem> items, Path targetScriptFile) throws IOException {
+        if (targetScriptFile.getParent() != null) {
+            Files.createDirectories(targetScriptFile.getParent());
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("#!/usr/bin/env bash\n");
+        sb.append("# =============================================================================\n");
+        sb.append("# Smart Plugin Assistant - Automated Server Plugin Setup Script\n");
+        sb.append("# Instance: ").append(instance.getName()).append("\n");
+        sb.append("# Loader: ").append(instance.getLoader()).append(" | Minecraft Version: ").append(instance.getMcVersion()).append("\n");
+        sb.append("# Generated at: ").append(java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
+        sb.append("# =============================================================================\n\n");
+        sb.append("set -e\n\n");
+        sb.append("# Ensure script is run from server root (or plugins directory)\n");
+        sb.append("if [ -d \"plugins\" ]; then\n");
+        sb.append("    PLUGINS_DIR=\"plugins\"\n");
+        sb.append("else\n");
+        sb.append("    PLUGINS_DIR=\".\"\n");
+        sb.append("fi\n\n");
+        sb.append("echo \"=================================================================\"\n");
+        sb.append("echo \"🚀 Starting plugin installation for instance: ").append(instance.getName()).append("\"\n");
+        sb.append("echo \"📁 Target plugins directory: $PLUGINS_DIR\"\n");
+        sb.append("echo \"=================================================================\"\n");
+        sb.append("mkdir -p \"$PLUGINS_DIR\"\n\n");
+
+        sb.append("SUCCESS_COUNT=0\n");
+        sb.append("FAILED_COUNT=0\n");
+        sb.append("SKIPPED_COUNT=0\n\n");
+
+        sb.append("download_plugin() {\n");
+        sb.append("    local filename=\"$1\"\n");
+        sb.append("    local url=\"$2\"\n");
+        sb.append("    local expected_sha512=\"$3\"\n");
+        sb.append("    local target_path=\"$PLUGINS_DIR/$filename\"\n\n");
+        sb.append("    echo \"\"\n");
+        sb.append("    echo \"📦 Processing: $filename ...\"\n\n");
+        sb.append("    if [ -z \"$url\" ]; then\n");
+        sb.append("        echo \"⚠️  [SKIP] No download URL available for $filename (Local / Unsupported). Please upload manually.\"\n");
+        sb.append("        SKIPPED_COUNT=$((SKIPPED_COUNT + 1))\n");
+        sb.append("        return 0\n");
+        sb.append("    fi\n\n");
+        sb.append("    if [ -f \"$target_path\" ] && [ -n \"$expected_sha512\" ]; then\n");
+        sb.append("        local current_sha512=\"\"\n");
+        sb.append("        if command -v sha512sum >/dev/null 2>&1; then\n");
+        sb.append("            current_sha512=$(sha512sum \"$target_path\" | awk '{print $1}')\n");
+        sb.append("        elif command -v shasum >/dev/null 2>&1; then\n");
+        sb.append("            current_sha512=$(shasum -a 512 \"$target_path\" | awk '{print $1}')\n");
+        sb.append("        fi\n\n");
+        sb.append("        if [ \"$current_sha512\" = \"$expected_sha512\" ]; then\n");
+        sb.append("            echo \"✅ [EXISTS] $filename is already installed and checksum matches.\"\n");
+        sb.append("            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))\n");
+        sb.append("            return 0\n");
+        sb.append("        fi\n");
+        sb.append("    fi\n\n");
+        sb.append("    echo \"⬇️  Downloading from $url ...\"\n");
+        sb.append("    local tmp_file=\"$target_path.tmp\"\n");
+        sb.append("    if command -v curl >/dev/null 2>&1; then\n");
+        sb.append("        curl -fsSL -H \"User-Agent: Sparxilium-SmartPluginAssistant/1.0\" -o \"$tmp_file\" \"$url\"\n");
+        sb.append("    elif command -v wget >/dev/null 2>&1; then\n");
+        sb.append("        wget -q --user-agent=\"Sparxilium-SmartPluginAssistant/1.0\" -O \"$tmp_file\" \"$url\"\n");
+        sb.append("    else\n");
+        sb.append("        echo \"❌ [ERROR] Neither curl nor wget was found on this system!\"\n");
+        sb.append("        FAILED_COUNT=$((FAILED_COUNT + 1))\n");
+        sb.append("        return 1\n");
+        sb.append("    fi\n\n");
+        sb.append("    if [ -n \"$expected_sha512\" ]; then\n");
+        sb.append("        local dl_sha512=\"\"\n");
+        sb.append("        if command -v sha512sum >/dev/null 2>&1; then\n");
+        sb.append("            dl_sha512=$(sha512sum \"$tmp_file\" | awk '{print $1}')\n");
+        sb.append("        elif command -v shasum >/dev/null 2>&1; then\n");
+        sb.append("            dl_sha512=$(shasum -a 512 \"$tmp_file\" | awk '{print $1}')\n");
+        sb.append("        fi\n\n");
+        sb.append("        if [ -n \"$dl_sha512\" ] && [ \"$dl_sha512\" != \"$expected_sha512\" ]; then\n");
+        sb.append("            echo \"❌ [CHECKSUM FAILED] $filename\"\n");
+        sb.append("            echo \"   Expected: $expected_sha512\"\n");
+        sb.append("            echo \"   Actual:   $dl_sha512\"\n");
+        sb.append("            rm -f \"$tmp_file\"\n");
+        sb.append("            FAILED_COUNT=$((FAILED_COUNT + 1))\n");
+        sb.append("            return 1\n");
+        sb.append("        fi\n");
+        sb.append("    fi\n\n");
+        sb.append("    mv -f \"$tmp_file\" \"$target_path\"\n");
+        sb.append("    echo \"✅ [SUCCESS] Installed: $filename\"\n");
+        sb.append("    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))\n");
+        sb.append("}\n\n");
+
+        for (ScriptItem item : items) {
+            String safeFn = item.fileName.replace("'", "'\\''");
+            String safeUrl = item.downloadUrl != null ? item.downloadUrl.replace("'", "'\\''") : "";
+            String safeSha = item.expectedSha512 != null ? item.expectedSha512 : "";
+            sb.append("download_plugin '").append(safeFn).append("' '").append(safeUrl).append("' '").append(safeSha).append("'\n");
+        }
+
+        sb.append("\necho \"\"\n");
+        sb.append("echo \"=================================================================\"\n");
+        sb.append("echo \"🎉 Plugin setup finished!\"\n");
+        sb.append("echo \"   ✅ Succeeded: $SUCCESS_COUNT\"\n");
+        sb.append("echo \"   ⚠️  Skipped (Manual): $SKIPPED_COUNT\"\n");
+        sb.append("echo \"   ❌ Failed: $FAILED_COUNT\"\n");
+        sb.append("echo \"=================================================================\"\n");
+
+        Files.writeString(targetScriptFile, sb.toString(), java.nio.charset.StandardCharsets.UTF_8);
+    }
 }
+

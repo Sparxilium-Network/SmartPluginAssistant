@@ -1,12 +1,15 @@
 package com.sparxilium.smartpluginassistant.controller;
 
+import com.sparxilium.smartpluginassistant.model.HangarVersion;
 import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
+import com.sparxilium.smartpluginassistant.model.ModrinthVersion;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
 import com.sparxilium.smartpluginassistant.service.HangarService;
 import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;
 import com.sparxilium.smartpluginassistant.service.ModrinthService;
 import com.sparxilium.smartpluginassistant.service.PluginManagerService;
+import com.sparxilium.smartpluginassistant.service.PluginMetadataStore;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -27,6 +30,7 @@ import javafx.stage.Stage;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -53,6 +57,7 @@ public class MainController {
     @FXML private Button openPluginsFolderBtn;
     @FXML private Button exportInstanceZipBtn;
     @FXML private Button exportPluginsZipBtn;
+    @FXML private Button exportScriptBtn;
     @FXML private Button deleteInstanceBtn;
 
     // Toolbar
@@ -193,6 +198,7 @@ public class MainController {
             openPluginsFolderBtn.setText("📂 " + (isEn ? "Folder" : "資料夾"));
             exportInstanceZipBtn.setText("📦 " + (isEn ? "Inst ZIP" : "實例 ZIP"));
             exportPluginsZipBtn.setText("📦 " + (isEn ? "Plug ZIP" : "插件 ZIP"));
+            if (exportScriptBtn != null) exportScriptBtn.setText("📜 " + (isEn ? "Script" : "腳本"));
             deleteInstanceBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
             browseModrinthBtn.setText("🔍 " + (isEn ? "Modrinth" : "Modrinth 插件"));
             if (browseHangarBtn != null) browseHangarBtn.setText("🏪 " + (isEn ? "Hangar" : "Hangar 插件"));
@@ -212,6 +218,7 @@ public class MainController {
             openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder"));
             exportInstanceZipBtn.setText(I18n.get("app.export_instance_zip"));
             exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip"));
+            if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script"));
             deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
             browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
             if (browseHangarBtn != null) browseHangarBtn.setText(I18n.get("app.browse_hangar"));
@@ -239,6 +246,7 @@ public class MainController {
         openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder"));
         exportInstanceZipBtn.setText(I18n.get("app.export_instance_zip"));
         exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip"));
+        if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script"));
         deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
 
         browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
@@ -769,6 +777,7 @@ public class MainController {
         openPluginsFolderBtn.setDisable(disabled);
         exportInstanceZipBtn.setDisable(disabled);
         exportPluginsZipBtn.setDisable(disabled);
+        if (exportScriptBtn != null) exportScriptBtn.setDisable(disabled);
         deleteInstanceBtn.setDisable(disabled);
         browseModrinthBtn.setDisable(disabled);
         addByUrlBtn.setDisable(disabled);
@@ -1258,6 +1267,142 @@ public class MainController {
                 alert.showAndWait();
             }
         }
+    }
+
+    @FXML
+    private void handleExportScript() {
+        if (currentSelectedInstance == null) return;
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle(I18n.get("app.export_script_title"));
+        fileChooser.setInitialFileName("install-plugins-" + currentSelectedInstance.getName().replaceAll("[\\\\/:*?\"<>|]", "_") + ".sh");
+        fileChooser.getExtensionFilters().add(new javafx.stage.FileChooser.ExtensionFilter("Shell Script (*.sh)", "*.sh"));
+
+        java.io.File targetFile = fileChooser.showSaveDialog(rootPane.getScene().getWindow());
+        if (targetFile == null) return;
+
+        globalProgress.setVisible(true);
+        statusLabel.setText(I18n.get("app.export_script_generating"));
+
+        CompletableFuture.supplyAsync(() -> {
+            List<InstalledPlugin> currentPlugins = new ArrayList<>(installedPluginsList);
+            List<CompletableFuture<InstanceManager.ScriptItem>> itemFutures = new ArrayList<>();
+
+            for (InstalledPlugin p : currentPlugins) {
+                String sha512 = p.getSha512();
+                String fileName = p.getFileName();
+                boolean enabled = p.isEnabled();
+
+                // 1. Direct hit from plugin latestDownloadUrl if available
+                if (p.getLatestDownloadUrl() != null && !p.getLatestDownloadUrl().isBlank()) {
+                    itemFutures.add(CompletableFuture.completedFuture(
+                            new InstanceManager.ScriptItem(fileName, p.getLatestDownloadUrl(), sha512, p.getHostingPlatform(), p.getCurrentVersionNumber(), enabled)
+                    ));
+                    continue;
+                }
+
+                // 2. Check metadata store
+                PluginMetadataStore.DownloadRecord record = PluginMetadataStore.findRecord(instanceManager, currentSelectedInstance, fileName, sha512);
+
+                if (record != null && "hangar".equalsIgnoreCase(record.hostingPlatform) && record.hangarNamespace != null) {
+                    // Query Hangar for download URL
+                    String[] parts = record.hangarNamespace.split("/", 2);
+                    if (parts.length == 2) {
+                        String author = parts[0];
+                        String slug = parts[1];
+                        String platform = HangarService.toPlatformKey(currentSelectedInstance.getLoader());
+
+                        CompletableFuture<InstanceManager.ScriptItem> hf = hangarService.getVersions(author, slug, platform, null, 0, 10)
+                                .thenApply(page -> {
+                                    for (HangarVersion hv : page.versions()) {
+                                        if (record.versionNumber != null && record.versionNumber.equalsIgnoreCase(hv.getVersionNumber())
+                                                || (record.versionId != null && record.versionId.equalsIgnoreCase(String.valueOf(hv.getId())))) {
+                                            HangarVersion.PlatformDownload pd = hv.getPaperDownload();
+                                            if (pd != null && pd.downloadUrl != null) {
+                                                return new InstanceManager.ScriptItem(fileName, pd.downloadUrl, sha512, "hangar", hv.getVersionNumber(), enabled);
+                                            }
+                                        }
+                                    }
+                                    // Fallback to first paper download in page
+                                    if (!page.versions().isEmpty()) {
+                                        HangarVersion first = page.versions().get(0);
+                                        HangarVersion.PlatformDownload pd = first.getPaperDownload();
+                                        if (pd != null && pd.downloadUrl != null) {
+                                            return new InstanceManager.ScriptItem(fileName, pd.downloadUrl, sha512, "hangar", first.getVersionNumber(), enabled);
+                                        }
+                                    }
+                                    return new InstanceManager.ScriptItem(fileName, null, sha512, "hangar", p.getCurrentVersionNumber(), enabled);
+                                }).exceptionally(ex -> new InstanceManager.ScriptItem(fileName, null, sha512, "hangar", p.getCurrentVersionNumber(), enabled));
+                        itemFutures.add(hf);
+                        continue;
+                    }
+                }
+
+                if (record != null && record.versionId != null && !record.versionId.isBlank()) {
+                    // Query Modrinth version by versionId
+                    CompletableFuture<InstanceManager.ScriptItem> mf = modrinthService.getVersion(record.versionId)
+                            .thenApply(mv -> {
+                                ModrinthVersion.ModrinthFile primary = mv.getPrimaryFile();
+                                String dlUrl = primary != null ? primary.getUrl() : null;
+                                return new InstanceManager.ScriptItem(fileName, dlUrl, sha512, "modrinth", mv.getVersionNumber(), enabled);
+                            }).exceptionally(ex -> new InstanceManager.ScriptItem(fileName, null, sha512, "modrinth", p.getCurrentVersionNumber(), enabled));
+                    itemFutures.add(mf);
+                    continue;
+                }
+
+                if (sha512 != null && !sha512.isBlank()) {
+                    // Query Modrinth by SHA-512
+                    CompletableFuture<InstanceManager.ScriptItem> hf = modrinthService.getVersionByHash(sha512)
+                            .thenApply(mv -> {
+                                if (mv != null && mv.getPrimaryFile() != null) {
+                                    return new InstanceManager.ScriptItem(fileName, mv.getPrimaryFile().getUrl(), sha512, "modrinth", mv.getVersionNumber(), enabled);
+                                }
+                                return new InstanceManager.ScriptItem(fileName, null, sha512, "local", p.getCurrentVersionNumber(), enabled);
+                            }).exceptionally(ex -> new InstanceManager.ScriptItem(fileName, null, sha512, "local", p.getCurrentVersionNumber(), enabled));
+                    itemFutures.add(hf);
+                    continue;
+                }
+
+                // Fallback: local plugin without online match
+                itemFutures.add(CompletableFuture.completedFuture(
+                        new InstanceManager.ScriptItem(fileName, null, sha512, "local", p.getCurrentVersionNumber(), enabled)
+                ));
+            }
+
+            return CompletableFuture.allOf(itemFutures.toArray(new CompletableFuture[0]))
+                    .thenApply(v -> itemFutures.stream().map(CompletableFuture::join).toList())
+                    .join();
+        }).thenAccept(scriptItems -> Platform.runLater(() -> {
+            globalProgress.setVisible(false);
+            statusLabel.setText(I18n.get("app.status_ready"));
+            try {
+                instanceManager.exportPluginsScript(currentSelectedInstance, scriptItems, targetFile.toPath());
+                long resolvedCount = scriptItems.stream().filter(item -> item.downloadUrl != null && !item.downloadUrl.isBlank()).count();
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, I18n.get("app.export_script_success", currentSelectedInstance.getName(), targetFile.getAbsolutePath(), resolvedCount), ButtonType.OK);
+                alert.setTitle(I18n.get("app.export_script_title"));
+                alert.setHeaderText(null);
+                com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
+                alert.showAndWait();
+            } catch (Exception e) {
+                logger.error("Failed to export plugins script", e);
+                Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("app.export_zip_failed", e.getMessage()), ButtonType.OK);
+                alert.setTitle(I18n.get("app.export_script_title"));
+                alert.setHeaderText(null);
+                com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
+                alert.showAndWait();
+            }
+        })).exceptionally(ex -> {
+            Platform.runLater(() -> {
+                globalProgress.setVisible(false);
+                statusLabel.setText(I18n.get("app.status_ready"));
+                logger.error("Failed to resolve script items", ex);
+                Alert alert = new Alert(Alert.AlertType.ERROR, I18n.get("app.export_zip_failed", ex.getMessage()), ButtonType.OK);
+                alert.setTitle(I18n.get("app.export_script_title"));
+                alert.setHeaderText(null);
+                com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(alert);
+                alert.showAndWait();
+            });
+            return null;
+        });
     }
 
     @FXML

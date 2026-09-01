@@ -52,6 +52,7 @@
                     <Button fx:id="openPluginsFolderBtn" text="開啟插件資料夾" onAction="#handleOpenPluginsFolder" styleClass="btn-secondary"/>
                     <Button fx:id="exportInstanceZipBtn" text="📦 匯出實例 ZIP" onAction="#handleExportInstanceZip" styleClass="btn-secondary"/>
                     <Button fx:id="exportPluginsZipBtn" text="📦 匯出插件 ZIP" onAction="#handleExportPluginsZip" styleClass="btn-secondary"/>
+                    <Button fx:id="exportScriptBtn" text="📜 匯出為腳本" onAction="#handleExportScript" styleClass="btn-secondary"/>
                     <Button fx:id="deleteInstanceBtn" text="刪除實例" onAction="#handleDeleteCurrentInstance" styleClass="btn-danger"/>
                 </HBox>
 
