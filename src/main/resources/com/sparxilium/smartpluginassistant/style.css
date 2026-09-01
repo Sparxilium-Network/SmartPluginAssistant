@@ -36,6 +36,26 @@
     -fx-background-color: #4682f7;
 }
 
+.menu-button.btn-primary {
+    -fx-background-color: #3574f0;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 2 6 2 8;
+    -fx-cursor: hand;
+}
+.menu-button.btn-primary:hover,
+.menu-button.btn-primary:showing {
+    -fx-background-color: #4682f7;
+}
+.menu-button.btn-primary .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+.menu-button.btn-primary .arrow {
+    -fx-background-color: #ffffff;
+}
+
 .btn-secondary {
     -fx-background-color: #2b2d30;
     -fx-text-fill: #dfe1e5;

@@ -61,8 +61,9 @@ public class MainController {
     @FXML private Button deleteInstanceBtn;
 
     // Toolbar
-    @FXML private Button browseModrinthBtn;
-    @FXML private Button browseHangarBtn;
+    @FXML private MenuButton browseMenuBtn;
+    @FXML private MenuItem browseModrinthMenuItem;
+    @FXML private MenuItem browseHangarMenuItem;
     @FXML private Button addByUrlBtn;
     @FXML private Button importPluginsBtn;
     @FXML private Button checkUpdatesBtn;
@@ -200,8 +201,9 @@ public class MainController {
             exportPluginsZipBtn.setText("📦 " + (isEn ? "Plug ZIP" : "插件 ZIP"));
             if (exportScriptBtn != null) exportScriptBtn.setText("📜 " + (isEn ? "Script" : "腳本"));
             deleteInstanceBtn.setText("🗑️ " + (isEn ? "Delete" : "刪除"));
-            browseModrinthBtn.setText("🔍 " + (isEn ? "Modrinth" : "Modrinth 插件"));
-            if (browseHangarBtn != null) browseHangarBtn.setText("🏪 " + (isEn ? "Hangar" : "Hangar 插件"));
+            if (browseMenuBtn != null) browseMenuBtn.setText("🔍 " + (isEn ? "Browse" : "瀏覽插件"));
+            if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText("🔍 " + (isEn ? "Modrinth Plugins" : "瀏覽 Modrinth 插件"));
+            if (browseHangarMenuItem != null) browseHangarMenuItem.setText("🏪 " + (isEn ? "Hangar Plugins" : "瀏覽 Hangar 插件"));
             addByUrlBtn.setText("🔗 " + (isEn ? "URL" : "網址新增"));
             if (importPluginsBtn != null) importPluginsBtn.setText("📂 " + (isEn ? "Import" : "匯入"));
             checkUpdatesBtn.setText("🔄 " + (isEn ? "Check" : "檢查更新"));
@@ -220,8 +222,9 @@ public class MainController {
             exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip"));
             if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script"));
             deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
-            browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
-            if (browseHangarBtn != null) browseHangarBtn.setText(I18n.get("app.browse_hangar"));
+            if (browseMenuBtn != null) browseMenuBtn.setText(I18n.get("app.browse_online"));
+            if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText(I18n.get("app.browse_modrinth"));
+            if (browseHangarMenuItem != null) browseHangarMenuItem.setText(I18n.get("app.browse_hangar"));
             addByUrlBtn.setText(I18n.get("app.add_by_url"));
             if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
             checkUpdatesBtn.setText(I18n.get("app.check_updates"));
@@ -249,8 +252,9 @@ public class MainController {
         if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script"));
         deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
 
-        browseModrinthBtn.setText(I18n.get("app.browse_modrinth"));
-        if (browseHangarBtn != null) browseHangarBtn.setText(I18n.get("app.browse_hangar"));
+        if (browseMenuBtn != null) browseMenuBtn.setText(I18n.get("app.browse_online"));
+        if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText(I18n.get("app.browse_modrinth"));
+        if (browseHangarMenuItem != null) browseHangarMenuItem.setText(I18n.get("app.browse_hangar"));
         addByUrlBtn.setText(I18n.get("app.add_by_url"));
         if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
         checkUpdatesBtn.setText(I18n.get("app.check_updates"));
@@ -779,7 +783,7 @@ public class MainController {
         exportPluginsZipBtn.setDisable(disabled);
         if (exportScriptBtn != null) exportScriptBtn.setDisable(disabled);
         deleteInstanceBtn.setDisable(disabled);
-        browseModrinthBtn.setDisable(disabled);
+        if (browseMenuBtn != null) browseMenuBtn.setDisable(disabled);
         addByUrlBtn.setDisable(disabled);
         checkUpdatesBtn.setDisable(disabled);
         refreshPluginsBtn.setDisable(disabled);

@@ -58,8 +58,12 @@
 
                 <!-- Plugin Actions Toolbar -->
                 <HBox alignment="CENTER_LEFT" spacing="8.0" style="-fx-background-color: #2b2d30; -fx-padding: 8 10; -fx-background-radius: 6;">
-                    <Button fx:id="browseModrinthBtn" text="🔍 瀏覽 Modrinth 插件" onAction="#handleOpenModrinthBrowser" styleClass="btn-primary"/>
-                    <Button fx:id="browseHangarBtn" text="🏪 瀏覽 Hangar 插件" onAction="#handleOpenHangarBrowser" styleClass="btn-primary"/>
+                    <MenuButton fx:id="browseMenuBtn" text="🔍 瀏覽線上插件" styleClass="btn-primary">
+                        <items>
+                            <MenuItem fx:id="browseModrinthMenuItem" text="🔍 瀏覽 Modrinth 插件" onAction="#handleOpenModrinthBrowser"/>
+                            <MenuItem fx:id="browseHangarMenuItem" text="🏪 瀏覽 Hangar 插件" onAction="#handleOpenHangarBrowser"/>
+                        </items>
+                    </MenuButton>
                     <Button fx:id="addByUrlBtn" text="🔗 貼上網址新增" onAction="#handleAddByUrl" styleClass="btn-secondary"/>
                     <Button fx:id="importPluginsBtn" text="📂 匯入插件" onAction="#handleOpenImportPlugins" styleClass="btn-secondary"/>
                     <Button fx:id="checkUpdatesBtn" text="🔄 檢查所有更新" onAction="#handleCheckUpdates" styleClass="btn-secondary"/>
