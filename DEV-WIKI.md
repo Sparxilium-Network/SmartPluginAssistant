@@ -28,21 +28,26 @@
 * **測試版 (Alpha/Beta) 檢查與警告標記**：
   * 若在實例設定中勾選「允許測試版本 (Alpha / Beta) 檢查與更新」，檢查更新時會納入 Alpha 與 Beta 發布版本。
   * 主畫面版本狀態若檢測到新版為測試版，會顯示專屬警示徽章：`⚠️ 測試版: <版本號> (beta/alpha)`，讓使用者明確知曉版本穩定度。
+* **腳本與 ZIP 匯出**：
+  * **ZIP 匯出**：支援將整個實例設定與插件，或單獨插件資料夾匯出成備份 ZIP。
+  * **一鍵部署腳本 (deploy.sh)**：能夠自動追溯本機所有 `.jar` 於 Modrinth / Hangar 的來源，並組合出一份可於 Linux 環境以 `wget` 自動重構下載相同插件版本的 Bash Script (`handleExportScript`)。
 
 ### 2.2 插件元數據與下載歷史記錄 (`PluginMetadataStore`)
 * 存放於各實例 `plugins/.plugin_metadata.json`。
 * 下載插件時即時記錄：
-  * `projectId`：Modrinth 專案識別碼（如 `luckperms`）
-  * `versionId`：Modrinth 發布版本 ID（如 `5zQ9hQ4x`）
-  * `versionNumber`：Modrinth 原始完整版本字串（如 `v5.5.71-bukkit`）
+  * `projectId`：Modrinth/Hangar 專案識別碼（如 `luckperms`）
+  * `versionId`：發布版本 ID（如 `5zQ9hQ4x`）
+  * `versionNumber`：原始完整版本字串（如 `v5.5.71-bukkit`）
   * `fileName`：下載儲存檔名（如 `LuckPerms-Bukkit-5.5.71.jar`）
-  * `sha1`：檔案雜湊值
+  * `sha1` / `sha512`：檔案雜湊值
+  * `hostingPlatform`：託管平台 (modrinth / hangar / local)
 * **更新比對機制**：
   1. 優先透過 `versionId` 進行 1:1 比對。
   2. 其次透過 `versionNumber`（含前後綴標籤）進行精確字串比對。
   3. 最後透過正規化語義版本演算法 (`normalizeVersionNumber`)，徹底消除平台前後綴（如 `-bukkit`, `-spigot`, `v`）帶來的版本誤報。
 
-### 2.3 Prism-style 購物車式 Modrinth 瀏覽器 (`ModrinthBrowserController`)
+### 2.3 購物車式線上插件市場瀏覽器 (`ModrinthBrowserController` & `HangarBrowserController`)
+* **多平台支援**：分別串接 Modrinth (`v2` API) 與 PaperMC Hangar (`v1` API) 兩大主流插件市場。
 * **多選佇列 (Shopping Cart)**：使用者可連續挑選多個插件版本，卡片即時顯示選取徽章。
 * **測試版篩選 (Alpha/Beta Pre-releases)**：
   * 預設僅列出正式穩定版本 (`release`)，避免誤裝不穩定測試版。
@@ -50,52 +55,41 @@
 * **外部瀏覽器網頁開啟**：
   * 右側詳情面板右上角提供「🌐 在瀏覽器中開啟」按鈕，可直接於系統預設瀏覽器開啟該插件在 Modrinth / Hangar 的完整官方頁面。
 * **批次依賴解析與確認**：
-  * 點擊右下角「檢查並確認 (X)」後，自動非同步解析所有選取項目的 Required 與 Optional 依賴。
+  * 點擊右下角「檢查並確認 (X)」後，自動非同步解析所有選取項目的 Required 與 Optional 依賴 (主要針對 Modrinth)。
   * 彈出原生深色模態對話框 (`Stage`)，供使用者自由勾選或剔除依賴項目。
   * 確認後進行平行下載與安裝，並寫入下載元數據。
 
-### 2.4 網址解析新增插件、特定版本指定與不相容警示機制 (`AddByUrlDialogController`)
+### 2.4 網址解析新增與不相容警示機制 (`AddByUrlDialogController`)
 * **支援多種網址格式**：
-  * 專案首頁網址（如 `https://modrinth.com/plugin/huskhomes` 或 `huskhomes`）。
-  * **特定發布版本直接網址**（如 `https://modrinth.com/plugin/huskhomes/version/4.11-7a2d09a`）。
+  * Modrinth 專案首頁網址或 Slug（如 `https://modrinth.com/plugin/huskhomes`）。
+  * Hangar 專案首頁網址（如 `https://hangar.papermc.io/William278/HuskHomes`）。
+  * 特定發布版本直接網址。
 * **相容性判斷與安全確認機制（不強制阻擋，改以警告 + 勾選授權）**：
   * **完全相容正式版**：直接解鎖下載。
   * **僅有相容測試版 (Beta / Alpha)**：顯示測試版提示，需主動勾選確認後解鎖下載。
-  * **環境不相容或指定非相容版本**：
-    * 以前遇到不相容會直接跳出錯誤並終止下載，現在會自動抓取目標版本資訊。
-    * 顯示醒目警告：標明該版本支援的核心與 MC 版本，與當前實例環境不同。
-    * 提供「確認忽視環境不相容，強制下載並安裝此版本」核取方塊，勾選後即可順利下載。
+  * **環境不相容或指定非相容版本**：自動抓取目標版本資訊，顯示醒目警告（標明該版本支援的核心與當前環境不同），提供「確認忽視環境不相容，強制下載」核取方塊解鎖。
 
-### 2.5 主畫面插件表格、平台標記、多選操作、過濾與即時搜尋 (`MainController`)
+### 2.5 主畫面插件表格、平台標記、多選與過濾 (`MainController`)
 * 採用 `FilteredList` + `SortedList` 雙向綁定 `TableView`。
 * **託管平台識別 (Platform Column)**：
-  * 主表格新增「託管平台」欄位。
   * **Modrinth 插件**：顯示亮綠色徽章 `Modrinth`（代表已連結專案，支援檢查更新與一鍵升級）。
-  * **Hangar 插件**：顯示深藍色徽章 `Hangar`（代表自 PaperMC 官方 Hangar 倉庫下載並連結，支援版本檢查與更新）。
+  * **Hangar 插件**：顯示深藍色徽章 `Hangar`（支援版本檢查與更新）。
   * **本地插件**：顯示深灰色徽章 `本地`（代表本機匯入或未關聯遠端平台的自製/本機插件）。
-* **多選與快捷鍵支援 (Ctrl / Shift / Space)**：
-  * 支援 `Ctrl + 左鍵` 點擊不連續多選、`Shift + 左鍵` 連續範圍多選。
-  * 表格反白選取狀態會與左側勾選框即時雙向連動。
-  * 按下 `Space`（空白鍵）可一鍵切換所有反白選取列的勾選狀態。
-* **右鍵快顯功能表 (Context Menu)**：
-  * 對任何插件列按下滑鼠右鍵，即刻彈出原生功能表：支援「啟用插件 / 停用插件」切換與「刪除插件」（含確認對話框）。
-* **單一插件更新就地刷新 (In-place Update)**：
+* **多選與快捷鍵支援 (Ctrl / Shift / Space)**：支援不連續/範圍多選與空白鍵一鍵切換啟用狀態。
+* **單一插件就地刷新 (In-place Update)**：
   * 在「檢查所有更新」後，點選任一插件的「更新」按鈕進行個別升級，僅會就地更新該插件的版本狀態與檔名，不會清除其他尚未更新插件的更新按鈕與徽章。
-* **篩選下拉選單**：支援「全部插件」、「已啟用」、「已停用」、「有新版本」並附帶即時數量徽章。
-* **即時關鍵字搜尋**：輸入檔名或版本號即時聯動篩選。
+* **即時關鍵字搜尋與篩選**：支援下拉篩選「有新版本」以及即時文字搜尋。
 
 ### 2.6 批量目錄匯入與 Modrinth 自動配對連結 (`ImportPluginsDialogController`)
 * **功能入口**：主畫面插件工具列「📂 匯入插件」按鈕。
 * **掃描與讀取**：選擇目標目錄後，自動掃描所有 `.jar` 與 `.jar.disabled` 檔案。
 * **自動讀取與配對流程**：
   1. 讀取 jar 內部描述檔（`plugin.yml` / `paper-plugin.yml` 等）以取得內部名稱與版本。
-  2. 計算每個 jar 檔案的 SHA-1 Hash，並調用 Modrinth `/version_files` 批次端點反查。
-  3. 若 SHA-1 命中，直接取得 Modrinth `projectId`、`versionId`、`versionNumber` 與發布類型。
+  2. 計算每個 jar 檔案的 SHA-1 / SHA-512 Hash，並調用 Modrinth API 批次端點反查。
+  3. 若 Hash 命中，直接取得 Modrinth `projectId`、`versionId` 並轉化為「已連結」。
   4. 未命中者標註為「未連結 (本機插件)」，仍可勾選匯入。
 * **批量匯入與元數據持久化**：
-  * 勾選項目後點擊「開始匯入」，將檔案複製到實例 `plugins/` 目錄。
-  * 自動寫入 `.plugin_metadata.json`，使匯入的插件未來支援一鍵檢查更新與版本對比。
-
+  * 將檔案複製到實例 `plugins/` 目錄，自動寫入 `.plugin_metadata.json`。
 
 ---
 
@@ -105,7 +99,7 @@
   * 繁體中文：`zh-tw.lang`
   * 英文：`en.lang`
 * **使用準則**：
-  * 嚴禁在 Java 程式碼或 FXML 中寫死文字。
+  * 嚴禁在 Java 程式碼或 FXML 中寫死文字（包括緊湊模式下的短標題，都應使用獨立的 lang key）。
   * 一律透過 `I18n.get("key", params...)` 取得在地化字串。
 
 ---
@@ -153,6 +147,6 @@ chmod +x build-linux.sh
 
 ## 📜 6. 開發者維護守則 (Agent Rules)
 
-1. **翻譯與文字**：新增任何 UI 元素或提示訊息，必須同時更新 `zh-tw.lang` 與 `en.lang`。
-2. **日誌記錄**：所有關鍵動作與異常皆使用 `LogManager.getLogger(...)` 記錄。
+1. **翻譯與文字 (I18n)**：新增任何 UI 元素或提示訊息，必須同時更新 `zh-tw.lang` 與 `en.lang`，嚴格禁止三元運算子硬編碼。
+2. **日誌記錄 (SLF4J/Log4j)**：所有關鍵動作、網路請求失敗與例外捕捉皆**必須**使用 `logger.error("...", e)` 記錄，**嚴禁**使用 `e.printStackTrace()`。
 3. **版本控制**：每次完成特定功能或修復後，必須執行 `git commit` 並撰寫詳盡 Commit Message。

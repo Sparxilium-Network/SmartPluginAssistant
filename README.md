@@ -12,8 +12,9 @@
 
 本工具**並非直接架設伺服器程序**，而是專注於**虛擬伺服器實例與插件生態的管理**：
 * 支援多種伺服器核心分類管理（Paper, Spigot, Purpur, Folia, Velocity, BungeeCord 等）。
-* 串接官方 **[Modrinth API](https://docs.modrinth.com/api/)**。
-* 實現**線上搜尋安裝**、**貼上網址直接匯入**，以及基於檔案 SHA-1 雜湊值的**一鍵批次自動更新**功能。
+* 深度串接 **[Modrinth API](https://docs.modrinth.com/api/)** 與 **[PaperMC Hangar API](https://hangar.papermc.io/)**。
+* 實現**線上搜尋安裝**、**貼上網址直接匯入**、**本機批量掃描與線上配對**，以及基於檔案 Hash 雜湊值的**一鍵批次自動更新**功能。
+* 支援**匯出伺服器部署腳本 (deploy.sh)**，一鍵自動產生可用於 Linux 伺服器部署的 `curl` / `wget` 插件下載腳本。
 
 ---
 
@@ -24,34 +25,37 @@
    * 支援使用預設資料夾，或直接指向您本機現有的伺服器目錄。
    * 快速從介面開啟實例根目錄或 `plugins/` 資料夾。
 
-2. **Modrinth API 線上搜尋與安裝 (Modrinth Browser)**
-   * 內建 Modrinth 插件市場瀏覽器。
+2. **多平台線上搜尋與安裝 (Modrinth & Hangar Browser)**
+   * 內建 Modrinth 與 Hangar 插件市場瀏覽器。
    * 自動依據當前實例的 Loader 核心與 Minecraft 版本進行相容性篩選。
+   * 支援一鍵解析必備前置依賴 (Dependencies) 並自動勾選下載。
    * 點擊即可一鍵下載 `.jar` 檔案至該實例的 `plugins/` 目錄中。
 
-3. **透過網址或 Slug 直接新增 (Add by URL)**
-   * 支援直接貼上 Modrinth 網址（例如 `https://modrinth.com/plugin/viaversion`）或專案 ID。
+3. **透過網址直接新增 (Add by URL)**
+   * 支援直接貼上 Modrinth 網址（如 `https://modrinth.com/plugin/viaversion`）或 Hangar 網址。
    * 自動解析插件資訊與符合當前伺服器環境的最新發布版本並下載。
 
-4. **批次 Hash 比對與一鍵自動更新 (Auto-Updater)**
-   * 本地自動計算 `plugins/` 內所有 `.jar` 的 SHA-1 雜湊值。
-   * 透過 Modrinth `/v2/version_files/update` API 批次比對最新版本。
+4. **批次目錄匯入與線上配對 (Bulk Import & Link)**
+   * 選擇現有的 `plugins/` 目錄進行批量匯入。
+   * 自動計算所有本機 `.jar` 檔案的 SHA-1，並嘗試與 Modrinth API 線上比對。
+   * 成功命中後，本機舊插件將瞬間轉化為「已連結」，未來可享有一鍵更新！
+
+5. **批次 Hash 比對與一鍵自動更新 (Auto-Updater)**
+   * 本地自動計算 `plugins/` 內所有 `.jar` 的 Hash 雜湊值。
+   * 透過 Modrinth / Hangar API 批次比對最新版本（支援正式版 / Beta / Alpha 切換）。
    * 提供「一鍵全部更新」或個別插件更新，自動安全置換檔案。
 
-5. **細緻載入器相容性自訂 (Granular Compatibility Selection)**
-   * 進入實例設定，可依據伺服器核心靈活勾選欲額外相容的上游核心：
-     * **Folia 實例**：可獨立勾選是否相容 `Paper`、`Spigot`、`Bukkit`、`Purpur`。
-     * **Paper 實例**：可勾選相容 `Spigot`、`Bukkit`。
-     * **Velocity 等無下游相容之核心**：相容選項將自動隱藏並提示無額外相容核心。
+6. **細緻載入器相容性自訂 (Granular Compatibility Selection)**
+   * 進入實例設定，可依據伺服器核心靈活勾選欲額外相容的上游核心（例如 Paper 實例可勾選 Spigot 相容）。
    * 勾選時即時呈現 API / 非同步相容性風險警告。
 
-6. **多國語言支援 (.lang 檔案翻譯系統)**
-   * 主介面右上角提供 `🌐` 語言即時下拉切換。
-   * 內建標準化語系檔：`zh-tw.lang`（繁體中文）、`en.lang`（英文）。
-   * 任何人皆可透過簡單鍵值對文字檔（`key=value`）擴充其他語言。
+7. **匯出與共享部署 (Export & Deploy Scripts)**
+   * **ZIP 匯出**：一鍵將伺服器實例或純插件目錄打包為 ZIP 檔案。
+   * **腳本匯出 (Shell Script)**：自動解析實例內所有已安裝插件的原始下載來源（Modrinth/Hangar），並生成相容於 Linux 的 `.sh` 腳本，可用於在新環境下自動化 `curl/wget` 部署插件。
 
-7. **現代化深色介面 (Modern Dark UI)**
-   * 採用 Prism Launcher 風格的深色調介面與標籤體系，操作直覺流暢。
+8. **多國語言與現代深色介面 (I18n & Modern Dark UI)**
+   * 採用 Prism Launcher 風格的深色調介面與標籤體系（支援 Windows 11 DWM 原生深色標題列）。
+   * 內建完善的多語系系統 (I18n)，提供 `zh-tw.lang`（繁體中文）、`en.lang`（英文）動態切換。
 
 ---
 
@@ -60,7 +64,9 @@
 * **運行環境**：Java JDK 21+ / JDK 25
 * **UI 框架**：JavaFX 21 + FXML + CSS
 * **資料處理**：Jackson Databind (JSON 序列化與反序列化)
-* **網路通訊**：Java 11+ 原生 `HttpClient` (支援非同步 CompletableFuture)
+* **網路通訊**：Java 11+ 原生 `HttpClient` (非同步 CompletableFuture 與執行緒池)
+* **日誌紀錄**：SLF4J + Log4j 2
+* **系統整合**：JNA (Windows 深色標題列整合)
 * **圖標庫**：Ikonli FontAwesome5
 
 ---
@@ -90,23 +96,32 @@ src/main/java/com/sparxilium/smartpluginassistant/
 ├── HelloApplication.java            # 應用程式主入口 (JavaFX)
 ├── Launcher.java                    # 啟動器轉發
 ├── controller/                      # 介面控制器
-│   ├── MainController.java          # 主畫面與插件列表控制器
+│   ├── MainController.java          # 主畫面與實例管理控制器
 │   ├── ModrinthBrowserController.java # Modrinth 搜尋市場控制器
-│   ├── AddByUrlDialogController.java # 網址新增對話框控制器
+│   ├── HangarBrowserController.java # Hangar 搜尋市場控制器
+│   ├── AddByUrlDialogController.java # 網址解析新增對話框控制器
+│   ├── ImportPluginsDialogController.java # 批量掃描匯入控制器
+│   ├── InstanceSettingsDialogController.java # 實例獨立相容性設定控制器
 │   └── CreateInstanceDialogController.java # 建立實例對話框控制器
 ├── model/                           # 資料模型
 │   ├── ServerInstance.java          # 伺服器實例模型
 │   ├── InstalledPlugin.java         # 本地已安裝插件模型
-│   └── Modrinth*.java               # Modrinth API 回傳資料結構
+│   ├── Modrinth*.java               # Modrinth API 資料結構
+│   └── Hangar*.java                 # Hangar API 資料結構
 └── service/                         # 業務邏輯服務
-    ├── InstanceManager.java         # 實例配置儲存與資料夾管理
+    ├── InstanceManager.java         # 實例配置儲存、Shell 腳本生成與目錄管理
     ├── ModrinthService.java         # Modrinth HTTP API 客戶端
-    └── PluginManagerService.java    # 插件掃描、Hash 比對與更新管理
+    ├── HangarService.java           # Hangar HTTP API 客戶端
+    ├── PluginManagerService.java    # 插件檔案掃描、Hash 比對與生命週期管理
+    ├── PluginMetadataStore.java     # 插件線上來源快取與持久化儲存
+    ├── ImageCacheService.java       # 非同步網路圖片快取服務
+    └── I18n.java                    # 多國語系動態切換服務
 ```
 
 ---
 
 ## 📄 開源授權與致謝 (License & Credits)
 
-* API 支援來自 [Modrinth API](https://docs.modrinth.com/api/)。
+* API 支援來自 [Modrinth API](https://docs.modrinth.com/api/) 與 [PaperMC Hangar](https://hangar.papermc.io/)。
 * UI 與交互設計靈感來自 [Prism Launcher](https://prismlauncher.org/)。
+
