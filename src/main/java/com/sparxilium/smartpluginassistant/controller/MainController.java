@@ -106,9 +106,9 @@ public class MainController {
         if (mainSplitPane != null) {
             java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
             double savedPos = prefs.getDouble(PREF_MAIN_SPLIT_POSITION, 0.25);
-            mainSplitPane.setDividerPositions(savedPos);
             
             Platform.runLater(() -> {
+                mainSplitPane.setDividerPositions(savedPos);
                 if (!mainSplitPane.getDividers().isEmpty()) {
                     mainSplitPane.getDividers().get(0).positionProperty().addListener((obs, oldV, newV) -> {
                         prefs.putDouble(PREF_MAIN_SPLIT_POSITION, newV.doubleValue());
