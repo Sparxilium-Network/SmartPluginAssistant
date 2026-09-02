@@ -95,7 +95,7 @@
 
 ## 🌐 3. 國際化多語系規範 (I18n)
 
-* 語系檔案路徑：`src/main/resources/com/sparxilium/smartpluginassistant/lang/`
+* 語系檔案路徑：`src/main/resources/com/sparxilium/smartpluginassistant/resources/lang/`
   * 繁體中文：`zh-tw.lang`
   * 英文：`en.lang`
 * **使用準則**：

@@ -4,7 +4,7 @@
 
 ## 1. 介面與視窗翻譯 (I18n Translation)
 * **規範**：所有 UI 視窗、對話框、提示訊息及文字標籤，皆必須透過專案內建的 `I18n.get(...)` 進行翻譯處理，嚴禁在 Java 程式碼或 FXML 中寫死（Hardcode）中英文或其他語言的文字。
-* **語系檔案**：翻譯資源應同步更新至 `src/main/resources/` 下的語系檔（如 `zh-tw.lang`、`en.lang`）。
+* **語系檔案**：翻譯資源應同步更新至 `src/main/resources/com/sparxilium/smartpluginassistant/resources/lang/` 下的語系檔（如 `zh-tw.lang`、`en.lang`）。
 * **使用範例**：
   ```java
   titleLabel.setText(I18n.get("app_settings.title"));

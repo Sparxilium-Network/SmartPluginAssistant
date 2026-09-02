@@ -23,7 +23,7 @@ public class I18n {
 
     public static void loadLanguage(String langCode) {
         currentMessages.clear();
-        String resourcePath = "/com/sparxilium/smartpluginassistant/lang/" + langCode + ".lang";
+        String resourcePath = "/com/sparxilium/smartpluginassistant/resources/lang/" + langCode + ".lang";
         try (InputStream is = I18n.class.getResourceAsStream(resourcePath)) {
             if (is != null) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
