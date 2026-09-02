@@ -394,7 +394,7 @@ public class HangarBrowserController implements PluginBrowserModule {
             Path dest = pluginsDir.resolve(fileName);
 
             String finalFileName = fileName;
-            var f = hangarService.downloadFile(pd.downloadUrl, dest, null)
+            var f = hangarService.downloadUpdate(null, pd.downloadUrl, dest, null)
                     .thenAccept(path -> {
                         String sha512 = PluginManagerService.calculateSha512(path.toFile());
                         PluginMetadataStore.DownloadRecord record = new PluginMetadataStore.DownloadRecord(

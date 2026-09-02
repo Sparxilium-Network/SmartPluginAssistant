@@ -60,7 +60,7 @@ public class InstanceSettingsDialogController {
         if (tokenVoxelField != null) tokenVoxelField.setText(instance.getApiToken("voxel"));
         if (tokenSpigetField != null) tokenSpigetField.setText(instance.getApiToken("spiget"));
 
-        new com.sparxilium.smartpluginassistant.service.ModrinthService().fetchGameVersions()
+        new com.sparxilium.smartpluginassistant.service.ModrinthService(new com.sparxilium.smartpluginassistant.service.HttpDownloadService(java.net.http.HttpClient.newHttpClient())).fetchGameVersions()
                 .thenAccept(versions -> javafx.application.Platform.runLater(() -> {
                     versionComboBox.getItems().setAll(versions);
                     versionComboBox.setValue(instance.getMcVersion());

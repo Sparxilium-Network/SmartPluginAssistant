@@ -88,11 +88,12 @@ public class MainController {
     @FXML private TableColumn<InstalledPlugin, Void> colActions;
 
     private final InstanceManager instanceManager = new InstanceManager();
-    private final ModrinthService modrinthService = new ModrinthService();
-    private final HangarService hangarService = new HangarService();
-    private final VoxelService voxelService = new VoxelService();
-    private final com.sparxilium.smartpluginassistant.service.SpigetService spigetService = new com.sparxilium.smartpluginassistant.service.SpigetService();
-    private final PluginManagerService pluginManagerService = new PluginManagerService(instanceManager, modrinthService);
+    private final com.sparxilium.smartpluginassistant.service.HttpDownloadService downloadService = new com.sparxilium.smartpluginassistant.service.HttpDownloadService(java.net.http.HttpClient.newHttpClient());
+    private final ModrinthService modrinthService = new ModrinthService(downloadService);
+    private final HangarService hangarService = new HangarService(downloadService);
+    private final VoxelService voxelService = new VoxelService(downloadService);
+    private final com.sparxilium.smartpluginassistant.service.SpigetService spigetService = new com.sparxilium.smartpluginassistant.service.SpigetService(downloadService);
+    private final PluginManagerService pluginManagerService = new PluginManagerService(instanceManager, java.util.List.of(modrinthService, hangarService, voxelService, spigetService));
 
     private ServerInstance currentSelectedInstance;
     private final ObservableList<InstalledPlugin> installedPluginsList = FXCollections.observableArrayList();
@@ -958,9 +959,8 @@ public class MainController {
 
         List<InstalledPlugin> pluginsCopy = new java.util.ArrayList<>(installedPluginsList);
 
-        // First check Modrinth plugins, then chain Hangar plugins
+        // Check all plugins (repo lookup is dynamic now)
         pluginManagerService.checkPluginUpdates(currentSelectedInstance, pluginsCopy)
-                .thenCompose(updatedList -> pluginManagerService.checkHangarPluginUpdates(currentSelectedInstance, updatedList))
                 .thenAccept(updatedList -> Platform.runLater(() -> {
                     globalProgress.setVisible(false);
                     updateFilterComboOptions();

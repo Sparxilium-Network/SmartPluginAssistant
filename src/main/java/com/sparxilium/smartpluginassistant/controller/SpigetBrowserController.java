@@ -263,7 +263,7 @@ public class SpigetBrowserController implements PluginBrowserModule {
         Path pluginsDir = instanceManager.getPluginsDirectory(currentInstance);
         Path targetPath = pluginsDir.resolve(fileName);
 
-        spigetService.downloadResource(selectedResource.getId(), targetPath)
+        spigetService.downloadUpdate(currentInstance, spigetService.getDownloadUrl(selectedResource.getId()), targetPath, null)
                 .thenAccept(path -> {
                     String sha512 = "";
                     try {

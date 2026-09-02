@@ -2,6 +2,7 @@ package com.sparxilium.smartpluginassistant.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.sparxilium.smartpluginassistant.model.SpigetResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,29 +13,46 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import com.sparxilium.smartpluginassistant.model.UpdateResult;
+import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
+import com.sparxilium.smartpluginassistant.model.ServerInstance;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
-public class SpigetService {
+public class SpigetService implements PluginRepository {
     private static final Logger logger = LoggerFactory.getLogger(SpigetService.class);
     private static final String BASE_URL = "https://api.spiget.org/v2";
-    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant/1.0 (contact@sparxilium.com)";
+    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant (https://github.com/Sparxilium-Network/SmartPluginAssistant)";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final HttpDownloadService downloadService;
 
-    public SpigetService() {
+    public SpigetService(HttpDownloadService downloadService) {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
         this.objectMapper = new ObjectMapper();
+        this.downloadService = downloadService;
+    }
+
+    @Override
+    public String getPlatformKey() {
+        return "spiget";
     }
 
     public CompletableFuture<List<SpigetResource>> searchResources(String query, int page, int size) {
@@ -100,33 +118,55 @@ public class SpigetService {
         return BASE_URL + "/resources/" + resourceId + "/download";
     }
 
-    public CompletableFuture<Path> downloadResource(long resourceId, Path targetPath) {
-        String url = getDownloadUrl(resourceId);
-        logger.info("Downloading resource from Spiget: {} -> {}", url, targetPath);
+    @Override
+    public CompletableFuture<Map<InstalledPlugin, UpdateResult>> checkForUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
+        Map<InstalledPlugin, UpdateResult> resultMap = new java.util.concurrent.ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("User-Agent", USER_AGENT)
-                .timeout(Duration.ofMinutes(3))
-                .GET()
-                .build();
+        for (InstalledPlugin plugin : plugins) {
+            if (plugin.getProjectId() == null || plugin.getProjectId().isBlank()) continue;
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
-                .thenApply(response -> {
-                    if (response.statusCode() != 200) {
-                        throw new RuntimeException("Download failed with HTTP " + response.statusCode());
-                    }
-                    try {
-                        if (targetPath.getParent() != null) {
-                            Files.createDirectories(targetPath.getParent());
+            long resourceId;
+            try {
+                resourceId = Long.parseLong(plugin.getProjectId());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+
+            // Spiget doesn't have a good batch endpoint, so we query the latest version for each resource
+            String url = BASE_URL + "/resources/" + resourceId + "/versions/latest";
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", USER_AGENT)
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+
+            CompletableFuture<Void> f = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenAccept(response -> {
+                        if (response.statusCode() == 200) {
+                            try {
+                                JsonNode root = objectMapper.readTree(response.body());
+                                String versionNum = root.path("name").asText(null);
+                                String versionId = root.path("id").asText(null);
+                                if (versionNum != null && !versionNum.equals(plugin.getCurrentVersionNumber())) {
+                                    String downloadUrl = getDownloadUrl(resourceId);
+                                    resultMap.put(plugin, new UpdateResult(versionNum, downloadUrl, "-", versionId));
+                                }
+                            } catch (Exception e) {
+                                logger.error("Failed to parse Spiget latest version", e);
+                            }
                         }
-                        try (InputStream in = response.body()) {
-                            Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                        }
-                        return targetPath;
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to save downloaded Spiget resource: " + e.getMessage(), e);
-                    }
-                });
+                    });
+            futures.add(f);
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> resultMap);
+    }
+
+    @Override
+    public CompletableFuture<Path> downloadUpdate(ServerInstance instance, String downloadUrl, Path targetPath, Consumer<Double> progressCallback) {
+        return downloadService.downloadFile(downloadUrl, targetPath, null, progressCallback);
     }
 }

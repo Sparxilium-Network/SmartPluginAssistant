@@ -12,33 +12,49 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import com.sparxilium.smartpluginassistant.model.UpdateResult;
+import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
+import com.sparxilium.smartpluginassistant.model.ServerInstance;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
-public class VoxelService {
+public class VoxelService implements PluginRepository {
     private static final Logger logger = LoggerFactory.getLogger(VoxelService.class);
     private static final String BASE_URL = "https://api.voxel.shop/v1";
-    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant/1.0 (contact@sparxilium.com)";
+    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant (https://github.com/Sparxilium-Network/SmartPluginAssistant)";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final HttpDownloadService downloadService;
 
     public record SearchResultPage(List<VoxelProduct> products, int totalCount, boolean hasMore) {}
     public record DownloadInfo(String downloadUrl, String version) {}
 
-    public VoxelService() {
+    public VoxelService(HttpDownloadService downloadService) {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
         this.objectMapper = new ObjectMapper();
+        this.downloadService = downloadService;
+    }
+
+    @Override
+    public String getPlatformKey() {
+        return "voxel";
     }
 
     public CompletableFuture<SearchResultPage> searchResources(String query, int offset, int limit) {
@@ -137,31 +153,45 @@ public class VoxelService {
                 });
     }
 
-    public CompletableFuture<Path> downloadFile(String downloadUrl, Path targetPath) {
-        logger.info("Downloading file from Voxel: {} -> {}", downloadUrl, targetPath);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(downloadUrl))
-                .header("User-Agent", USER_AGENT)
-                .timeout(Duration.ofMinutes(3))
-                .GET()
-                .build();
+    @Override
+    public CompletableFuture<Map<InstalledPlugin, UpdateResult>> checkForUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
+        Map<InstalledPlugin, UpdateResult> resultMap = new java.util.concurrent.ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
-                .thenApply(response -> {
-                    if (response.statusCode() != 200) {
-                        throw new RuntimeException("Download failed with HTTP " + response.statusCode());
-                    }
-                    try {
-                        if (targetPath.getParent() != null) {
-                            Files.createDirectories(targetPath.getParent());
+        for (InstalledPlugin plugin : plugins) {
+            if (plugin.getProjectId() == null || plugin.getProjectId().isBlank()) continue;
+
+            long resourceId;
+            try {
+                resourceId = Long.parseLong(plugin.getProjectId());
+            } catch (NumberFormatException e) {
+                continue;
+            }
+
+            CompletableFuture<Void> f = getDownloadInfo(resourceId)
+                    .thenAccept(dlInfo -> {
+                        if (dlInfo != null && dlInfo.downloadUrl() != null && dlInfo.version() != null) {
+                            // Check if version is different from currently installed
+                            if (!dlInfo.version().equals(plugin.getCurrentVersionNumber())) {
+                                resultMap.put(plugin, new UpdateResult(dlInfo.version(), dlInfo.downloadUrl(), "-", dlInfo.version()));
+                            }
                         }
-                        try (InputStream in = response.body()) {
-                            Files.copy(in, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                        }
-                        return targetPath;
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to save downloaded file: " + e.getMessage(), e);
-                    }
-                });
+                    });
+            futures.add(f);
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> resultMap);
+    }
+
+    @Override
+    public CompletableFuture<Path> downloadUpdate(ServerInstance instance, String downloadUrl, Path targetPath, Consumer<Double> progressCallback) {
+        // Voxel might need api token if we ever implement premium downloads, we can grab it from instance
+        Map<String, String> headers = new java.util.HashMap<>();
+        if (instance != null && instance.getApiToken("voxel") != null && !instance.getApiToken("voxel").isBlank()) {
+            // Not strictly specified by Polymart docs for direct URL, but good placeholder
+            // headers.put("Authorization", "Bearer " + instance.getApiToken("voxel"));
+        }
+        return downloadService.downloadFile(downloadUrl, targetPath, headers, progressCallback);
     }
 }

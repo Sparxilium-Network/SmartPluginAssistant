@@ -33,8 +33,7 @@ public class CreateInstanceDialogController {
         loaderComboBox.getItems().addAll("paper", "spigot", "purpur", "folia", "velocity", "bungeecord", "fabric", "sponge");
         loaderComboBox.setValue("paper");
 
-        // Load game versions dynamically from Modrinth API
-        new com.sparxilium.smartpluginassistant.service.ModrinthService().fetchGameVersions()
+        new com.sparxilium.smartpluginassistant.service.ModrinthService(new com.sparxilium.smartpluginassistant.service.HttpDownloadService(java.net.http.HttpClient.newHttpClient())).fetchGameVersions()
                 .thenAccept(versions -> javafx.application.Platform.runLater(() -> {
                     versionComboBox.getItems().setAll(versions);
                     if (!versions.isEmpty()) {

@@ -263,7 +263,7 @@ public class VoxelBrowserController implements PluginBrowserModule {
 
                     Platform.runLater(() -> statusLabel.setText(I18n.get("hangar.downloading")));
 
-                    voxelService.downloadFile(dlInfo.downloadUrl(), targetPath)
+                    voxelService.downloadUpdate(currentInstance, dlInfo.downloadUrl(), targetPath, null)
                             .thenAccept(path -> {
                                 String sha512 = "";
                                 try {

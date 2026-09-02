@@ -886,7 +886,7 @@ public class ModrinthBrowserController implements PluginBrowserModule {
         List<java.util.concurrent.CompletableFuture<Path>> futures = new ArrayList<>();
         for (DownloadItem item : toDownload) {
             Path dest = pluginsDir.resolve(item.getFileName());
-            futures.add(modrinthService.downloadFile(item.getUrl(), dest, null).thenApply(downloadedPath -> {
+            futures.add(modrinthService.downloadUpdate(null, item.getUrl(), dest, null).thenApply(downloadedPath -> {
                 String sha512 = PluginManagerService.calculateSha512(downloadedPath.toFile());
                 PluginMetadataStore.saveRecord(instanceManager, currentInstance,
                         new PluginMetadataStore.DownloadRecord(

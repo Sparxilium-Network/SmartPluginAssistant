@@ -7,6 +7,10 @@ import com.sparxilium.smartpluginassistant.model.ModrinthVersion;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.sparxilium.smartpluginassistant.model.UpdateResult;
+import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
+import com.sparxilium.smartpluginassistant.model.ServerInstance;
+
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -21,21 +25,29 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-public class ModrinthService {
+public class ModrinthService implements PluginRepository {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ModrinthService.class);
     private static final String BASE_URL = "https://api.modrinth.com/v2";
-    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant/1.0 (contact@sparxilium.com)";
+    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant (https://github.com/Sparxilium-Network/SmartPluginAssistant)";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final HttpDownloadService downloadService;
 
-    public ModrinthService() {
+    public ModrinthService(HttpDownloadService downloadService) {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
         this.objectMapper = new ObjectMapper();
+        this.downloadService = downloadService;
+    }
+
+    @Override
+    public String getPlatformKey() {
+        return "modrinth";
     }
 
     /**
@@ -367,31 +379,54 @@ public class ModrinthService {
         return checkUpdates(hashes, loaders, mcVersion);
     }
 
-    public CompletableFuture<Path> downloadFile(String fileUrl, Path destination, Consumer<Double> progressCallback) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(fileUrl))
-                .header("User-Agent", USER_AGENT)
-                .GET()
-                .build();
+    @Override
+    public CompletableFuture<Map<InstalledPlugin, UpdateResult>> checkForUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
+        List<String> hashes = plugins.stream()
+                .map(InstalledPlugin::getSha512)
+                .filter(hash -> hash != null && !hash.isEmpty())
+                .collect(Collectors.toList());
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
-                .thenApply(response -> {
-                    if (response.statusCode() != 200) {
-                        throw new RuntimeException("Download failed with HTTP " + response.statusCode());
-                    }
-                    try (InputStream is = response.body()) {
-                        if (destination.getParent() != null) {
-                            Files.createDirectories(destination.getParent());
+        if (hashes.isEmpty()) {
+            return CompletableFuture.completedFuture(Collections.emptyMap());
+        }
+
+        return checkUpdates(hashes, instance.getLoader(), instance.getMcVersion())
+                .thenApply(modrinthUpdates -> {
+                    Map<InstalledPlugin, UpdateResult> resultMap = new HashMap<>();
+                    for (InstalledPlugin plugin : plugins) {
+                        if (plugin.getSha512() == null) continue;
+                        ModrinthVersion newVersion = modrinthUpdates.get(plugin.getSha512());
+                        if (newVersion != null) {
+                            String downloadUrl = null;
+                            if (newVersion.getFiles() != null && !newVersion.getFiles().isEmpty()) {
+                                ModrinthVersion.ModrinthFile primaryFile = newVersion.getFiles().stream()
+                                        .filter(ModrinthVersion.ModrinthFile::isPrimary)
+                                        .findFirst()
+                                        .orElse(newVersion.getFiles().get(0));
+                                downloadUrl = primaryFile.getUrl();
+                            }
+                            
+                            if (downloadUrl != null) {
+                                String supportedGames = "-";
+                                if (newVersion.getGameVersions() != null && !newVersion.getGameVersions().isEmpty()) {
+                                    if (newVersion.getGameVersions().size() > 2) {
+                                        supportedGames = newVersion.getGameVersions().get(0) + " ~ " + newVersion.getGameVersions().get(newVersion.getGameVersions().size() - 1);
+                                    } else {
+                                        supportedGames = String.join(", ", newVersion.getGameVersions());
+                                    }
+                                }
+                                
+                                resultMap.put(plugin, new UpdateResult(newVersion.getVersionNumber(), downloadUrl, supportedGames, newVersion.getId()));
+                            }
                         }
-                        Files.copy(is, destination, StandardCopyOption.REPLACE_EXISTING);
-                        if (progressCallback != null) {
-                            progressCallback.accept(1.0);
-                        }
-                        return destination;
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to save downloaded file: " + e.getMessage(), e);
                     }
+                    return resultMap;
                 });
+    }
+
+    @Override
+    public CompletableFuture<Path> downloadUpdate(ServerInstance instance, String downloadUrl, Path targetPath, Consumer<Double> progressCallback) {
+        return downloadService.downloadFile(downloadUrl, targetPath, null, progressCallback);
     }
 
     public static class ResolvedUrlInfo {

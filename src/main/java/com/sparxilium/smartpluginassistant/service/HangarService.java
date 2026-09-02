@@ -11,6 +11,16 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import com.sparxilium.smartpluginassistant.model.UpdateResult;
+import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
+import com.sparxilium.smartpluginassistant.model.ServerInstance;
+
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,23 +30,31 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public class HangarService {
+public class HangarService implements PluginRepository {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HangarService.class);
     private static final String BASE_URL = "https://hangar.papermc.io/api/v1";
-    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant/1.0 (contact@sparxilium.com)";
+    private static final String USER_AGENT = "Sparxilium/SmartPluginAssistant (https://github.com/Sparxilium-Network/SmartPluginAssistant)";
 
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final HttpDownloadService downloadService;
 
-    public HangarService() {
+    public HangarService(HttpDownloadService downloadService) {
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
         this.objectMapper = new ObjectMapper();
+        this.downloadService = downloadService;
+    }
+
+    @Override
+    public String getPlatformKey() {
+        return "hangar";
     }
 
     // ===== Search =====
@@ -169,32 +187,69 @@ public class HangarService {
                 });
     }
 
-    // ===== Download =====
+    @Override
+    public CompletableFuture<Map<InstalledPlugin, UpdateResult>> checkForUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
+        String platform = toPlatformKey(instance.getLoader());
+        Map<InstalledPlugin, UpdateResult> resultMap = new java.util.concurrent.ConcurrentHashMap<>();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-    public CompletableFuture<Path> downloadFile(String fileUrl, Path destination, Consumer<Double> progressCallback) {
-        logger.info("HangarService.downloadFile: downloading {} -> {}", fileUrl, destination);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(fileUrl))
-                .header("User-Agent", USER_AGENT)
-                .GET()
-                .build();
+        for (InstalledPlugin plugin : plugins) {
+            if (plugin.getHangarNamespace() == null || plugin.getHangarNamespace().isBlank()) continue;
+            
+            String[] parts = plugin.getHangarNamespace().split("/", 2);
+            if (parts.length < 2) continue;
+            String author = parts[0];
+            String slug = parts[1];
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream())
-                .thenApply(response -> {
-                    if (response.statusCode() != 200) {
-                        throw new RuntimeException("Download failed with HTTP " + response.statusCode());
-                    }
-                    try (InputStream is = response.body()) {
-                        if (destination.getParent() != null) {
-                            Files.createDirectories(destination.getParent());
+            CompletableFuture<Void> f = getVersions(author, slug, platform, null, 0, 5)
+                    .thenAccept(page -> {
+                        if (page.versions().isEmpty()) return;
+
+                        HangarVersion latest = null;
+                        for (HangarVersion v : page.versions()) {
+                            if (!instance.isAllowPrereleases() && v.isUnstable()) continue;
+                            latest = v;
+                            break;
                         }
-                        Files.copy(is, destination, StandardCopyOption.REPLACE_EXISTING);
-                        if (progressCallback != null) progressCallback.accept(1.0);
-                        return destination;
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to save downloaded file: " + e.getMessage(), e);
-                    }
-                });
+                        if (latest == null) latest = page.versions().get(0);
+
+                        String downloadUrl = null;
+                        HangarVersion.PlatformDownload pd = null;
+                        if ("PAPER".equalsIgnoreCase(platform) || "WATERFALL".equalsIgnoreCase(platform) || "VELOCITY".equalsIgnoreCase(platform)) {
+                            pd = latest.getDownloads().get(platform);
+                        } else {
+                            pd = latest.getDownloads().values().stream().findFirst().orElse(null);
+                        }
+                        
+                        if (pd != null && pd.downloadUrl != null) {
+                            downloadUrl = pd.downloadUrl;
+                        }
+                        
+                        if (downloadUrl != null) {
+                            String supportedGames = "-";
+                            List<String> gameVers = latest.getPlatformDependencies() != null && latest.getPlatformDependencies().containsKey(platform) ? 
+                                latest.getPlatformDependencies().get(platform) : new ArrayList<>();
+                            
+                            if (!gameVers.isEmpty()) {
+                                if (gameVers.size() > 2) {
+                                    supportedGames = gameVers.get(0) + " ~ " + gameVers.get(gameVers.size() - 1);
+                                } else {
+                                    supportedGames = String.join(", ", gameVers);
+                                }
+                            }
+                            resultMap.put(plugin, new UpdateResult(latest.getVersionNumber(), downloadUrl, supportedGames, latest.getVersionNumber()));
+                        }
+                    });
+            futures.add(f);
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(v -> resultMap);
+    }
+
+    @Override
+    public CompletableFuture<Path> downloadUpdate(ServerInstance instance, String downloadUrl, Path targetPath, Consumer<Double> progressCallback) {
+        return downloadService.downloadFile(downloadUrl, targetPath, null, progressCallback);
     }
 
     // ===== URL Parsing =====

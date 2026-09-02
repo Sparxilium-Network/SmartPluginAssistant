@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.util.*;
+import com.sparxilium.smartpluginassistant.model.UpdateResult;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,13 +20,16 @@ import java.util.stream.Stream;
 public class PluginManagerService {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PluginManagerService.class);
     private final InstanceManager instanceManager;
-    private final ModrinthService modrinthService;
-    private final HangarService hangarService;
+    private final Map<String, PluginRepository> repositories;
 
-    public PluginManagerService(InstanceManager instanceManager, ModrinthService modrinthService) {
+    public PluginManagerService(InstanceManager instanceManager, List<PluginRepository> repositoryList) {
         this.instanceManager = instanceManager;
-        this.modrinthService = modrinthService;
-        this.hangarService = new HangarService();
+        this.repositories = new java.util.HashMap<>();
+        if (repositoryList != null) {
+            for (PluginRepository repo : repositoryList) {
+                this.repositories.put(repo.getPlatformKey(), repo);
+            }
+        }
     }
 
     public List<InstalledPlugin> scanPlugins(ServerInstance instance) {
@@ -94,167 +98,77 @@ public class PluginManagerService {
     }
 
     public CompletableFuture<List<InstalledPlugin>> checkPluginUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
-        List<String> hashesList = plugins.stream()
-                .map(InstalledPlugin::getSha512)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        // Group plugins by hosting platform. Default to modrinth for backward compatibility (hash based).
+        Map<String, List<InstalledPlugin>> pluginsByPlatform = plugins.stream()
+                .collect(Collectors.groupingBy(p -> {
+                    if (p.getHostingPlatform() != null && !p.getHostingPlatform().isBlank()) {
+                        return p.getHostingPlatform().toLowerCase();
+                    }
+                    if (p.getHangarNamespace() != null && !p.getHangarNamespace().isBlank()) {
+                        return "hangar";
+                    }
+                    return "modrinth";
+                }));
 
-        return modrinthService.checkUpdates(hashesList, instance.getEffectiveLoaders(), instance.getMcVersion())
-                .thenApply(updateMap -> {
-                    for (InstalledPlugin plugin : plugins) {
-                        String hash = plugin.getSha512();
-                        if (hash != null && updateMap.containsKey(hash)) {
-                            ModrinthVersion version = updateMap.get(hash);
-                            ModrinthVersion.ModrinthFile primaryFile = version.getPrimaryFile();
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-                            String latestVerNum = version.getVersionNumber();
-                            String currentVerNum = plugin.getCurrentVersionNumber();
-                            String currentVerId = plugin.getVersionId();
+        for (Map.Entry<String, List<InstalledPlugin>> entry : pluginsByPlatform.entrySet()) {
+            String platformKey = entry.getKey();
+            List<InstalledPlugin> platformPlugins = entry.getValue();
 
-                            // 1. Direct ID comparison: If we know the exact installed version ID and it equals the returned version ID, it is the same version!
-                            boolean isSameVersion = currentVerId != null && currentVerId.equals(version.getId());
-                            
-                            // 2. Direct exact string comparison (including any platform tags/prefixes/suffixes)
-                            if (!isSameVersion && currentVerNum != null && currentVerNum.equalsIgnoreCase(latestVerNum)) {
-                                isSameVersion = true;
-                            }
+            PluginRepository repo = repositories.get(platformKey);
+            if (repo == null) {
+                logger.warn("No PluginRepository found for platform: {}", platformKey);
+                continue;
+            }
 
-                            // 3. Normalized semantic comparison
-                            boolean isNewer = !isSameVersion && isNewerVersion(currentVerNum, latestVerNum);
+            logger.info("Checking {} plugins for updates on platform: {}", platformPlugins.size(), platformKey);
 
-                            if (isNewer) {
-                                plugin.setUpdateAvailable(true);
-                                plugin.setLatestVersionId(version.getId());
-                                plugin.setLatestVersionNumber(latestVerNum);
-                                plugin.setLatestVersionType(version.getVersionType());
-                                plugin.setProjectId(version.getProjectId());
-
-                                if (version.getGameVersions() != null && !version.getGameVersions().isEmpty()) {
-                                    if (version.getGameVersions().size() > 2) {
-                                        plugin.setSupportedGameVersions(version.getGameVersions().get(0) + " ~ " + version.getGameVersions().get(version.getGameVersions().size() - 1));
+            CompletableFuture<Void> f = repo.checkForUpdates(instance, platformPlugins)
+                    .thenAccept(updateMap -> {
+                        for (InstalledPlugin plugin : platformPlugins) {
+                            UpdateResult update = updateMap.get(plugin);
+                            if (update != null) {
+                                boolean isNewer = false;
+                                
+                                // ID comparison if exact versionId was given (usually modrinth/hangar/spiget)
+                                boolean isSameVersionId = plugin.getVersionId() != null && plugin.getVersionId().equals(update.getVersionId());
+                                
+                                if (!isSameVersionId) {
+                                    if (update.getLatestVersionNumber() != null && update.getLatestVersionNumber().equalsIgnoreCase(plugin.getCurrentVersionNumber())) {
+                                        // Exact version string match
                                     } else {
-                                        plugin.setSupportedGameVersions(String.join(", ", version.getGameVersions()));
+                                        isNewer = isNewerVersion(plugin.getCurrentVersionNumber(), update.getLatestVersionNumber());
                                     }
                                 }
 
-                                if (version.getLoaders() != null && !version.getLoaders().isEmpty()) {
-                                    String primaryLoader = instance.getLoader() != null ? instance.getLoader().toLowerCase() : "paper";
-                                    boolean supportsPrimary = version.getLoaders().stream().anyMatch(l -> l.equalsIgnoreCase(primaryLoader));
-                                    plugin.setLoaderIncompatible(!supportsPrimary);
-                                    plugin.setSupportedLoadersSummary(String.join(", ", version.getLoaders()));
+                                if (isNewer) {
+                                    plugin.setUpdateAvailable(true);
+                                    plugin.setLatestVersionId(update.getVersionId());
+                                    plugin.setLatestVersionNumber(update.getLatestVersionNumber());
+                                    plugin.setLatestDownloadUrl(update.getLatestDownloadUrl());
+                                    plugin.setSupportedGameVersions(update.getSupportedGameVersions());
+                                    
+                                    // Make sure we have the platform recorded
+                                    if (plugin.getHostingPlatform() == null) {
+                                        plugin.setHostingPlatform(platformKey);
+                                    }
                                 } else {
-                                    plugin.setLoaderIncompatible(false);
-                                }
-
-                                if (primaryFile != null) {
-                                    plugin.setLatestDownloadUrl(primaryFile.getUrl());
-                                    plugin.setLatestFileName(primaryFile.getFilename());
+                                    plugin.setUpdateAvailable(false);
+                                    if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
+                                        plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
+                                    }
                                 }
                             } else {
                                 plugin.setUpdateAvailable(false);
-                                plugin.setLoaderIncompatible(false);
-                                // Save/refresh download record with exact version, sha512 and projectId
-                                if (plugin.getProjectId() == null || plugin.getVersionId() == null) {
-                                    plugin.setProjectId(version.getProjectId());
-                                    plugin.setVersionId(version.getId());
-                                    plugin.setCurrentVersionNumber(version.getVersionNumber());
-                                    String sha512 = plugin.getSha512();
-                                    PluginMetadataStore.saveRecord(instanceManager, instance,
-                                            new PluginMetadataStore.DownloadRecord(version.getProjectId(), version.getId(), version.getVersionNumber(), plugin.getFileName(), sha512));
-                                }
                                 if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
                                     plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
                                 }
                             }
-                        } else {
-                            plugin.setUpdateAvailable(false);
-                            plugin.setLoaderIncompatible(false);
-                            if (plugin.getSupportedGameVersions() == null || plugin.getSupportedGameVersions().equals("-")) {
-                                plugin.setSupportedGameVersions(instance.getMcVersion() != null ? instance.getMcVersion() : "-");
-                            }
-                        }
-                    }
-                    return plugins;
-                });
-    }
-
-    /**
-     * Check updates for Hangar plugins.
-     * Hangar does not support hash-based lookup, so we use the stored hangarNamespace
-     * to query the latest version from Hangar API and compare version numbers.
-     */
-    public CompletableFuture<List<InstalledPlugin>> checkHangarPluginUpdates(ServerInstance instance, List<InstalledPlugin> plugins) {
-        String platform = HangarService.toPlatformKey(instance.getLoader());
-        String mcVersion = instance.getMcVersion();
-
-        // Only process plugins with a known Hangar namespace
-        List<InstalledPlugin> hangarPlugins = plugins.stream()
-                .filter(p -> p.getHangarNamespace() != null && !p.getHangarNamespace().isBlank())
-                .collect(Collectors.toList());
-
-        if (hangarPlugins.isEmpty()) {
-            logger.info("checkHangarPluginUpdates: no Hangar plugins to check");
-            return CompletableFuture.completedFuture(plugins);
-        }
-
-        logger.info("checkHangarPluginUpdates: checking {} Hangar plugins on platform={}, mc={}", hangarPlugins.size(), platform, mcVersion);
-
-        // Fire one request per Hangar plugin (Hangar has no batch update endpoint)
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        for (InstalledPlugin plugin : hangarPlugins) {
-            String[] parts = plugin.getHangarNamespace().split("/", 2);
-            if (parts.length < 2) continue;
-            String author = parts[0];
-            String slug = parts[1];
-
-            CompletableFuture<Void> f = hangarService.getVersions(author, slug, platform, null, 0, 5)
-                    .thenAccept(page -> {
-                        if (page.versions().isEmpty()) {
-                            logger.info("checkHangarPluginUpdates: no versions found for {}", plugin.getHangarNamespace());
-                            return;
-                        }
-                        // Find the newest stable version (unless allowPrereleases is on)
-                        HangarVersion latest = null;
-                        for (HangarVersion v : page.versions()) {
-                            if (!instance.isAllowPrereleases() && v.isUnstable()) continue;
-                            latest = v;
-                            break;
-                        }
-                        if (latest == null) latest = page.versions().get(0);
-
-                        String latestVerNum = latest.getVersionNumber();
-                        String currentVerNum = plugin.getCurrentVersionNumber();
-                        boolean isNewer = isNewerVersion(currentVerNum, latestVerNum);
-                        logger.info("checkHangarPluginUpdates: {} current={} latest={} isNewer={}", plugin.getHangarNamespace(), currentVerNum, latestVerNum, isNewer);
-
-                        if (isNewer) {
-                            plugin.setUpdateAvailable(true);
-                            plugin.setLatestVersionNumber(latestVerNum);
-                            plugin.setLatestVersionType(latest.getVersionType());
-
-                            // Get download URL
-                            HangarVersion.PlatformDownload pd = latest.getPaperDownload();
-                            if (pd != null && pd.downloadUrl != null) {
-                                plugin.setLatestDownloadUrl(pd.downloadUrl);
-                                if (pd.fileInfo != null) plugin.setLatestFileName(pd.fileInfo.name);
-                            }
-
-                            // Supported game versions
-                            List<String> gameVers = latest.getPaperVersions();
-                            if (!gameVers.isEmpty()) {
-                                if (gameVers.size() > 2) {
-                                    plugin.setSupportedGameVersions(gameVers.get(0) + " ~ " + gameVers.get(gameVers.size() - 1));
-                                } else {
-                                    plugin.setSupportedGameVersions(String.join(", ", gameVers));
-                                }
-                            }
-                        } else {
-                            plugin.setUpdateAvailable(false);
                         }
                     })
                     .exceptionally(ex -> {
-                        logger.warn("checkHangarPluginUpdates: error checking {}: {}", plugin.getHangarNamespace(), ex.getMessage());
+                        logger.error("Error checking updates for platform {}: {}", platformKey, ex.getMessage(), ex);
                         return null;
                     });
             futures.add(f);
@@ -269,6 +183,17 @@ public class PluginManagerService {
             return CompletableFuture.completedFuture(null);
         }
 
+        String platformKey = plugin.getHostingPlatform();
+        if (platformKey == null || platformKey.isBlank()) {
+            if (plugin.getHangarNamespace() != null && !plugin.getHangarNamespace().isBlank()) platformKey = "hangar";
+            else platformKey = "modrinth";
+        }
+
+        PluginRepository repo = repositories.get(platformKey);
+        if (repo == null) {
+            return CompletableFuture.failedFuture(new RuntimeException("No repository found for platform: " + platformKey));
+        }
+
         Path pluginsDir = instanceManager.getPluginsDirectory(instance);
         Path oldFilePath = pluginsDir.resolve(plugin.getFileName());
         String rawName = plugin.getLatestFileName() != null ? plugin.getLatestFileName() : plugin.getFileName();
@@ -278,7 +203,7 @@ public class PluginManagerService {
         final String newName = rawName;
         Path newFilePath = pluginsDir.resolve(newName);
 
-        return modrinthService.downloadFile(plugin.getLatestDownloadUrl(), newFilePath, null)
+        return repo.downloadUpdate(instance, plugin.getLatestDownloadUrl(), newFilePath, null)
                 .thenAccept(downloadedPath -> {
                     if (!oldFilePath.equals(newFilePath)) {
                         try {

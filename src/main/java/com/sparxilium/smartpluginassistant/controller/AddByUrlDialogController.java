@@ -364,7 +364,7 @@ public class AddByUrlDialogController {
         Path pluginsDir = instanceManager.getPluginsDirectory(currentInstance);
         Path dest = pluginsDir.resolve(fileName);
 
-        hangarService.downloadFile(pd.downloadUrl, dest, null)
+        hangarService.downloadUpdate(null, pd.downloadUrl, dest, null)
                 .thenAccept(path -> Platform.runLater(() -> {
                     try {
                         String sha512 = PluginManagerService.calculateSha512(path.toFile());
@@ -408,7 +408,7 @@ public class AddByUrlDialogController {
         Path pluginsDir = instanceManager.getPluginsDirectory(currentInstance);
         Path dest = pluginsDir.resolve(primaryFile.getFilename());
 
-        modrinthService.downloadFile(primaryFile.getUrl(), dest, null)
+        modrinthService.downloadUpdate(null, primaryFile.getUrl(), dest, null)
                 .thenAccept(path -> Platform.runLater(() -> {
                     try {
                         String sha512 = primaryFile.getHashes() != null ? primaryFile.getHashes().get("sha512") : null;
