@@ -51,8 +51,9 @@
   * 主畫面點擊「🔍 下載插件」後開啟整合對話框，左側動態加載所有註冊模組的 ToggleButton，右側為對應市場的內容視圖。
   * 採用模組化架構（`PluginBrowserModule` 介面搭配 `PluginBrowserContext` 上下文），使未來擴充新市場（如 SpigotMC、CurseForge）免改動主視窗代碼。
 * **多平台支援與來源連結**：
-  * 分別串接 Modrinth (`v2` API) 與 PaperMC Hangar (`v1` API) 兩大主流市場。
-  * 標題旁皆整合專屬 API 來源外連按鈕（`API BY MODRINTH` / `API BY HANGAR`），點選可直接呼叫系統預設瀏覽器訪問官方網站。
+  * 分別串接 Modrinth (`v2` API)、PaperMC Hangar (`v1` API) 與 Voxel.shop (Polymart `v1` API) 三大主流市場。
+  * 標題旁皆整合專屬 API 來源外連按鈕（`API BY MODRINTH` / `API BY HANGAR` / `API BY VOXEL.SHOP`），點選可直接呼叫系統預設瀏覽器訪問官方網站。
+  * Voxel.shop 模組支援免費資源一鍵直配下載與 Hash 寫入，付費外掛清楚標示價格並引導至官方購買頁面。
 * **多選佇列 (Shopping Cart)**：使用者可連續挑選多個插件版本，卡片即時顯示選取徽章。
 * **測試版篩選 (Alpha/Beta Pre-releases)**：
   * 預設僅列出正式穩定版本 (`release`)，避免誤裝不穩定測試版。

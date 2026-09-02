@@ -312,6 +312,9 @@
 .hangar-btn .module-icon {
     -fx-text-fill: #2f4476;
 }
+.voxel-btn .module-icon {
+    -fx-text-fill: #e67e22;
+}
 
 /* API BY Link Styling */
 .api-by-link {
@@ -334,5 +337,12 @@
 }
 .api-by-modrinth:hover {
     -fx-text-fill: #25d46c;
+    -fx-underline: true;
+}
+.api-by-voxel {
+    -fx-text-fill: #e67e22;
+}
+.api-by-voxel:hover {
+    -fx-text-fill: #f39c12;
     -fx-underline: true;
 }
