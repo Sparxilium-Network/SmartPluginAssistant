@@ -243,3 +243,7 @@ app_settings.lang_zh_tw=繁體中文 (zh-tw)
 app_settings.lang_en=English (en)
 url.author_hangar=by {0} • Hangar
 url.author_modrinth=by {0} • Modrinth
+downloader.sidebar_title=Download Plugins
+app.download_plugins=🔍 Download Plugins
+app.download_plugins_compact=Download
+app.download_plugins_title=Download Plugins - {0}
