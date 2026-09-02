@@ -263,4 +263,11 @@ table.platform_spiget=SpigotMC
 spiget.title=SpigotMC (SpiGet) Resource Hub
 spiget.search_prompt=Search Spigot plugins or resources (e.g. essentials, vault, worldedit...)
 spiget.btn_view_on_spigot=View on SpigotMC
+settings.api_tokens_section=Platform API Keys & Tokens (API Access Tokens):
+settings.api_tokens_hint=Configure private API keys or personal access tokens to increase rate limits or access restricted resources.
+settings.token_modrinth=Modrinth Token:
+settings.token_hangar=Hangar API Key:
+settings.token_voxel=Voxel.shop Token:
+settings.token_spiget=Spiget User-Agent / Token:
+
 

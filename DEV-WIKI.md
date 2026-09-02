@@ -28,6 +28,9 @@
 * **測試版 (Alpha/Beta) 檢查與警告標記**：
   * 若在實例設定中勾選「允許測試版本 (Alpha / Beta) 檢查與更新」，檢查更新時會納入 Alpha 與 Beta 發布版本。
   * 主畫面版本狀態若檢測到新版為測試版，會顯示專屬警示徽章：`⚠️ 測試版: <版本號> (beta/alpha)`，讓使用者明確知曉版本穩定度。
+* **各平台 API Token / 金鑰設定 (API Access Tokens)**：
+  * 實例設定視窗提供四大平台獨立的 Token 輸入區：`Modrinth Token`、`PaperMC Hangar API Key`、`Voxel.shop Token` 與 `Spiget User-Agent / Token`。
+  * 支援將金鑰隨實例配置持久化存儲於 `instance.json`，方便提升 API 請求頻率限制 (Rate Limit) 或存取受限資源。
 * **腳本與 ZIP 匯出**：
   * **ZIP 匯出**：支援將整個實例設定與插件，或單獨插件資料夾匯出成備份 ZIP。
   * **一鍵部署腳本 (deploy.sh)**：能夠自動追溯本機所有 `.jar` 於 Modrinth / Hangar 的來源，並組合出一份可於 Linux 環境以 `wget` 自動重構下載相同插件版本的 Bash Script (`handleExportScript`)。

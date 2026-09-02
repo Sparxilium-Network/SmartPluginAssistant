@@ -45,6 +45,35 @@
         <Label fx:id="allowPrereleaseHintLabel" text="開啟後，檢查更新時將允許檢測並升級至最新的 Alpha / Beta 測試版本。" style="-fx-text-fill: #8b8e96; -fx-font-size: 11px;" wrapText="true"/>
     </VBox>
 
+    <!-- Platform API Tokens Section -->
+    <VBox spacing="10.0" style="-fx-background-color: #26282c; -fx-padding: 12; -fx-background-radius: 6; -fx-border-color: #393b40; -fx-border-radius: 6;">
+        <Label fx:id="apiTokensSectionLabel" text="平台 API 金鑰與 Token 設定 (API Access Tokens):" style="-fx-text-fill: #ffffff; -fx-font-weight: bold;"/>
+        <Label fx:id="apiTokensHintLabel" text="設定私有金鑰或個人存取權杖，可用於提升 API 請求頻率限制 (Rate Limit) 或存取受權限保護之資源。" style="-fx-text-fill: #8b8e96; -fx-font-size: 11px;" wrapText="true"/>
+
+        <GridPane hgap="10.0" vgap="8.0">
+            <columnConstraints>
+                <ColumnConstraints minWidth="130" prefWidth="150"/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+
+            <!-- Modrinth -->
+            <Label fx:id="tokenModrinthLabel" text="Modrinth Token:" style="-fx-text-fill: #dfe1e5;" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <PasswordField fx:id="tokenModrinthField" promptText="Modrinth Personal Access Token" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+            <!-- Hangar -->
+            <Label fx:id="tokenHangarLabel" text="Hangar API Key:" style="-fx-text-fill: #dfe1e5;" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <PasswordField fx:id="tokenHangarField" promptText="PaperMC Hangar API Key" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+            <!-- Voxel.shop -->
+            <Label fx:id="tokenVoxelLabel" text="Voxel.shop Token:" style="-fx-text-fill: #dfe1e5;" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <PasswordField fx:id="tokenVoxelField" promptText="Voxel.shop / Polymart API Key" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+            <!-- Spiget -->
+            <Label fx:id="tokenSpigetLabel" text="Spiget User-Agent / Token:" style="-fx-text-fill: #dfe1e5;" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <PasswordField fx:id="tokenSpigetField" promptText="Custom User-Agent or Token" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        </GridPane>
+    </VBox>
+
     <Region VBox.vgrow="ALWAYS"/>
 
     <HBox spacing="10.0" alignment="CENTER_RIGHT">

@@ -264,4 +264,11 @@ table.platform_spiget=SpigotMC
 spiget.title=SpigotMC (SpiGet) 資源中心
 spiget.search_prompt=搜尋 Spigot 插件或資源名稱 (例如: essentials, vault, worldedit...)
 spiget.btn_view_on_spigot=前往 SpigotMC 購買
+settings.api_tokens_section=平台 API 金鑰與 Token 設定 (API Access Tokens):
+settings.api_tokens_hint=設定私有金鑰或個人存取權杖，可用於提升 API 請求頻率限制 (Rate Limit) 或存取受權限保護之資源。
+settings.token_modrinth=Modrinth Token:
+settings.token_hangar=Hangar API Key:
+settings.token_voxel=Voxel.shop Token:
+settings.token_spiget=Spiget User-Agent / Token:
+
 

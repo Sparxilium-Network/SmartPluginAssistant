@@ -24,6 +24,18 @@ public class InstanceSettingsDialogController {
     @FXML private Label warningLabel;
     @FXML private CheckBox allowPrereleaseCheckBox;
     @FXML private Label allowPrereleaseHintLabel;
+
+    @FXML private Label apiTokensSectionLabel;
+    @FXML private Label apiTokensHintLabel;
+    @FXML private Label tokenModrinthLabel;
+    @FXML private PasswordField tokenModrinthField;
+    @FXML private Label tokenHangarLabel;
+    @FXML private PasswordField tokenHangarField;
+    @FXML private Label tokenVoxelLabel;
+    @FXML private PasswordField tokenVoxelField;
+    @FXML private Label tokenSpigetLabel;
+    @FXML private PasswordField tokenSpigetField;
+
     @FXML private Button cancelBtn;
     @FXML private Button saveBtn;
 
@@ -42,6 +54,11 @@ public class InstanceSettingsDialogController {
         loaderComboBox.setValue(instance.getLoader());
 
         allowPrereleaseCheckBox.setSelected(instance.isAllowPrereleases());
+
+        if (tokenModrinthField != null) tokenModrinthField.setText(instance.getApiToken("modrinth"));
+        if (tokenHangarField != null) tokenHangarField.setText(instance.getApiToken("hangar"));
+        if (tokenVoxelField != null) tokenVoxelField.setText(instance.getApiToken("voxel"));
+        if (tokenSpigetField != null) tokenSpigetField.setText(instance.getApiToken("spiget"));
 
         new com.sparxilium.smartpluginassistant.service.ModrinthService().fetchGameVersions()
                 .thenAccept(versions -> javafx.application.Platform.runLater(() -> {
@@ -62,6 +79,12 @@ public class InstanceSettingsDialogController {
         warningLabel.setText(I18n.get("settings.warning"));
         allowPrereleaseCheckBox.setText(I18n.get("settings.allow_prerelease"));
         allowPrereleaseHintLabel.setText(I18n.get("settings.allow_prerelease_hint"));
+        if (apiTokensSectionLabel != null) apiTokensSectionLabel.setText(I18n.get("settings.api_tokens_section"));
+        if (apiTokensHintLabel != null) apiTokensHintLabel.setText(I18n.get("settings.api_tokens_hint"));
+        if (tokenModrinthLabel != null) tokenModrinthLabel.setText(I18n.get("settings.token_modrinth"));
+        if (tokenHangarLabel != null) tokenHangarLabel.setText(I18n.get("settings.token_hangar"));
+        if (tokenVoxelLabel != null) tokenVoxelLabel.setText(I18n.get("settings.token_voxel"));
+        if (tokenSpigetLabel != null) tokenSpigetLabel.setText(I18n.get("settings.token_spiget"));
         cancelBtn.setText(I18n.get("settings.btn_cancel"));
         saveBtn.setText(I18n.get("settings.btn_save"));
     }
@@ -118,6 +141,14 @@ public class InstanceSettingsDialogController {
                 }
             }
             instance.setExtraCompatibleLoaders(selectedLoaders);
+
+            Map<String, String> tokens = instance.getApiTokens();
+            if (tokenModrinthField != null) tokens.put("modrinth", tokenModrinthField.getText() != null ? tokenModrinthField.getText().trim() : "");
+            if (tokenHangarField != null) tokens.put("hangar", tokenHangarField.getText() != null ? tokenHangarField.getText().trim() : "");
+            if (tokenVoxelField != null) tokens.put("voxel", tokenVoxelField.getText() != null ? tokenVoxelField.getText().trim() : "");
+            if (tokenSpigetField != null) tokens.put("spiget", tokenSpigetField.getText() != null ? tokenSpigetField.getText().trim() : "");
+            instance.setApiTokens(tokens);
+
             saved = true;
         }
         closeDialog();

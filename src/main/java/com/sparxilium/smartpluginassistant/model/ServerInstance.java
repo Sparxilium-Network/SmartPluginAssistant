@@ -17,6 +17,7 @@ public class ServerInstance {
     private String icon; // icon name or color
     private java.util.List<String> extraCompatibleLoaders = new java.util.ArrayList<>();
     private boolean allowPrereleases = false; // allow beta and alpha updates
+    private java.util.Map<String, String> apiTokens = new java.util.HashMap<>();
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
 
@@ -165,6 +166,23 @@ public class ServerInstance {
 
     public void setAllowPrereleases(boolean allowPrereleases) {
         this.allowPrereleases = allowPrereleases;
+    }
+
+    public java.util.Map<String, String> getApiTokens() {
+        if (apiTokens == null) {
+            apiTokens = new java.util.HashMap<>();
+        }
+        return apiTokens;
+    }
+
+    public void setApiTokens(java.util.Map<String, String> apiTokens) {
+        this.apiTokens = apiTokens != null ? apiTokens : new java.util.HashMap<>();
+    }
+
+    public String getApiToken(String platform) {
+        if (apiTokens == null || platform == null) return null;
+        String val = apiTokens.get(platform.toLowerCase());
+        return (val != null && !val.isBlank()) ? val.trim() : null;
     }
 
     public LocalDateTime getCreatedAt() {
