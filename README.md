@@ -26,9 +26,10 @@
    * 快速從介面開啟實例根目錄或 `plugins/` 資料夾。
 
 2. **多平台線上搜尋與安裝 (Modrinth & Hangar Browser)**
-   * 內建 Modrinth 與 Hangar 插件市場瀏覽器。
+   * 內建 Prism-style 整合型下載視窗，左側可直覺切換 Modrinth 與 Hangar 市場模組。
+   * 市場頂部提供一鍵直達官方首頁的來源連結標籤（`API BY MODRINTH` / `API BY HANGAR`）。
    * 自動依據當前實例的 Loader 核心與 Minecraft 版本進行相容性篩選。
-   * 支援一鍵解析必備前置依賴 (Dependencies) 並自動勾選下載。
+   * 支援購物車多選暫存，一鍵非同步解析必備前置依賴 (Dependencies) 並自由勾選平行下載。
    * 點擊即可一鍵下載 `.jar` 檔案至該實例的 `plugins/` 目錄中。
 
 3. **透過網址直接新增 (Add by URL)**
@@ -97,12 +98,14 @@ src/main/java/com/sparxilium/smartpluginassistant/
 ├── Launcher.java                    # 啟動器轉發
 ├── controller/                      # 介面控制器
 │   ├── MainController.java          # 主畫面與實例管理控制器
-│   ├── ModrinthBrowserController.java # Modrinth 搜尋市場控制器
-│   ├── HangarBrowserController.java # Hangar 搜尋市場控制器
+│   ├── PluginDownloaderController.java # 整合型插件下載視窗控制器 (Prism-style 側欄切換)
+│   ├── ModrinthBrowserController.java # Modrinth 搜尋市場模組
+│   ├── HangarBrowserController.java # Hangar 搜尋市場模組
 │   ├── AddByUrlDialogController.java # 網址解析新增對話框控制器
 │   ├── ImportPluginsDialogController.java # 批量掃描匯入控制器
 │   ├── InstanceSettingsDialogController.java # 實例獨立相容性設定控制器
-│   └── CreateInstanceDialogController.java # 建立實例對話框控制器
+│   ├── CreateInstanceDialogController.java # 建立實例對話框控制器
+│   └── module/                      # 可擴充市場模組介面 (PluginBrowserModule, Context)
 ├── model/                           # 資料模型
 │   ├── ServerInstance.java          # 伺服器實例模型
 │   ├── InstalledPlugin.java         # 本地已安裝插件模型

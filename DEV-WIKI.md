@@ -46,14 +46,19 @@
   2. 其次透過 `versionNumber`（含前後綴標籤）進行精確字串比對。
   3. 最後透過正規化語義版本演算法 (`normalizeVersionNumber`)，徹底消除平台前後綴（如 `-bukkit`, `-spigot`, `v`）帶來的版本誤報。
 
-### 2.3 購物車式線上插件市場瀏覽器 (`ModrinthBrowserController` & `HangarBrowserController`)
-* **多平台支援**：分別串接 Modrinth (`v2` API) 與 PaperMC Hangar (`v1` API) 兩大主流插件市場。
+### 2.3 模組化插件下載中心 (`PluginDownloaderController` & `PluginBrowserModule`)
+* **Prism-style 側邊欄整合介面**：
+  * 主畫面點擊「🔍 下載插件」後開啟整合對話框，左側動態加載所有註冊模組的 ToggleButton，右側為對應市場的內容視圖。
+  * 採用模組化架構（`PluginBrowserModule` 介面搭配 `PluginBrowserContext` 上下文），使未來擴充新市場（如 SpigotMC、CurseForge）免改動主視窗代碼。
+* **多平台支援與來源連結**：
+  * 分別串接 Modrinth (`v2` API) 與 PaperMC Hangar (`v1` API) 兩大主流市場。
+  * 標題旁皆整合專屬 API 來源外連按鈕（`API BY MODRINTH` / `API BY HANGAR`），點選可直接呼叫系統預設瀏覽器訪問官方網站。
 * **多選佇列 (Shopping Cart)**：使用者可連續挑選多個插件版本，卡片即時顯示選取徽章。
 * **測試版篩選 (Alpha/Beta Pre-releases)**：
   * 預設僅列出正式穩定版本 (`release`)，避免誤裝不穩定測試版。
   * 頂部搜尋欄提供「允許測試版 (Alpha/Beta)」勾選項，勾選後立即顯示包含 Alpha 與 Beta 的所有發布版本。
-* **外部瀏覽器網頁開啟**：
-  * 右側詳情面板右上角提供「🌐 在瀏覽器中開啟」按鈕，可直接於系統預設瀏覽器開啟該插件在 Modrinth / Hangar 的完整官方頁面。
+* **外部瀏覽器插件頁面開啟**：
+  * 右側詳情面板右上角提供「🌐 在瀏覽器中開啟」按鈕，可直接於系統預設瀏覽器開啟該插件在 Modrinth / Hangar 的完整官方專案頁面。
 * **批次依賴解析與確認**：
   * 點擊右下角「檢查並確認 (X)」後，自動非同步解析所有選取項目的 Required 與 Optional 依賴 (主要針對 Modrinth)。
   * 彈出原生深色模態對話框 (`Stage`)，供使用者自由勾選或剔除依賴項目。
