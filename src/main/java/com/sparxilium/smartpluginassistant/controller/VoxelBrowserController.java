@@ -289,8 +289,10 @@ public class VoxelBrowserController implements PluginBrowserModule {
                             .exceptionally(ex -> {
                                 Platform.runLater(() -> {
                                     setLoading(false);
-                                    logger.error("Download failed from Voxel", ex);
-                                    statusLabel.setText(I18n.get("app.update_failed", ex.getMessage()));
+                                    logger.warn("Direct download failed from Voxel (Cloudflare protection triggered): {}", ex.getMessage());
+                                    statusLabel.setText(I18n.get("voxel.cloudflare_download_redirect"));
+                                    // Open download page or URL in external browser to bypass Cloudflare
+                                    openBrowserUrl(dlInfo.downloadUrl());
                                 });
                                 return null;
                             });

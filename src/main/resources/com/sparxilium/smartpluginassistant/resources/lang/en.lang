@@ -259,6 +259,7 @@ voxel.btn_view_on_voxel=View on Voxel.shop
 voxel.supported_loaders=Supported Core: {0}
 voxel.supported_versions=Supported Versions: {0}
 voxel.download_url_failed=Cannot retrieve download URL or this resource requires login/purchase!
+voxel.cloudflare_download_redirect=Cloudflare protection detected. Opening browser page to download!
 table.platform_spiget=SpigotMC
 spiget.title=SpigotMC (SpiGet) Resource Hub
 spiget.search_prompt=Search Spigot plugins or resources (e.g. essentials, vault, worldedit...)

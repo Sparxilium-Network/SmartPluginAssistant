@@ -260,6 +260,7 @@ voxel.btn_view_on_voxel=前往 Voxel 購買
 voxel.supported_loaders=支援核心: {0}
 voxel.supported_versions=支援版本: {0}
 voxel.download_url_failed=無法取得下載連結或此資源需登入/購買！
+voxel.cloudflare_download_redirect=原站觸發 Cloudflare 防護，已自動開啟瀏覽器頁面為您下載！
 table.platform_spiget=SpigotMC
 spiget.title=SpigotMC (SpiGet) 資源中心
 spiget.search_prompt=搜尋 Spigot 插件或資源名稱 (例如: essentials, vault, worldedit...)
