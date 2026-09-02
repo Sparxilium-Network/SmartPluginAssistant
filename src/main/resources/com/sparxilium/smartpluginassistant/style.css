@@ -288,3 +288,27 @@
 .dialog-pane .button:default:hover {
     -fx-background-color: #3064d0;
 }
+/* Downloader Sidebar Styles */
+.module-sidebar-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #dfe1e5;
+    -fx-padding: 8 12;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+.module-sidebar-btn:hover {
+    -fx-background-color: #393b40;
+}
+.module-sidebar-btn:selected {
+    -fx-background-color: #2e436e;
+    -fx-text-fill: #ffffff;
+}
+.module-icon {
+    -fx-font-size: 16px;
+}
+.modrinth-btn .module-icon {
+    -fx-text-fill: #1db158;
+}
+.hangar-btn .module-icon {
+    -fx-text-fill: #2f4476;
+}

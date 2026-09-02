@@ -8,9 +8,12 @@ import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;
 import com.sparxilium.smartpluginassistant.service.PluginManagerService;
 import com.sparxilium.smartpluginassistant.service.PluginMetadataStore;
+import com.sparxilium.smartpluginassistant.controller.module.PluginBrowserContext;
+import com.sparxilium.smartpluginassistant.controller.module.PluginBrowserModule;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -26,7 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public class HangarBrowserController {
+public class HangarBrowserController implements PluginBrowserModule {
+    @FXML private VBox rootPane;
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HangarBrowserController.class);
 
     @FXML private Label titleLabel;
@@ -74,11 +78,32 @@ public class HangarBrowserController {
     }
     private final Map<String, CartItem> cartMap = new LinkedHashMap<>();
 
-    public void init(ServerInstance instance, HangarService hangarService, InstanceManager instanceManager, Runnable onPluginInstalledCallback) {
-        this.currentInstance = instance;
-        this.hangarService = hangarService;
-        this.instanceManager = instanceManager;
-        this.onPluginInstalledCallback = onPluginInstalledCallback;
+    @Override
+    public String getProviderName() {
+        return "Hangar";
+    }
+
+    @Override
+    public String getStyleClass() {
+        return "hangar-btn";
+    }
+
+    @Override
+    public String getIconString() {
+        return "🏪";
+    }
+
+    @Override
+    public Node getRootNode() {
+        return rootPane;
+    }
+
+    @Override
+    public void initializeModule(PluginBrowserContext context) {
+        this.currentInstance = context.getCurrentInstance();
+        this.hangarService = context.getHangarService();
+        this.instanceManager = context.getInstanceManager();
+        this.onPluginInstalledCallback = context.getOnPluginInstalledCallback();
         applyI18n();
         setupPlatformFilter();
         setupVersionFilter();

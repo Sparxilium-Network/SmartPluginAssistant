@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.sparxilium.smartpluginassistant.controller.PluginDownloaderController"
+            prefHeight="760.0" prefWidth="1200.0" style="-fx-background-color: #1e1f22;">
+
+    <!-- Left Sidebar -->
+    <left>
+        <VBox styleClass="downloader-sidebar" spacing="10.0" prefWidth="200.0" style="-fx-background-color: #2b2d30; -fx-padding: 10;">
+            <HBox alignment="CENTER_LEFT" spacing="6.0" style="-fx-padding: 0 0 10 0; -fx-border-color: transparent transparent #393b40 transparent; -fx-border-width: 0 0 1 0;">
+                <Label text="+" style="-fx-text-fill: #589df6; -fx-font-weight: bold; -fx-font-size: 14px; -fx-border-color: #589df6; -fx-border-radius: 4; -fx-padding: 0 4;"/>
+                <Label fx:id="sidebarHeaderLabel" text="下載模組 - Prism" style="-fx-font-size: 14px; -fx-text-fill: #bcbec4; -fx-font-weight: bold;"/>
+            </HBox>
+            <VBox fx:id="moduleListContainer" spacing="4.0" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </left>
+
+    <!-- Center Content -->
+    <center>
+        <StackPane fx:id="centerPane" style="-fx-background-color: #1e1f22;"/>
+    </center>
+
+</BorderPane>

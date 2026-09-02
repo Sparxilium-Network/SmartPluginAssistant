@@ -62,9 +62,7 @@ public class MainController {
     @FXML private Button deleteInstanceBtn;
 
     // Toolbar
-    @FXML private MenuButton browseMenuBtn;
-    @FXML private MenuItem browseModrinthMenuItem;
-    @FXML private MenuItem browseHangarMenuItem;
+    @FXML private Button downloadPluginsBtn;
     @FXML private Button addByUrlBtn;
     @FXML private Button importPluginsBtn;
     @FXML private Button checkUpdatesBtn;
@@ -217,9 +215,7 @@ public class MainController {
             exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip_compact"));
             if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script_compact"));
             deleteInstanceBtn.setText(I18n.get("app.delete_instance_compact"));
-            if (browseMenuBtn != null) browseMenuBtn.setText(I18n.get("app.browse_online_compact"));
-            if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText(I18n.get("app.browse_modrinth_compact"));
-            if (browseHangarMenuItem != null) browseHangarMenuItem.setText(I18n.get("app.browse_hangar_compact"));
+            if (downloadPluginsBtn != null) downloadPluginsBtn.setText(I18n.get("app.download_plugins_compact"));
             addByUrlBtn.setText(I18n.get("app.add_by_url_compact"));
             if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins_compact"));
             checkUpdatesBtn.setText(I18n.get("app.check_updates_compact"));
@@ -238,9 +234,7 @@ public class MainController {
             exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip"));
             if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script"));
             deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
-            if (browseMenuBtn != null) browseMenuBtn.setText(I18n.get("app.browse_online"));
-            if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText(I18n.get("app.browse_modrinth"));
-            if (browseHangarMenuItem != null) browseHangarMenuItem.setText(I18n.get("app.browse_hangar"));
+            if (downloadPluginsBtn != null) downloadPluginsBtn.setText(I18n.get("app.download_plugins"));
             addByUrlBtn.setText(I18n.get("app.add_by_url"));
             if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
             checkUpdatesBtn.setText(I18n.get("app.check_updates"));
@@ -268,9 +262,7 @@ public class MainController {
         if (exportScriptBtn != null) exportScriptBtn.setText(I18n.get("app.export_script"));
         deleteInstanceBtn.setText(I18n.get("app.delete_instance"));
 
-        if (browseMenuBtn != null) browseMenuBtn.setText(I18n.get("app.browse_online"));
-        if (browseModrinthMenuItem != null) browseModrinthMenuItem.setText(I18n.get("app.browse_modrinth"));
-        if (browseHangarMenuItem != null) browseHangarMenuItem.setText(I18n.get("app.browse_hangar"));
+        if (downloadPluginsBtn != null) downloadPluginsBtn.setText(I18n.get("app.download_plugins"));
         addByUrlBtn.setText(I18n.get("app.add_by_url"));
         if (importPluginsBtn != null) importPluginsBtn.setText(I18n.get("app.import_plugins"));
         checkUpdatesBtn.setText(I18n.get("app.check_updates"));
@@ -799,7 +791,7 @@ public class MainController {
         exportPluginsZipBtn.setDisable(disabled);
         if (exportScriptBtn != null) exportScriptBtn.setDisable(disabled);
         deleteInstanceBtn.setDisable(disabled);
-        if (browseMenuBtn != null) browseMenuBtn.setDisable(disabled);
+        if (downloadPluginsBtn != null) downloadPluginsBtn.setDisable(disabled);
         addByUrlBtn.setDisable(disabled);
         checkUpdatesBtn.setDisable(disabled);
         refreshPluginsBtn.setDisable(disabled);
@@ -1017,22 +1009,33 @@ public class MainController {
     }
 
     @FXML
-    private void handleOpenHangarBrowser() {
+    private void handleOpenPluginDownloader() {
         if (currentSelectedInstance == null) return;
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sparxilium/smartpluginassistant/hangar-browser-dialog.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sparxilium/smartpluginassistant/plugin-downloader-dialog.fxml"));
             Parent root = loader.load();
 
-            HangarBrowserController controller = loader.getController();
-            controller.init(currentSelectedInstance, hangarService, instanceManager, this::refreshPlugins);
+            PluginDownloaderController controller = loader.getController();
+            
+            Stage stage = new Stage();
+            stage.setTitle(I18n.get("app.download_plugins_title", currentSelectedInstance.getName()));
+            stage.initModality(Modality.APPLICATION_MODAL);
+            
+            com.sparxilium.smartpluginassistant.controller.module.PluginBrowserContext context = new com.sparxilium.smartpluginassistant.controller.module.PluginBrowserContext(
+                    currentSelectedInstance,
+                    modrinthService,
+                    hangarService,
+                    instanceManager,
+                    this::refreshPlugins,
+                    stage
+            );
+            
+            controller.init(context);
 
             java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
-            double w = prefs.getDouble("hangar_dialog_w", 1080);
-            double h = prefs.getDouble("hangar_dialog_h", 720);
+            double w = prefs.getDouble("downloader_dialog_w", 1200);
+            double h = prefs.getDouble("downloader_dialog_h", 760);
 
-            Stage stage = new Stage();
-            stage.setTitle(I18n.get("hangar.window_title", currentSelectedInstance.getName()));
-            stage.initModality(Modality.APPLICATION_MODAL);
             Scene scene = new Scene(root, w, h);
             scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
             stage.setScene(scene);
@@ -1041,52 +1044,15 @@ public class MainController {
 
             stage.setOnCloseRequest(e -> {
                 if (!stage.isMaximized()) {
-                    prefs.putDouble("hangar_dialog_w", stage.getWidth());
-                    prefs.putDouble("hangar_dialog_h", stage.getHeight());
+                    prefs.putDouble("downloader_dialog_w", stage.getWidth());
+                    prefs.putDouble("downloader_dialog_h", stage.getHeight());
                 }
             });
 
             com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
             stage.showAndWait();
         } catch (IOException e) {
-            logger.error("Failed to open Hangar browser", e);
-        }
-    }
-
-    @FXML
-    private void handleOpenModrinthBrowser() {
-        if (currentSelectedInstance == null) return;
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/sparxilium/smartpluginassistant/modrinth-browser-dialog.fxml"));
-            Parent root = loader.load();
-
-            ModrinthBrowserController controller = loader.getController();
-            controller.init(currentSelectedInstance, modrinthService, instanceManager, this::refreshPlugins);
-
-            java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(MainController.class);
-            double w = prefs.getDouble("modrinth_dialog_w", 1080);
-            double h = prefs.getDouble("modrinth_dialog_h", 720);
-
-            Stage stage = new Stage();
-            stage.setTitle(I18n.get("modrinth.window_title", currentSelectedInstance.getName()));
-            stage.initModality(Modality.APPLICATION_MODAL);
-            Scene scene = new Scene(root, w, h);
-            scene.getStylesheets().add(getClass().getResource("/com/sparxilium/smartpluginassistant/style.css").toExternalForm());
-            stage.setScene(scene);
-            stage.setMinWidth(900);
-            stage.setMinHeight(600);
-
-            stage.setOnCloseRequest(e -> {
-                if (!stage.isMaximized()) {
-                    prefs.putDouble("modrinth_dialog_w", stage.getWidth());
-                    prefs.putDouble("modrinth_dialog_h", stage.getHeight());
-                }
-            });
-
-            com.sparxilium.smartpluginassistant.util.WindowsTitleBarTheme.applyDarkTitleBar(stage);
-            stage.showAndWait();
-        } catch (IOException e) {
-            logger.error("Exception occurred", e);
+            logger.error("Failed to open plugin downloader", e);
         }
     }
 
