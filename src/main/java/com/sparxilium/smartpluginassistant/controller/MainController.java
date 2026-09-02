@@ -91,6 +91,7 @@ public class MainController {
     private final ModrinthService modrinthService = new ModrinthService();
     private final HangarService hangarService = new HangarService();
     private final VoxelService voxelService = new VoxelService();
+    private final com.sparxilium.smartpluginassistant.service.SpigetService spigetService = new com.sparxilium.smartpluginassistant.service.SpigetService();
     private final PluginManagerService pluginManagerService = new PluginManagerService(instanceManager, modrinthService);
 
     private ServerInstance currentSelectedInstance;
@@ -447,6 +448,9 @@ public class MainController {
                     } else if ("voxel".equals(platform)) {
                         platformBadge.setText(I18n.get("table.platform_voxel"));
                         platformBadge.setStyle("-fx-background-color: #e67e22; -fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 2 8; -fx-background-radius: 10;");
+                    } else if ("spiget".equals(platform)) {
+                        platformBadge.setText(I18n.get("table.platform_spiget"));
+                        platformBadge.setStyle("-fx-background-color: #f39c12; -fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-font-size: 11px; -fx-padding: 2 8; -fx-background-radius: 10;");
                     } else {
                         platformBadge.setText(I18n.get("table.platform_local"));
                         platformBadge.setStyle("-fx-background-color: #4e5157; -fx-text-fill: #bcbec4; -fx-font-size: 11px; -fx-padding: 2 8; -fx-background-radius: 10;");
@@ -1031,6 +1035,7 @@ public class MainController {
                     modrinthService,
                     hangarService,
                     voxelService,
+                    spigetService,
                     instanceManager,
                     this::refreshPlugins,
                     stage

@@ -35,6 +35,7 @@ public class PluginDownloaderController {
         loadModule("/com/sparxilium/smartpluginassistant/modrinth-browser-dialog.fxml", context);
         loadModule("/com/sparxilium/smartpluginassistant/hangar-browser-dialog.fxml", context);
         loadModule("/com/sparxilium/smartpluginassistant/voxel-browser-dialog.fxml", context);
+        loadModule("/com/sparxilium/smartpluginassistant/spiget-browser-dialog.fxml", context);
         
         buildSidebar();
 

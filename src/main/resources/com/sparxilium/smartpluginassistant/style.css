@@ -346,3 +346,14 @@
     -fx-text-fill: #f39c12;
     -fx-underline: true;
 }
+.spiget-btn .module-icon {
+    -fx-text-fill: #e67e22;
+}
+.api-by-spiget {
+    -fx-text-fill: #e67e22;
+}
+.api-by-spiget:hover {
+    -fx-text-fill: #f39c12;
+    -fx-underline: true;
+}
+

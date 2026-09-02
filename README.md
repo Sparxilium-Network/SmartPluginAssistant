@@ -12,7 +12,7 @@
 
 本工具**並非直接架設伺服器程序**，而是專注於**虛擬伺服器實例與插件生態的管理**：
 * 支援多種伺服器核心分類管理（Paper, Spigot, Purpur, Folia, Velocity, BungeeCord 等）。
-* 深度串接 **[Modrinth API](https://docs.modrinth.com/api/)**、**[PaperMC Hangar API](https://hangar.papermc.io/)** 與 **[Voxel.shop API](https://voxel.shop)**。
+* 深度串接 **[Modrinth API](https://docs.modrinth.com/api/)**、**[PaperMC Hangar API](https://hangar.papermc.io/)**、**[Voxel.shop API](https://voxel.shop)** 與 **[SpiGet API](https://spiget.org)**。
 * 實現**線上搜尋安裝**、**貼上網址直接匯入**、**本機批量掃描與線上配對**，以及基於檔案 Hash 雜湊值的**一鍵批次自動更新**功能。
 * 支援**匯出伺服器部署腳本 (deploy.sh)**，一鍵自動產生可用於 Linux 伺服器部署的 `curl` / `wget` 插件下載腳本。
 
@@ -25,10 +25,10 @@
    * 支援使用預設資料夾，或直接指向您本機現有的伺服器目錄。
    * 快速從介面開啟實例根目錄或 `plugins/` 資料夾。
 
-2. **多平台線上搜尋與安裝 (Modrinth, Hangar & Voxel.shop Browser)**
-   * 內建 Prism-style 整合型下載視窗，左側可直覺切換 Modrinth、Hangar 與 Voxel.shop (Polymart) 市場模組。
-   * 市場頂部提供一鍵直達官方首頁的來源連結標籤（`API BY MODRINTH` / `API BY HANGAR` / `API BY VOXEL.SHOP`）。
-   * 支援 Voxel.shop 免費資源一鍵下載，付費外掛標註價格並支援直達官方購買頁面。
+2. **多平台線上搜尋與安裝 (Modrinth, Hangar, Voxel.shop & SpigotMC Browser)**
+   * 內建 Prism-style 整合型下載視窗，左側可直覺切換 Modrinth、Hangar、Voxel.shop 與 SpigotMC (SpiGet) 四大市場模組。
+   * 市場頂部提供一鍵直達官方首頁的來源連結標籤（`API BY MODRINTH` / `API BY HANGAR` / `API BY VOXEL.SHOP` / `API BY SPIGET`）。
+   * 支援 Voxel.shop 與 SpigotMC 免費資源一鍵下載，付費/外部外掛標註價格並支援直達官方購買頁面。
    * 自動依據當前實例的 Loader 核心與 Minecraft 版本進行相容性篩選。
    * 支援購物車多選暫存，一鍵非同步解析必備前置依賴 (Dependencies) 並自由勾選平行下載。
    * 點擊即可一鍵下載 `.jar` 檔案至該實例的 `plugins/` 目錄中。
@@ -103,6 +103,7 @@ src/main/java/com/sparxilium/smartpluginassistant/
 │   ├── ModrinthBrowserController.java # Modrinth 搜尋市場模組
 │   ├── HangarBrowserController.java # Hangar 搜尋市場模組
 │   ├── VoxelBrowserController.java  # Voxel.shop 搜尋市場模組
+│   ├── SpigetBrowserController.java # SpigotMC (SpiGet) 搜尋市場模組
 │   ├── AddByUrlDialogController.java # 網址解析新增對話框控制器
 │   ├── ImportPluginsDialogController.java # 批量掃描匯入控制器
 │   ├── InstanceSettingsDialogController.java # 實例獨立相容性設定控制器
@@ -113,12 +114,14 @@ src/main/java/com/sparxilium/smartpluginassistant/
 │   ├── InstalledPlugin.java         # 本地已安裝插件模型
 │   ├── Modrinth*.java               # Modrinth API 資料結構
 │   ├── Hangar*.java                 # Hangar API 資料結構
-│   └── VoxelProduct.java            # Voxel.shop API 資料結構
+│   ├── VoxelProduct.java            # Voxel.shop API 資料結構
+│   └── SpigetResource.java          # SpiGet API 資料結構
 ├── service/                         # 業務邏輯服務
 │   ├── InstanceManager.java         # 實例配置儲存、Shell 腳本生成與目錄管理
 │   ├── ModrinthService.java         # Modrinth HTTP API 客戶端
 │   ├── HangarService.java           # Hangar HTTP API 客戶端
 │   ├── VoxelService.java            # Voxel.shop HTTP API 客戶端
+│   ├── SpigetService.java           # SpiGet (SpigotMC) HTTP API 客戶端
 │   ├── PluginManagerService.java    # 插件檔案掃描、Hash 比對與生命週期管理
 │   ├── PluginMetadataStore.java     # 插件線上來源快取與持久化儲存
 │   ├── ImageCacheService.java       # 非同步網路圖片快取服務
@@ -129,5 +132,5 @@ src/main/java/com/sparxilium/smartpluginassistant/
 
 ## 📄 開源授權與致謝 (License & Credits)
 
-* API 支援來自 [Modrinth API](https://docs.modrinth.com/api/)、[PaperMC Hangar](https://hangar.papermc.io/) 與 [Voxel.shop](https://voxel.shop)。
+* API 支援來自 [Modrinth API](https://docs.modrinth.com/api/)、[PaperMC Hangar](https://hangar.papermc.io/)、[Voxel.shop](https://voxel.shop) 與 [SpiGet](https://spiget.org/)。
 * UI 與交互設計靈感來自 [Prism Launcher](https://prismlauncher.org/)。
