@@ -202,7 +202,7 @@ import.no_selection=Please select at least one plugin file to import!
 table.platform_hangar=Hangar
 app.browse_hangar=🏪 Browse Hangar
 
-hangar.title=Hangar Plugin Hub (PaperMC)
+hangar.title=Hangar Plugin Hub
 hangar.window_title=Browse Hangar Plugins - {0}
 hangar.ready=Ready
 hangar.btn_search=Search

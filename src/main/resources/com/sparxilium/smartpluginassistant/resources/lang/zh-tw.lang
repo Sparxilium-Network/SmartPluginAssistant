@@ -203,7 +203,7 @@ import.no_selection=請先勾選至少一個要匯入的插件檔案！
 table.platform_hangar=Hangar
 app.browse_hangar=🏪 瀏覽 Hangar 插件
 
-hangar.title=Hangar 插件中心 (PaperMC)
+hangar.title=Hangar 插件中心
 hangar.window_title=瀏覽 Hangar 插件 - {0}
 hangar.ready=準備就緒
 hangar.btn_search=搜尋

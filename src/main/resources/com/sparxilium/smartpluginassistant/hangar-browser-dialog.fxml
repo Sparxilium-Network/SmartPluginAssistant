@@ -12,7 +12,7 @@
 
     <HBox spacing="10.0" alignment="CENTER_LEFT">
         <Label fx:id="titleLabel" text="Hangar 插件中心" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>
-        <Label style="-fx-text-fill: #2f4476; -fx-font-weight: bold; -fx-font-size: 12px;" text="by PaperMC"/>
+        <Hyperlink fx:id="apiByLink" text="API BY HANGAR" onAction="#handleOpenApiWebPage" styleClass="api-by-link, api-by-hangar"/>
         <Region HBox.hgrow="ALWAYS"/>
         <ProgressIndicator fx:id="loadingIndicator" prefWidth="20" prefHeight="20" visible="false"/>
     </HBox>

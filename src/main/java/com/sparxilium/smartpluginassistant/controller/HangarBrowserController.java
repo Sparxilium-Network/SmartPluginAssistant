@@ -34,6 +34,7 @@ public class HangarBrowserController implements PluginBrowserModule {
     private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HangarBrowserController.class);
 
     @FXML private Label titleLabel;
+    @FXML private Hyperlink apiByLink;
     @FXML private TextField searchField;
     @FXML private ComboBox<String> platformFilterCombo;
     @FXML private ComboBox<String> versionFilterCombo;
@@ -325,6 +326,15 @@ public class HangarBrowserController implements PluginBrowserModule {
         String ns = selectedProject.getNamespaceString();
         if (ns == null || ns.isBlank()) return;
         String url = "https://hangar.papermc.io/" + ns;
+        openBrowserUrl(url);
+    }
+
+    @FXML
+    private void handleOpenApiWebPage() {
+        openBrowserUrl("https://hangar.papermc.io/");
+    }
+
+    private void openBrowserUrl(String url) {
         try {
             if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
                 java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
@@ -339,7 +349,7 @@ public class HangarBrowserController implements PluginBrowserModule {
                 }
             }
         } catch (Exception ex) {
-            logger.warn("Failed to open Hangar web page in external browser: {}", url, ex);
+            logger.warn("Failed to open web page in external browser: {}", url, ex);
         }
     }
 

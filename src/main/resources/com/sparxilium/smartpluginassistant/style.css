@@ -312,3 +312,27 @@
 .hangar-btn .module-icon {
     -fx-text-fill: #2f4476;
 }
+
+/* API BY Link Styling */
+.api-by-link {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 1 4;
+    -fx-underline: false;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+}
+.api-by-hangar {
+    -fx-text-fill: #4b6cb7;
+}
+.api-by-hangar:hover {
+    -fx-text-fill: #7097f5;
+    -fx-underline: true;
+}
+.api-by-modrinth {
+    -fx-text-fill: #1db158;
+}
+.api-by-modrinth:hover {
+    -fx-text-fill: #25d46c;
+    -fx-underline: true;
+}

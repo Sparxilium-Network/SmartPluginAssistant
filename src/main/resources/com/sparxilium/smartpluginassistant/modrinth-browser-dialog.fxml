@@ -12,6 +12,7 @@
 
     <HBox spacing="10.0" alignment="CENTER_LEFT">
         <Label fx:id="titleLabel" text="Modrinth 插件中心" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>
+        <Hyperlink fx:id="apiByLink" text="API BY MODRINTH" onAction="#handleOpenApiWebPage" styleClass="api-by-link, api-by-modrinth"/>
         <Region HBox.hgrow="ALWAYS"/>
         <ProgressIndicator fx:id="loadingIndicator" prefWidth="20" prefHeight="20" visible="false"/>
     </HBox>

@@ -33,6 +33,7 @@ import java.util.Map;
 public class ModrinthBrowserController implements PluginBrowserModule {
     @FXML private VBox rootPane;
     @FXML private Label titleLabel;
+    @FXML private Hyperlink apiByLink;
     @FXML private TextField searchField;
     @FXML private ComboBox<String> loaderFilterCombo;
     @FXML private ComboBox<String> versionFilterCombo;
@@ -649,6 +650,15 @@ public class ModrinthBrowserController implements PluginBrowserModule {
         String slug = selectedResult.getSlug() != null ? selectedResult.getSlug() : selectedResult.getProjectId();
         if (slug == null || slug.isBlank()) return;
         String url = "https://modrinth.com/plugin/" + slug;
+        openBrowserUrl(url);
+    }
+
+    @FXML
+    private void handleOpenApiWebPage() {
+        openBrowserUrl("https://modrinth.com/plugins");
+    }
+
+    private void openBrowserUrl(String url) {
         try {
             if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
                 java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
