@@ -60,7 +60,7 @@ public class SpigetBrowserController implements PluginBrowserModule {
 
     @Override
     public String getProviderName() {
-        return "SpigotMC (SpiGet)";
+        return "SpigotMC [實驗性]";
     }
 
     @Override

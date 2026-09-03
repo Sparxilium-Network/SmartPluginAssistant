@@ -208,6 +208,9 @@ public class VoxelBrowserController implements PluginBrowserModule {
         String authorName = product.getOwner() != null && product.getOwner().getName() != null ? product.getOwner().getName() : "Unknown";
         detailAuthorLabel.setText("by " + authorName);
 
+        String voxelToken = currentInstance != null ? currentInstance.getApiToken("voxel") : null;
+        boolean hasToken = voxelToken != null && !voxelToken.isBlank();
+
         if (product.isFree()) {
             detailPriceBadge.setText(I18n.get("voxel.free"));
             detailPriceBadge.setStyle("-fx-background-color: #1bd96a; -fx-text-fill: #000000; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 4;");
@@ -216,8 +219,13 @@ public class VoxelBrowserController implements PluginBrowserModule {
         } else {
             detailPriceBadge.setText("$" + product.getPrice() + " " + (product.getCurrency() != null ? product.getCurrency() : "USD"));
             detailPriceBadge.setStyle("-fx-background-color: #f39c12; -fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-padding: 3 8; -fx-background-radius: 4;");
-            detailDownloadBtn.setText("🛒 " + I18n.get("voxel.btn_view_on_voxel"));
-            detailDownloadBtn.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold;");
+            if (hasToken) {
+                detailDownloadBtn.setText("⬇ " + I18n.get("voxel.btn_download_licensed"));
+                detailDownloadBtn.setStyle("-fx-background-color: #3574f0; -fx-text-fill: white; -fx-font-weight: bold;");
+            } else {
+                detailDownloadBtn.setText("🛒 " + I18n.get("voxel.btn_view_on_voxel"));
+                detailDownloadBtn.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-font-weight: bold;");
+            }
         }
 
         String sw = product.getSupportedServerSoftware() != null ? product.getSupportedServerSoftware() : "-";
@@ -232,7 +240,11 @@ public class VoxelBrowserController implements PluginBrowserModule {
     @FXML
     private void handleDownloadOrBuy() {
         if (selectedProduct == null) return;
-        if (!selectedProduct.isFree()) {
+        String voxelToken = currentInstance != null ? currentInstance.getApiToken("voxel") : null;
+        boolean hasToken = voxelToken != null && !voxelToken.isBlank();
+
+        // If product is paid and user has no token configured, open web page directly to buy
+        if (!selectedProduct.isFree() && !hasToken) {
             handleOpenWebPage();
             return;
         }
@@ -245,12 +257,22 @@ public class VoxelBrowserController implements PluginBrowserModule {
         setLoading(true);
         statusLabel.setText(I18n.get("hangar.fetching_versions"));
 
-        voxelService.getDownloadInfo(selectedProduct.getId())
+        voxelService.getDownloadInfo(selectedProduct.getId(), voxelToken)
                 .thenAccept(dlInfo -> {
                     if (dlInfo == null || dlInfo.downloadUrl() == null) {
                         Platform.runLater(() -> {
                             setLoading(false);
-                            statusLabel.setText(I18n.get("voxel.download_url_failed"));
+                            String err = dlInfo != null ? dlInfo.errorCode() : null;
+                            if ("NOT_PURCHASED".equalsIgnoreCase(err) || "NO_PURCHASE".equalsIgnoreCase(err)
+                                    || "CANNOT_DOWNLOAD".equalsIgnoreCase(err) || "NOT_ALLOWED".equalsIgnoreCase(err)) {
+                                statusLabel.setText("❌ " + I18n.get("voxel.not_purchased"));
+                            } else if ("TOKEN_INVALID".equalsIgnoreCase(err) || "INVALID_TOKEN".equalsIgnoreCase(err)) {
+                                statusLabel.setText("❌ " + I18n.get("voxel.token_invalid"));
+                            } else if ("NO_TOKEN".equalsIgnoreCase(err)) {
+                                statusLabel.setText("❌ " + I18n.get("voxel.not_purchased"));
+                            } else {
+                                statusLabel.setText(I18n.get("voxel.download_url_failed"));
+                            }
                         });
                         return;
                     }

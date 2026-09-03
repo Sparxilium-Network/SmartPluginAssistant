@@ -41,7 +41,7 @@ public class VoxelService implements PluginRepository {
     private final HttpDownloadService downloadService;
 
     public record SearchResultPage(List<VoxelProduct> products, int totalCount, boolean hasMore) {}
-    public record DownloadInfo(String downloadUrl, String version) {}
+    public record DownloadInfo(String downloadUrl, String version, String errorCode, String errorMessage) {}
 
     public VoxelService(HttpDownloadService downloadService) {
         this.httpClient = HttpClient.newBuilder()
@@ -108,10 +108,18 @@ public class VoxelService implements PluginRepository {
     }
 
     public CompletableFuture<DownloadInfo> getDownloadInfo(long resourceId) {
-        String url = BASE_URL + "/getDownloadURL";
-        String formBody = "resource_id=" + resourceId;
+        return getDownloadInfo(resourceId, null);
+    }
 
-        logger.info("VoxelService.getDownloadInfo: POST {} (resource_id={})", url, resourceId);
+    public CompletableFuture<DownloadInfo> getDownloadInfo(long resourceId, String token) {
+        String url = BASE_URL + "/getDownloadURL";
+        StringBuilder formBuilder = new StringBuilder("resource_id=").append(resourceId);
+        if (token != null && !token.isBlank()) {
+            formBuilder.append("&token=").append(URLEncoder.encode(token.trim(), StandardCharsets.UTF_8));
+        }
+        String formBody = formBuilder.toString();
+
+        logger.info("VoxelService.getDownloadInfo: POST {} (resource_id={}, hasToken={})", url, resourceId, (token != null && !token.isBlank()));
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -125,7 +133,7 @@ public class VoxelService implements PluginRepository {
                 .thenApply(response -> {
                     if (response.statusCode() != 200) {
                         logger.error("Voxel getDownloadURL failed with status: {}", response.statusCode());
-                        return null;
+                        return new DownloadInfo(null, null, "HTTP_" + response.statusCode(), "HTTP " + response.statusCode());
                     }
                     try {
                         String body = response.body();
@@ -136,20 +144,25 @@ public class VoxelService implements PluginRepository {
                         JsonNode respNode = root.path("response");
                         boolean success = respNode.path("success").asBoolean(false);
                         if (!success) {
-                            String msg = respNode.path("message").asText("Unknown error");
-                            logger.warn("Voxel getDownloadURL unsuccessful: {}", msg);
-                            return null;
+                            String err = respNode.path("error").asText(null);
+                            if (err == null || err.isBlank()) {
+                                err = respNode.path("message").asText("UNKNOWN_ERROR");
+                            }
+                            String msg = respNode.path("message").asText(err);
+                            logger.warn("Voxel getDownloadURL unsuccessful: err={}, msg={}", err, msg);
+                            return new DownloadInfo(null, null, err, msg);
                         }
                         JsonNode resultNode = respNode.path("result");
                         String dlUrl = resultNode.path("url").asText(null);
                         String ver = resultNode.path("version").asText(null);
                         if (dlUrl != null && !dlUrl.isBlank()) {
-                            return new DownloadInfo(dlUrl, ver);
+                            return new DownloadInfo(dlUrl, ver, null, null);
                         }
                     } catch (Exception e) {
                         logger.error("Failed to parse Voxel getDownloadURL response", e);
+                        return new DownloadInfo(null, null, "PARSE_ERROR", e.getMessage());
                     }
-                    return null;
+                    return new DownloadInfo(null, null, "NO_URL", "No download URL returned");
                 });
     }
 
@@ -168,7 +181,8 @@ public class VoxelService implements PluginRepository {
                 continue;
             }
 
-            CompletableFuture<Void> f = getDownloadInfo(resourceId)
+            String voxelToken = instance != null ? instance.getApiToken("voxel") : null;
+            CompletableFuture<Void> f = getDownloadInfo(resourceId, voxelToken)
                     .thenAccept(dlInfo -> {
                         if (dlInfo != null && dlInfo.downloadUrl() != null && dlInfo.version() != null) {
                             // Check if version is different from currently installed
