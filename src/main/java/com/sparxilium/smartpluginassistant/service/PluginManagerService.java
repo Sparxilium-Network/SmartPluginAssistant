@@ -1,8 +1,8 @@
 package com.sparxilium.smartpluginassistant.service;
 
-import com.sparxilium.smartpluginassistant.model.HangarVersion;
+import com.sparxilium.smartpluginassistant.model.hangar.HangarVersion;
 import com.sparxilium.smartpluginassistant.model.InstalledPlugin;
-import com.sparxilium.smartpluginassistant.model.ModrinthVersion;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthVersion;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
 
 import java.io.File;

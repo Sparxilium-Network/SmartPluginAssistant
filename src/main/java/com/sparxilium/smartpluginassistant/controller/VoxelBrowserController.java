@@ -3,7 +3,7 @@ package com.sparxilium.smartpluginassistant.controller;
 import com.sparxilium.smartpluginassistant.controller.module.PluginBrowserContext;
 import com.sparxilium.smartpluginassistant.controller.module.PluginBrowserModule;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
-import com.sparxilium.smartpluginassistant.model.VoxelProduct;
+import com.sparxilium.smartpluginassistant.model.voxel.VoxelProduct;
 import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.ImageCacheService;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;
@@ -158,13 +158,8 @@ public class VoxelBrowserController implements PluginBrowserModule {
         HBox top = new HBox(10);
         top.setAlignment(Pos.CENTER_LEFT);
 
-        ImageView iconView = new ImageView();
-        iconView.setFitWidth(40);
-        iconView.setFitHeight(40);
-        iconView.setPreserveRatio(true);
-        if (product.getThumbnailURL() != null && !product.getThumbnailURL().isBlank()) {
-            ImageCacheService.loadImageAsync(product.getThumbnailURL(), 40, 40, iconView::setImage);
-        }
+        Label voxelIconBadge = new Label("🛒");
+        voxelIconBadge.setStyle("-fx-font-size: 24px; -fx-padding: 0 4 0 0;");
 
         VBox info = new VBox(2);
         HBox.setHgrow(info, Priority.ALWAYS);
@@ -184,7 +179,7 @@ public class VoxelBrowserController implements PluginBrowserModule {
             priceBadge.setStyle("-fx-background-color: #f39c12; -fx-text-fill: #ffffff; -fx-font-weight: bold; -fx-padding: 2 8; -fx-background-radius: 4; -fx-font-size: 11px;");
         }
 
-        top.getChildren().addAll(iconView, info, priceBadge);
+        top.getChildren().addAll(voxelIconBadge, info, priceBadge);
 
         Label desc = new Label(product.getSubtitle() != null ? product.getSubtitle() : "");
         desc.setStyle("-fx-text-fill: #8b8e96; -fx-font-size: 12px;");

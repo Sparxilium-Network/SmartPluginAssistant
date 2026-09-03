@@ -1,4 +1,4 @@
-package com.sparxilium.smartpluginassistant.model;
+package com.sparxilium.smartpluginassistant.model.modrinth;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

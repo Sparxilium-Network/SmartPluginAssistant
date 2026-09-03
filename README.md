@@ -112,10 +112,11 @@ src/main/java/com/sparxilium/smartpluginassistant/
 ├── model/                           # 資料模型
 │   ├── ServerInstance.java          # 伺服器實例模型
 │   ├── InstalledPlugin.java         # 本地已安裝插件模型
-│   ├── Modrinth*.java               # Modrinth API 資料結構
-│   ├── Hangar*.java                 # Hangar API 資料結構
-│   ├── VoxelProduct.java            # Voxel.shop API 資料結構
-│   └── SpigetResource.java          # SpiGet API 資料結構
+│   ├── UpdateResult.java            # 統一更新結果模型
+│   ├── hangar/                      # PaperMC Hangar API 專用資料結構 (HangarProject, HangarVersion)
+│   ├── modrinth/                    # Modrinth API 專用資料結構 (ModrinthProject, ModrinthVersion 等)
+│   ├── voxel/                       # Voxel.shop API 專用資料結構 (VoxelProduct)
+│   └── spiget/                      # SpiGet API 專用資料結構 (SpigetResource)
 ├── service/                         # 業務邏輯服務
 │   ├── InstanceManager.java         # 實例配置儲存、Shell 腳本生成與目錄管理
 │   ├── ModrinthService.java         # Modrinth HTTP API 客戶端
@@ -134,3 +135,4 @@ src/main/java/com/sparxilium/smartpluginassistant/
 
 * API 支援來自 [Modrinth API](https://docs.modrinth.com/api/)、[PaperMC Hangar](https://hangar.papermc.io/)、[Voxel.shop](https://voxel.shop) 與 [SpiGet](https://spiget.org/)。
 * UI 與交互設計靈感來自 [Prism Launcher](https://prismlauncher.org/)。
+* 圖標表情符號字型使用 [Google Noto Color Emoji](https://github.com/googlefonts/noto-emoji)（遵循 [SIL Open Font License 1.1](https://scripts.sil.org/OFL)）。

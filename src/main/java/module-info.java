@@ -22,9 +22,17 @@ module com.sparxilium.smartpluginassistant {
     opens com.sparxilium.smartpluginassistant to javafx.fxml;
     opens com.sparxilium.smartpluginassistant.controller to javafx.fxml;
     opens com.sparxilium.smartpluginassistant.model to com.fasterxml.jackson.databind, javafx.base;
+    opens com.sparxilium.smartpluginassistant.model.hangar to com.fasterxml.jackson.databind, javafx.base;
+    opens com.sparxilium.smartpluginassistant.model.modrinth to com.fasterxml.jackson.databind, javafx.base;
+    opens com.sparxilium.smartpluginassistant.model.voxel to com.fasterxml.jackson.databind, javafx.base;
+    opens com.sparxilium.smartpluginassistant.model.spiget to com.fasterxml.jackson.databind, javafx.base;
 
     exports com.sparxilium.smartpluginassistant;
     exports com.sparxilium.smartpluginassistant.model;
+    exports com.sparxilium.smartpluginassistant.model.hangar;
+    exports com.sparxilium.smartpluginassistant.model.modrinth;
+    exports com.sparxilium.smartpluginassistant.model.voxel;
+    exports com.sparxilium.smartpluginassistant.model.spiget;
     exports com.sparxilium.smartpluginassistant.service;
     exports com.sparxilium.smartpluginassistant.controller;
 }

@@ -1,6 +1,6 @@
 package com.sparxilium.smartpluginassistant.controller;
 
-import com.sparxilium.smartpluginassistant.model.ModrinthVersion;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthVersion;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
 import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;

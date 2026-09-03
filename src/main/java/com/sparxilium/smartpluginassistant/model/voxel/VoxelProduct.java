@@ -1,4 +1,4 @@
-package com.sparxilium.smartpluginassistant.model;
+package com.sparxilium.smartpluginassistant.model.voxel;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -106,7 +106,8 @@ public class VoxelProduct {
     }
 
     public String getThumbnailURL() {
-        return thumbnailURL;
+        // Return null directly as Voxel R2 image CDN blocks non-browser requests with 403 Cloudflare challenge
+        return null;
     }
 
     public void setThumbnailURL(String thumbnailURL) {
@@ -114,7 +115,7 @@ public class VoxelProduct {
     }
 
     public String getHeaderURL() {
-        return headerURL;
+        return null;
     }
 
     public void setHeaderURL(String headerURL) {

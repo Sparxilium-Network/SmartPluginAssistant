@@ -7,7 +7,7 @@
     -fx-focus-color: #3574f0;
     -fx-faint-focus-color: transparent;
     -fx-text-base-color: #dfe1e5;
-    -fx-font-family: "Segoe UI", "Noto Sans CJK TC", "Noto Sans TC", "Ubuntu", "DejaVu Sans", "Microsoft JhengHei", "PingFang SC", "WenQuanYi Micro Hei", sans-serif;
+    -fx-font-family: "Segoe UI", "Noto Sans CJK TC", "Noto Sans TC", "Ubuntu", "DejaVu Sans", "Microsoft JhengHei", "PingFang SC", "WenQuanYi Micro Hei", "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
     -fx-font-size: 13px;
 }
 
@@ -305,6 +305,7 @@
 }
 .module-icon {
     -fx-font-size: 16px;
+    -fx-font-family: "Noto Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 .modrinth-btn .module-icon {
     -fx-text-fill: #1db158;

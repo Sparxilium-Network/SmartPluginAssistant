@@ -3,7 +3,7 @@ package com.sparxilium.smartpluginassistant.controller;
 import com.sparxilium.smartpluginassistant.controller.module.PluginBrowserContext;
 import com.sparxilium.smartpluginassistant.controller.module.PluginBrowserModule;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
-import com.sparxilium.smartpluginassistant.model.SpigetResource;
+import com.sparxilium.smartpluginassistant.model.spiget.SpigetResource;
 import com.sparxilium.smartpluginassistant.service.I18n;
 import com.sparxilium.smartpluginassistant.service.ImageCacheService;
 import com.sparxilium.smartpluginassistant.service.InstanceManager;

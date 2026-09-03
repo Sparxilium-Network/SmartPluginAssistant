@@ -1,9 +1,9 @@
 package com.sparxilium.smartpluginassistant.service;
 
-import com.sparxilium.smartpluginassistant.model.ModrinthProject;
-import com.sparxilium.smartpluginassistant.model.ModrinthSearchResponse;
-import com.sparxilium.smartpluginassistant.model.ModrinthSearchResult;
-import com.sparxilium.smartpluginassistant.model.ModrinthVersion;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthProject;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthSearchResponse;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthSearchResult;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthVersion;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

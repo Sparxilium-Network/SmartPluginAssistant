@@ -1,9 +1,9 @@
 package com.sparxilium.smartpluginassistant.controller;
 
-import com.sparxilium.smartpluginassistant.model.HangarProject;
-import com.sparxilium.smartpluginassistant.model.HangarVersion;
-import com.sparxilium.smartpluginassistant.model.ModrinthProject;
-import com.sparxilium.smartpluginassistant.model.ModrinthVersion;
+import com.sparxilium.smartpluginassistant.model.hangar.HangarProject;
+import com.sparxilium.smartpluginassistant.model.hangar.HangarVersion;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthProject;
+import com.sparxilium.smartpluginassistant.model.modrinth.ModrinthVersion;
 import com.sparxilium.smartpluginassistant.model.ServerInstance;
 import com.sparxilium.smartpluginassistant.service.HangarService;
 import com.sparxilium.smartpluginassistant.service.I18n;

@@ -1,4 +1,4 @@
-package com.sparxilium.smartpluginassistant.model;
+package com.sparxilium.smartpluginassistant.model.spiget;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;

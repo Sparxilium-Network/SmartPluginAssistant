@@ -2,7 +2,7 @@ package com.sparxilium.smartpluginassistant.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sparxilium.smartpluginassistant.model.VoxelProduct;
+import com.sparxilium.smartpluginassistant.model.voxel.VoxelProduct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -2,8 +2,8 @@ package com.sparxilium.smartpluginassistant.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sparxilium.smartpluginassistant.model.HangarProject;
-import com.sparxilium.smartpluginassistant.model.HangarVersion;
+import com.sparxilium.smartpluginassistant.model.hangar.HangarProject;
+import com.sparxilium.smartpluginassistant.model.hangar.HangarVersion;
 
 import java.io.InputStream;
 import java.net.URI;

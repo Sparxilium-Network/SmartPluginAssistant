@@ -3,7 +3,7 @@ package com.sparxilium.smartpluginassistant.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.sparxilium.smartpluginassistant.model.SpigetResource;
+import com.sparxilium.smartpluginassistant.model.spiget.SpigetResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
