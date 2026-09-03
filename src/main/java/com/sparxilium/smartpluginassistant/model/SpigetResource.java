@@ -143,9 +143,11 @@ public class SpigetResource {
 
     public String getIconUrl() {
         if (icon != null && icon.getUrl() != null && !icon.getUrl().isBlank()) {
-            String u = icon.getUrl();
+            String u = icon.getUrl().trim();
             if (u.startsWith("//")) return "https:" + u;
-            return u;
+            if (u.startsWith("http://") || u.startsWith("https://")) return u;
+            if (u.startsWith("/")) return "https://www.spigotmc.org" + u;
+            return "https://www.spigotmc.org/" + u;
         }
         return null;
     }

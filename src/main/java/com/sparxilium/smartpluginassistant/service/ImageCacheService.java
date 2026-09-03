@@ -62,17 +62,17 @@ public class ImageCacheService {
                 if (!isRemoteHttp) {
                     // Local file handling
                     try {
-                        Path localPath;
+                        Path localPath = null;
                         if (url.startsWith("file:")) {
                             localPath = Paths.get(URI.create(url));
-                        } else {
+                        } else if (!url.contains("?") && !url.contains("*") && !url.contains(":")) {
                             localPath = Paths.get(url);
                         }
-                        if (Files.exists(localPath)) {
+                        if (localPath != null && Files.exists(localPath)) {
                             imageBytes = Files.readAllBytes(localPath);
                         }
                     } catch (Exception e) {
-                        logger.warn("Failed to read local image: {}", url, e);
+                        logger.debug("Failed to read local image: {}", url, e);
                     }
                 } else {
                     String hash = hashUrl(url);
