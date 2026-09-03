@@ -390,7 +390,10 @@ public class ModrinthService implements PluginRepository {
             return CompletableFuture.completedFuture(Collections.emptyMap());
         }
 
-        return checkUpdates(hashes, instance.getLoader(), instance.getMcVersion())
+        List<String> loaders = instance.getEffectiveLoaders();
+        String mcVersion = instance.isAllowHigherMcVersions() ? null : instance.getMcVersion();
+
+        return checkUpdates(hashes, loaders, mcVersion)
                 .thenApply(modrinthUpdates -> {
                     Map<InstalledPlugin, UpdateResult> resultMap = new HashMap<>();
                     for (InstalledPlugin plugin : plugins) {

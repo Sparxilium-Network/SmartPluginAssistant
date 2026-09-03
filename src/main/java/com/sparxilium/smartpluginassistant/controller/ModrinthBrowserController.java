@@ -611,6 +611,8 @@ public class ModrinthBrowserController implements PluginBrowserModule {
             this.fileName = fileName;
             this.url = url;
             this.depType = depType;
+            // Optional dependencies are unchecked by default; primary plugins and required dependencies remain checked
+            this.selected = !"optional".equalsIgnoreCase(depType);
         }
 
         public String getProjectId() { return projectId; }
@@ -810,7 +812,7 @@ public class ModrinthBrowserController implements PluginBrowserModule {
 
         for (DownloadItem item : items) {
             CheckBox cb = new CheckBox();
-            cb.setSelected(true);
+            cb.setSelected(item.isSelected());
             cb.setOnAction(e -> item.setSelected(cb.isSelected()));
 
             HBox itemRow = new HBox(8);

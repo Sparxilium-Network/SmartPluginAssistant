@@ -17,6 +17,7 @@ public class ServerInstance {
     private String icon; // icon name or color
     private java.util.List<String> extraCompatibleLoaders = new java.util.ArrayList<>();
     private boolean allowPrereleases = false; // allow beta and alpha updates
+    private boolean allowHigherMcVersions = false; // allow checking and updating to higher MC version plugins
     private java.util.Map<String, String> apiTokens = new java.util.HashMap<>();
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
@@ -28,6 +29,7 @@ public class ServerInstance {
         this.mcVersion = "1.21.1";
         this.extraCompatibleLoaders = new java.util.ArrayList<>();
         this.allowPrereleases = false;
+        this.allowHigherMcVersions = false;
     }
 
     public java.util.List<String> getExtraCompatibleLoaders() {
@@ -166,6 +168,14 @@ public class ServerInstance {
 
     public void setAllowPrereleases(boolean allowPrereleases) {
         this.allowPrereleases = allowPrereleases;
+    }
+
+    public boolean isAllowHigherMcVersions() {
+        return allowHigherMcVersions;
+    }
+
+    public void setAllowHigherMcVersions(boolean allowHigherMcVersions) {
+        this.allowHigherMcVersions = allowHigherMcVersions;
     }
 
     public java.util.Map<String, String> getApiTokens() {

@@ -24,6 +24,8 @@ public class InstanceSettingsDialogController {
     @FXML private Label warningLabel;
     @FXML private CheckBox allowPrereleaseCheckBox;
     @FXML private Label allowPrereleaseHintLabel;
+    @FXML private CheckBox allowHigherMcVersionsCheckBox;
+    @FXML private Label allowHigherMcVersionsHintLabel;
 
     @FXML private Label apiTokensSectionLabel;
     @FXML private Label apiTokensHintLabel;
@@ -54,6 +56,9 @@ public class InstanceSettingsDialogController {
         loaderComboBox.setValue(instance.getLoader());
 
         allowPrereleaseCheckBox.setSelected(instance.isAllowPrereleases());
+        if (allowHigherMcVersionsCheckBox != null) {
+            allowHigherMcVersionsCheckBox.setSelected(instance.isAllowHigherMcVersions());
+        }
 
         if (tokenModrinthField != null) tokenModrinthField.setText(instance.getApiToken("modrinth"));
         if (tokenHangarField != null) tokenHangarField.setText(instance.getApiToken("hangar"));
@@ -79,6 +84,12 @@ public class InstanceSettingsDialogController {
         warningLabel.setText(I18n.get("settings.warning"));
         allowPrereleaseCheckBox.setText(I18n.get("settings.allow_prerelease"));
         allowPrereleaseHintLabel.setText(I18n.get("settings.allow_prerelease_hint"));
+        if (allowHigherMcVersionsCheckBox != null) {
+            allowHigherMcVersionsCheckBox.setText(I18n.get("settings.allow_higher_mc_versions"));
+        }
+        if (allowHigherMcVersionsHintLabel != null) {
+            allowHigherMcVersionsHintLabel.setText(I18n.get("settings.allow_higher_mc_versions_hint"));
+        }
         if (apiTokensSectionLabel != null) apiTokensSectionLabel.setText(I18n.get("settings.api_tokens_section"));
         if (apiTokensHintLabel != null) apiTokensHintLabel.setText(I18n.get("settings.api_tokens_hint"));
         if (tokenModrinthLabel != null) tokenModrinthLabel.setText(I18n.get("settings.token_modrinth"));
@@ -133,6 +144,9 @@ public class InstanceSettingsDialogController {
             instance.setLoader(loaderComboBox.getValue());
             instance.setMcVersion(versionComboBox.getValue());
             instance.setAllowPrereleases(allowPrereleaseCheckBox.isSelected());
+            if (allowHigherMcVersionsCheckBox != null) {
+                instance.setAllowHigherMcVersions(allowHigherMcVersionsCheckBox.isSelected());
+            }
 
             List<String> selectedLoaders = new ArrayList<>();
             for (Map.Entry<String, CheckBox> entry : loaderCheckBoxMap.entrySet()) {
