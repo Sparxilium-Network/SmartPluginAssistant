@@ -5,6 +5,9 @@ on:
     branches: [ "**" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ${{ matrix.os-name }} Package
@@ -31,7 +34,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -80,3 +83,48 @@ jobs:
           name: ${{ matrix.artifact-name }}
           path: ${{ matrix.archive-file }}
           if-no-files-found: error
+
+  release:
+    name: Create Pre-release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f \( -name "*.zip" -o -name "*.tar.gz" \) -exec cp {} release-assets/ \;
+          ls -lh release-assets
+
+      - name: Generate timestamp tag
+        id: tag
+        run: |
+          TAG_NAME="pre-$(date +'%Y%m%d-%H%M%S')-${GITHUB_SHA::7}"
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          name: "Pre-release ${{ steps.tag.outputs.tag_name }}"
+          body: |
+            ## 🚀 Automated Pre-release
+            - **Commit**: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+            - **Branch**: `${{ github.ref_name }}`
+            - **Build Time**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+            
+            ### 📦 Downloads:
+            - **Windows**: `SmartPluginAssistant-Windows.zip`
+            - **Linux**: `SmartPluginAssistant-Linux.tar.gz`
+            - **macOS**: `SmartPluginAssistant-macOS.zip`
+          prerelease: true
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
