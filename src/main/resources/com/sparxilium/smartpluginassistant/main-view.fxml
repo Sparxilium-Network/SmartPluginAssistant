@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -19,7 +20,7 @@
             <Region HBox.hgrow="ALWAYS"/>
 
             <!-- App Global Settings Button -->
-            <Button fx:id="appSettingsBtn" text="⚙️ 設定" onAction="#handleOpenAppSettings" styleClass="btn-secondary"/>
+            <Button fx:id="appSettingsBtn" text="設定" onAction="#handleOpenAppSettings" styleClass="btn-secondary"/>
 
             <Button fx:id="addInstanceBtn" text="+ 新增伺服器實例" onAction="#handleCreateInstance" styleClass="btn-primary"/>
         </HBox>
@@ -48,21 +49,21 @@
                         <Label fx:id="selectedInstanceNameLabel" text="未選擇實例" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>
                         <Label fx:id="selectedInstanceInfoLabel" text="請從左側選擇或建立一個伺服器實例" style="-fx-text-fill: #8b8e96; -fx-font-size: 12px;"/>
                     </VBox>
-                    <Button fx:id="instanceSettingsBtn" text="🛠️ 實例設定" onAction="#handleOpenInstanceSettings" styleClass="btn-secondary"/>
-                    <Button fx:id="openPluginsFolderBtn" text="📁 開啟插件資料夾" onAction="#handleOpenPluginsFolder" styleClass="btn-secondary"/>
-                    <Button fx:id="exportInstanceZipBtn" text="🗜️ 匯出實例 ZIP" onAction="#handleExportInstanceZip" styleClass="btn-secondary"/>
-                    <Button fx:id="exportPluginsZipBtn" text="🧩 匯出插件 ZIP" onAction="#handleExportPluginsZip" styleClass="btn-secondary"/>
-                    <Button fx:id="exportScriptBtn" text="📜 匯出為腳本" onAction="#handleExportScript" styleClass="btn-secondary"/>
-                    <Button fx:id="deleteInstanceBtn" text="🗑️ 刪除實例" onAction="#handleDeleteCurrentInstance" styleClass="btn-danger"/>
+                    <Button fx:id="instanceSettingsBtn" text="實例設定" onAction="#handleOpenInstanceSettings" styleClass="btn-secondary"/>
+                    <Button fx:id="openPluginsFolderBtn" text="開啟插件資料夾" onAction="#handleOpenPluginsFolder" styleClass="btn-secondary"/>
+                    <Button fx:id="exportInstanceZipBtn" text="匯出實例 ZIP" onAction="#handleExportInstanceZip" styleClass="btn-secondary"/>
+                    <Button fx:id="exportPluginsZipBtn" text="匯出插件 ZIP" onAction="#handleExportPluginsZip" styleClass="btn-secondary"/>
+                    <Button fx:id="exportScriptBtn" text="匯出為腳本" onAction="#handleExportScript" styleClass="btn-secondary"/>
+                    <Button fx:id="deleteInstanceBtn" text="刪除實例" onAction="#handleDeleteCurrentInstance" styleClass="btn-danger"/>
                 </HBox>
 
                 <!-- Plugin Actions Toolbar -->
                 <HBox alignment="CENTER_LEFT" spacing="8.0" style="-fx-background-color: #2b2d30; -fx-padding: 8 10; -fx-background-radius: 6;">
-                    <Button fx:id="downloadPluginsBtn" text="🌐 下載插件" onAction="#handleOpenPluginDownloader" styleClass="btn-primary"/>
-                    <Button fx:id="addByUrlBtn" text="➕ 貼上網址新增" onAction="#handleAddByUrl" styleClass="btn-secondary"/>
-                    <Button fx:id="importPluginsBtn" text="📥 匯入插件" onAction="#handleOpenImportPlugins" styleClass="btn-secondary"/>
-                    <Button fx:id="checkUpdatesBtn" text="🔄 檢查所有更新" onAction="#handleCheckUpdates" styleClass="btn-secondary"/>
-                    <Button fx:id="updateAllBtn" text="⚡ 一鍵全部更新" onAction="#handleUpdateAll" styleClass="btn-success" visible="false"/>
+                    <Button fx:id="downloadPluginsBtn" text="下載插件" onAction="#handleOpenPluginDownloader" styleClass="btn-primary"/>
+                    <Button fx:id="addByUrlBtn" text="貼上網址新增" onAction="#handleAddByUrl" styleClass="btn-secondary"/>
+                    <Button fx:id="importPluginsBtn" text="匯入插件" onAction="#handleOpenImportPlugins" styleClass="btn-secondary"/>
+                    <Button fx:id="checkUpdatesBtn" text="檢查所有更新" onAction="#handleCheckUpdates" styleClass="btn-secondary"/>
+                    <Button fx:id="updateAllBtn" text="一鍵全部更新" onAction="#handleUpdateAll" styleClass="btn-success" visible="false"/>
                     <Button fx:id="refreshPluginsBtn" text="重整清單" onAction="#refreshPlugins" styleClass="btn-secondary"/>
 
                     <Separator orientation="VERTICAL" style="-fx-background-color: #393b40;"/>
@@ -75,7 +76,7 @@
 
                     <Button fx:id="batchEnableBtn" text="啟用選取" onAction="#handleBatchEnable" styleClass="btn-secondary"/>
                     <Button fx:id="batchDisableBtn" text="停用選取" onAction="#handleBatchDisable" styleClass="btn-secondary"/>
-                    <Button fx:id="batchDeleteBtn" text="🗑️ 刪除選取" onAction="#handleBatchDelete" styleClass="btn-danger"/>
+                    <Button fx:id="batchDeleteBtn" text="刪除選取" onAction="#handleBatchDelete" styleClass="btn-danger"/>
 
                     <Region HBox.hgrow="ALWAYS"/>
                     <ProgressIndicator fx:id="globalProgress" prefWidth="20" prefHeight="20" visible="false"/>

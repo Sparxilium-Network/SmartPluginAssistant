@@ -20,6 +20,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.kordamp.ikonli.javafx.FontIcon;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -118,9 +119,40 @@ public class MainController {
         }
         setupTableColumns();
         setupFilterBindings();
+        setupButtonIcons();
         applyI18n();
         refreshInstanceList();
         setupResponsiveLayout();
+    }
+
+    private void setupButtonIcons() {
+        // Top Bar
+        if (appSettingsBtn != null) appSettingsBtn.setGraphic(new FontIcon("fas-cog"));
+        if (addInstanceBtn != null) addInstanceBtn.setGraphic(new FontIcon("fas-plus"));
+
+        // Sidebar
+        if (refreshInstancesBtn != null) refreshInstancesBtn.setGraphic(new FontIcon("fas-sync-alt"));
+
+        // Instance Header Actions
+        if (instanceSettingsBtn != null) instanceSettingsBtn.setGraphic(new FontIcon("fas-tools"));
+        if (openPluginsFolderBtn != null) openPluginsFolderBtn.setGraphic(new FontIcon("fas-folder-open"));
+        if (exportInstanceZipBtn != null) exportInstanceZipBtn.setGraphic(new FontIcon("fas-file-archive"));
+        if (exportPluginsZipBtn != null) exportPluginsZipBtn.setGraphic(new FontIcon("fas-puzzle-piece"));
+        if (exportScriptBtn != null) exportScriptBtn.setGraphic(new FontIcon("fas-file-code"));
+        if (deleteInstanceBtn != null) deleteInstanceBtn.setGraphic(new FontIcon("fas-trash-alt"));
+
+        // Plugin Toolbar Actions
+        if (downloadPluginsBtn != null) downloadPluginsBtn.setGraphic(new FontIcon("fas-download"));
+        if (addByUrlBtn != null) addByUrlBtn.setGraphic(new FontIcon("fas-link"));
+        if (importPluginsBtn != null) importPluginsBtn.setGraphic(new FontIcon("fas-file-import"));
+        if (checkUpdatesBtn != null) checkUpdatesBtn.setGraphic(new FontIcon("fas-sync-alt"));
+        if (updateAllBtn != null) updateAllBtn.setGraphic(new FontIcon("fas-bolt"));
+        if (refreshPluginsBtn != null) refreshPluginsBtn.setGraphic(new FontIcon("fas-redo"));
+
+        // Batch Action Buttons
+        if (batchEnableBtn != null) batchEnableBtn.setGraphic(new FontIcon("fas-check"));
+        if (batchDisableBtn != null) batchDisableBtn.setGraphic(new FontIcon("fas-ban"));
+        if (batchDeleteBtn != null) batchDeleteBtn.setGraphic(new FontIcon("fas-trash-alt"));
     }
 
     private void setupFilterBindings() {
@@ -211,9 +243,9 @@ public class MainController {
         boolean isEn = "en".equalsIgnoreCase(I18n.getCurrentLang());
         if (isCompact) {
             // Icon only / shorter labels when window is small
-            appSettingsBtn.setText("🛠️");
+            appSettingsBtn.setText(I18n.get("app_settings.title"));
             addInstanceBtn.setText(I18n.get("app.add_instance_compact"));
-            instanceSettingsBtn.setText("🛠️");
+            instanceSettingsBtn.setText(I18n.get("app.instance_settings"));
             openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder_compact"));
             exportInstanceZipBtn.setText(I18n.get("app.export_instance_zip_compact"));
             exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip_compact"));
@@ -227,8 +259,8 @@ public class MainController {
             batchEnableBtn.setText(I18n.get("app.btn_batch_enable_compact"));
             batchDisableBtn.setText(I18n.get("app.btn_batch_disable_compact"));
             batchDeleteBtn.setText(I18n.get("app.btn_batch_delete_compact"));
-            refreshPluginsBtn.setText("↻");
-            refreshInstancesBtn.setText("↻");
+            refreshPluginsBtn.setText(I18n.get("app.refresh_list"));
+            refreshInstancesBtn.setText(I18n.get("app.refresh"));
         } else {
             appSettingsBtn.setText(I18n.get("app_settings.title"));
             addInstanceBtn.setText(I18n.get("app.add_instance"));

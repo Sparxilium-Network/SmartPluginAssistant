@@ -92,6 +92,24 @@
     -fx-background-color: #c0392b;
 }
 
+/* Button FontIcon alignment & colors */
+.button .ikonli-font-icon {
+    -fx-icon-color: #bcbec4;
+    -fx-icon-size: 13px;
+}
+.btn-primary .ikonli-font-icon {
+    -fx-icon-color: #ffffff;
+}
+.btn-success .ikonli-font-icon {
+    -fx-icon-color: #ffffff;
+}
+.btn-danger .ikonli-font-icon {
+    -fx-icon-color: #ffffff;
+}
+.button:hover .ikonli-font-icon {
+    -fx-icon-color: #ffffff;
+}
+
 /* Compact mode for small window size */
 .compact-mode .btn-primary,
 .compact-mode .btn-secondary,
