@@ -211,9 +211,9 @@ public class MainController {
         boolean isEn = "en".equalsIgnoreCase(I18n.getCurrentLang());
         if (isCompact) {
             // Icon only / shorter labels when window is small
-            appSettingsBtn.setText("⚙️");
+            appSettingsBtn.setText("🛠️");
             addInstanceBtn.setText(I18n.get("app.add_instance_compact"));
-            instanceSettingsBtn.setText("⚙️");
+            instanceSettingsBtn.setText("🛠️");
             openPluginsFolderBtn.setText(I18n.get("app.open_plugins_folder_compact"));
             exportInstanceZipBtn.setText(I18n.get("app.export_instance_zip_compact"));
             exportPluginsZipBtn.setText(I18n.get("app.export_plugins_zip_compact"));
