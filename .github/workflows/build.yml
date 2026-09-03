@@ -1,0 +1,82 @@
+name: Build and Package Cross-Platform
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.os-name }} Package
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            os-name: Windows
+            artifact-name: SmartPluginAssistant-Windows
+            archive-file: SmartPluginAssistant-Windows.zip
+          - os: ubuntu-latest
+            os-name: Linux
+            artifact-name: SmartPluginAssistant-Linux
+            archive-file: SmartPluginAssistant-Linux.tar.gz
+          - os: macos-latest
+            os-name: macOS
+            artifact-name: SmartPluginAssistant-macOS
+            archive-file: SmartPluginAssistant-macOS.zip
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build & Package (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call mvnw.cmd clean package -DskipTests
+          call mvnw.cmd dependency:copy-dependencies -DoutputDirectory=target/lib
+          copy target\SmartPluginAssistant-1.0-SNAPSHOT.jar target\lib\SmartPluginAssistant.jar
+          if exist dist\SmartPluginAssistant rmdir /s /q dist\SmartPluginAssistant
+          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --dest "dist"
+          tar -a -c -f SmartPluginAssistant-Windows.zip -C dist SmartPluginAssistant
+
+      - name: Build & Package (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean package -DskipTests
+          ./mvnw dependency:copy-dependencies -DoutputDirectory=target/lib
+          cp target/SmartPluginAssistant-1.0-SNAPSHOT.jar target/lib/SmartPluginAssistant.jar
+          rm -rf dist/SmartPluginAssistant
+          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --dest "dist"
+          tar -czvf SmartPluginAssistant-Linux.tar.gz -C dist SmartPluginAssistant
+
+      - name: Build & Package (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean package -DskipTests
+          ./mvnw dependency:copy-dependencies -DoutputDirectory=target/lib
+          cp target/SmartPluginAssistant-1.0-SNAPSHOT.jar target/lib/SmartPluginAssistant.jar
+          rm -rf dist/SmartPluginAssistant
+          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --dest "dist"
+          cd dist
+          zip -r ../SmartPluginAssistant-macOS.zip SmartPluginAssistant.app
+          cd ..
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.archive-file }}
+          if-no-files-found: error
