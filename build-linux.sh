@@ -16,7 +16,7 @@ chmod +x ./mvnw || true
 
 echo "[2/3] Preparing lib folder..."
 ./mvnw dependency:copy-dependencies -DoutputDirectory=target/lib
-cp target/SmartPluginAssistant-1.0-SNAPSHOT.jar target/lib/SmartPluginAssistant.jar
+cp target/SmartPluginAssistant-beta-1.0.0.jar target/lib/SmartPluginAssistant.jar
 
 echo "[3/3] Creating Linux Application with jpackage..."
 rm -rf dist/SmartPluginAssistant

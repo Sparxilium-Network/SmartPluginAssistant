@@ -16,7 +16,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo [2/3] Preparing lib folder...
 call .\mvnw.cmd dependency:copy-dependencies -DoutputDirectory=target/lib
-copy target\SmartPluginAssistant-1.0-SNAPSHOT.jar target\lib\SmartPluginAssistant.jar
+copy target\SmartPluginAssistant-beta-1.0.0.jar target\lib\SmartPluginAssistant.jar
 
 echo [3/3] Creating Windows EXE using jpackage...
 if exist dist\SmartPluginAssistant rmdir /s /q dist\SmartPluginAssistant

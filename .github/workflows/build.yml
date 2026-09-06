@@ -46,7 +46,7 @@ jobs:
         run: |
           call mvnw.cmd clean package -DskipTests
           call mvnw.cmd dependency:copy-dependencies -DoutputDirectory=target/lib
-          copy target\SmartPluginAssistant-1.0-SNAPSHOT.jar target\lib\SmartPluginAssistant.jar
+          copy target\SmartPluginAssistant-beta-1.0.0.jar target\lib\SmartPluginAssistant.jar
           if exist dist\SmartPluginAssistant rmdir /s /q dist\SmartPluginAssistant
           jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --java-options "--enable-native-access=javafx.graphics,com.sun.jna" --dest "dist"
           tar -a -c -f SmartPluginAssistant-Windows.zip -C dist SmartPluginAssistant
@@ -58,7 +58,7 @@ jobs:
           chmod +x ./mvnw
           ./mvnw clean package -DskipTests
           ./mvnw dependency:copy-dependencies -DoutputDirectory=target/lib
-          cp target/SmartPluginAssistant-1.0-SNAPSHOT.jar target/lib/SmartPluginAssistant.jar
+          cp target/SmartPluginAssistant-beta-1.0.0.jar target/lib/SmartPluginAssistant.jar
           rm -rf dist/SmartPluginAssistant
           jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --java-options "--enable-native-access=javafx.graphics,com.sun.jna" --dest "dist"
           tar -czvf SmartPluginAssistant-Linux.tar.gz -C dist SmartPluginAssistant
@@ -70,7 +70,7 @@ jobs:
           chmod +x ./mvnw
           ./mvnw clean package -DskipTests
           ./mvnw dependency:copy-dependencies -DoutputDirectory=target/lib
-          cp target/SmartPluginAssistant-1.0-SNAPSHOT.jar target/lib/SmartPluginAssistant.jar
+          cp target/SmartPluginAssistant-beta-1.0.0.jar target/lib/SmartPluginAssistant.jar
           rm -rf dist/SmartPluginAssistant
           jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --java-options "--enable-native-access=javafx.graphics,com.sun.jna" --dest "dist"
           cd dist

@@ -6,7 +6,7 @@
 
     <groupId>com.sparxilium</groupId>
     <artifactId>SmartPluginAssistant</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>beta-1.0.0</version>
     <name>SmartPluginAssistant</name>
 
     <properties>
