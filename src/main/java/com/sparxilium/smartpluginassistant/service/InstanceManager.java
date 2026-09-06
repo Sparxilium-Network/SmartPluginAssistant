@@ -211,28 +211,40 @@ public class InstanceManager {
             Files.createDirectories(targetZipFile.getParent());
         }
 
-        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(targetZipFile))) {
-            // Write instance metadata config inside zip
-            byte[] metadataBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(instance);
-            java.util.zip.ZipEntry metaEntry = new java.util.zip.ZipEntry("instance.json");
-            zos.putNextEntry(metaEntry);
-            zos.write(metadataBytes);
-            zos.closeEntry();
+        Path tempZipFile = Files.createTempFile("spa-export-instance-", ".zip");
+        try {
+            try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(
+                    new java.io.BufferedOutputStream(Files.newOutputStream(tempZipFile)))) {
+                zos.setLevel(java.util.zip.Deflater.NO_COMPRESSION);
 
-            try (var stream = Files.walk(instanceDir)) {
-                List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
-                for (Path p : paths) {
-                    String relativePath = instanceDir.relativize(p).toString().replace('\\', '/');
-                    // Skip if file is already instance.json at root level to prevent ZipException duplicate entry
-                    if ("instance.json".equalsIgnoreCase(relativePath)) {
-                        continue;
+                // Write instance metadata config inside zip
+                byte[] metadataBytes = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(instance);
+                java.util.zip.ZipEntry metaEntry = new java.util.zip.ZipEntry("instance.json");
+                zos.putNextEntry(metaEntry);
+                zos.write(metadataBytes);
+                zos.closeEntry();
+
+                try (var stream = Files.walk(instanceDir)) {
+                    List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
+                    for (Path p : paths) {
+                        String relativePath = instanceDir.relativize(p).toString().replace('\\', '/');
+                        // Skip if file is already instance.json at root level to prevent ZipException duplicate entry
+                        if ("instance.json".equalsIgnoreCase(relativePath)) {
+                            continue;
+                        }
+                        java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(relativePath);
+                        zos.putNextEntry(zipEntry);
+                        Files.copy(p, zos);
+                        zos.closeEntry();
                     }
-                    java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(relativePath);
-                    zos.putNextEntry(zipEntry);
-                    Files.copy(p, zos);
-                    zos.closeEntry();
                 }
+                zos.finish();
             }
+
+            Files.move(tempZipFile, targetZipFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            logger.info("Successfully exported instance to zip (uncompressed): {}", targetZipFile);
+        } finally {
+            Files.deleteIfExists(tempZipFile);
         }
     }
 
@@ -246,17 +258,29 @@ public class InstanceManager {
             Files.createDirectories(targetZipFile.getParent());
         }
 
-        try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(targetZipFile))) {
-            try (var stream = Files.walk(pluginsDir)) {
-                List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
-                for (Path p : paths) {
-                    String relativePath = pluginsDir.relativize(p).toString().replace('\\', '/');
-                    java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(relativePath);
-                    zos.putNextEntry(zipEntry);
-                    Files.copy(p, zos);
-                    zos.closeEntry();
+        Path tempZipFile = Files.createTempFile("spa-export-plugins-", ".zip");
+        try {
+            try (java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(
+                    new java.io.BufferedOutputStream(Files.newOutputStream(tempZipFile)))) {
+                zos.setLevel(java.util.zip.Deflater.NO_COMPRESSION);
+
+                try (var stream = Files.walk(pluginsDir)) {
+                    List<Path> paths = stream.filter(p -> !Files.isDirectory(p)).toList();
+                    for (Path p : paths) {
+                        String relativePath = pluginsDir.relativize(p).toString().replace('\\', '/');
+                        java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(relativePath);
+                        zos.putNextEntry(zipEntry);
+                        Files.copy(p, zos);
+                        zos.closeEntry();
+                    }
                 }
+                zos.finish();
             }
+
+            Files.move(tempZipFile, targetZipFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            logger.info("Successfully exported plugins to zip (uncompressed): {}", targetZipFile);
+        } finally {
+            Files.deleteIfExists(tempZipFile);
         }
     }
 
