@@ -42,7 +42,7 @@
   * `versionId`：發布版本 ID（如 `5zQ9hQ4x`）
   * `versionNumber`：原始完整版本字串（如 `v5.5.71-bukkit`）
   * `fileName`：下載儲存檔名（如 `LuckPerms-Bukkit-5.5.71.jar`）
-  * `sha1` / `sha512`：檔案雜湊值
+  * `sha512`：檔案雜湊值 (SHA-512)
   * `hostingPlatform`：託管平台 (modrinth / hangar / local)
 * **更新比對機制**：
   1. 優先透過 `versionId` 進行 1:1 比對。
@@ -94,7 +94,7 @@
 * **掃描與讀取**：選擇目標目錄後，自動掃描所有 `.jar` 與 `.jar.disabled` 檔案。
 * **自動讀取與配對流程**：
   1. 讀取 jar 內部描述檔（`plugin.yml` / `paper-plugin.yml` 等）以取得內部名稱與版本。
-  2. 計算每個 jar 檔案的 SHA-1 / SHA-512 Hash，並調用 Modrinth API 批次端點反查。
+  2. 計算每個 jar 檔案的 SHA-512 Hash，並調用 Modrinth API 批次端點反查。
   3. 若 Hash 命中，直接取得 Modrinth `projectId`、`versionId` 並轉化為「已連結」。
   4. 未命中者標註為「未連結 (本機插件)」，仍可勾選匯入。
 * **批量匯入與元數據持久化**：

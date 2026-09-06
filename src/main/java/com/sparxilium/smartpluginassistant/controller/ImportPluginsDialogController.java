@@ -226,7 +226,7 @@ public class ImportPluginsDialogController {
 
     private void resolveModrinthLinks(List<ImportItem> items) {
         statusLabel.setText(I18n.get("import.status_hashing", 0, items.size()));
-        logger.info("Starting SHA-1 calculation and Modrinth linking for {} items", items.size());
+        logger.info("Starting SHA-512 calculation and Modrinth linking for {} items", items.size());
 
         CompletableFuture.runAsync(() -> {
             Map<String, ImportItem> hashMap = new HashMap<>();

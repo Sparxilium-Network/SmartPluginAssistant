@@ -27,3 +27,10 @@
 
 ## 4. 檔案修改工具使用限制 (File Editing Restrictions)
 * **規範**：修改檔案時，應優先使用專用的檔案編輯工具（例如 `replace_file_content` 或 `write_to_file`），除非必要，否則不要調用命令列（Shell/Terminal 命令，例如 PowerShell 的 `Set-Content` 等）來編輯或修改檔案內容。
+
+## 5. 精準搜尋與避免盲目讀檔 (Targeted Search & Research Guidelines)
+* **規範**：在調查或搜尋專案內容時，**嚴禁**無目的、亂槍打鳥式地直接讀取大量無關檔案。
+* **準則與作法**：
+  1. **優先查詢架構文檔**：遇到架構、實作位置或模組關係問題時，優先查閱 `DEV-WIKI.md` 或 `README.md`，思考可能的類別或檔案所在位置。
+  2. **善用精確篩選工具**：優先使用類似 `find`（`find_by_name`）鎖定特定目錄與副檔名，或利用 `grep_search` 進行精確字串搜尋。
+  3. **精準閱讀**：只讀取明確與問題核心相關的檔案與行數範圍，確保 Context 專注且高效。
