@@ -136,3 +136,8 @@ src/main/java/com/sparxilium/smartpluginassistant/
 * API 支援來自 [Modrinth API](https://docs.modrinth.com/api/)、[PaperMC Hangar](https://hangar.papermc.io/)、[Voxel.shop](https://voxel.shop) 與 [SpiGet](https://spiget.org/)。
 * UI 與交互設計靈感來自 [Prism Launcher](https://prismlauncher.org/)。
 * 圖標表情符號字型使用 [Google Noto Color Emoji](https://github.com/googlefonts/noto-emoji)（遵循 [SIL Open Font License 1.1](https://scripts.sil.org/OFL)）。
+
+### ⚠️ 商標與圖標聲明 (Trademark & Logo Disclaimer)
+* 本專案中所使用的 **Modrinth** 與 **Hangar (PaperMC)** 標誌及商標，其版權與所有權均分別歸屬於 **Modrinth (Rinth, Inc.)** 與 **PaperMC** 組織所有。
+* 本專案僅引用相關圖標作為各平台 API 來源與市場之識別用途，本專案為獨立開源工具，**與上述組織不存在任何官方關聯、背書、贊助或合作關係**。
+

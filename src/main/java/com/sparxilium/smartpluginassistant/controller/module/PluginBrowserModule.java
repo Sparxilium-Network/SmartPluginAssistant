@@ -19,6 +19,13 @@ public interface PluginBrowserModule {
     String getIconString();
 
     /**
+     * Gets an optional custom Node icon for the sidebar (takes precedence over getIconString if non-null)
+     */
+    default Node getIconNode() {
+        return null;
+    }
+
+    /**
      * Returns the root node of this browser module's UI
      */
     Node getRootNode();

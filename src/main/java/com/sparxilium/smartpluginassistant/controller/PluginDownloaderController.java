@@ -5,6 +5,7 @@ import com.sparxilium.smartpluginassistant.controller.module.PluginBrowserModule
 import com.sparxilium.smartpluginassistant.service.I18n;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
@@ -73,10 +74,14 @@ public class PluginDownloaderController {
             
             HBox content = new HBox(8);
             content.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
-            Label iconLabel = new Label(module.getIconString());
-            iconLabel.getStyleClass().add("module-icon");
+            Node iconGraphic = module.getIconNode();
+            if (iconGraphic == null) {
+                Label iconLabel = new Label(module.getIconString());
+                iconLabel.getStyleClass().add("module-icon");
+                iconGraphic = iconLabel;
+            }
             Label textLabel = new Label(module.getProviderName());
-            content.getChildren().addAll(iconLabel, textLabel);
+            content.getChildren().addAll(iconGraphic, textLabel);
             
             btn.setGraphic(content);
             btn.setUserData(module);

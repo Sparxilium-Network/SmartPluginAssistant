@@ -115,6 +115,20 @@ public class ModrinthBrowserController implements PluginBrowserModule {
     }
 
     @Override
+    public Node getIconNode() {
+        try {
+            var iconStream = getClass().getResourceAsStream("/com/sparxilium/smartpluginassistant/images/modrinth.png");
+            if (iconStream != null) {
+                ImageView iv = new ImageView(new Image(iconStream, 16, 16, true, true));
+                iv.setFitWidth(16);
+                iv.setFitHeight(16);
+                return iv;
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    @Override
     public Node getRootNode() {
         return rootPane;
     }

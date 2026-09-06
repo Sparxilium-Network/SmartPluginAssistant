@@ -95,6 +95,23 @@ public class HangarBrowserController implements PluginBrowserModule {
     }
 
     @Override
+    public Node getIconNode() {
+        try {
+            var iconStream = getClass().getResourceAsStream("/com/sparxilium/smartpluginassistant/images/hangar.webp");
+            if (iconStream != null) {
+                java.awt.image.BufferedImage bImg = javax.imageio.ImageIO.read(iconStream);
+                if (bImg != null) {
+                    ImageView iv = new ImageView(javafx.embed.swing.SwingFXUtils.toFXImage(bImg, null));
+                    iv.setFitWidth(16);
+                    iv.setFitHeight(16);
+                    return iv;
+                }
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    @Override
     public Node getRootNode() {
         return rootPane;
     }
