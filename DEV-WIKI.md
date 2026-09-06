@@ -139,7 +139,7 @@
 ```
 
 ### 5.2 Windows 原生綠色版 EXE 打包 (`build-exe.bat`)
-* 專案內建 `build-exe.bat`，依賴 JDK 21 內建的 `jpackage` 工具：
+* 專案內建 `build-exe.bat`，依賴 JDK 25 內建的 `jpackage` 工具：
 ```cmd
 build-exe.bat
 ```

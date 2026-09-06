@@ -63,8 +63,8 @@
 
 ## 🛠️ 技術棧 (Tech Stack)
 
-* **運行環境**：Java JDK 21+ / JDK 25
-* **UI 框架**：JavaFX 21 + FXML + CSS
+* **運行環境**：Java JDK 25 (LTS)
+* **UI 框架**：JavaFX 25.0.3 + FXML + CSS
 * **資料處理**：Jackson Databind (JSON 序列化與反序列化)
 * **網路通訊**：Java 11+ 原生 `HttpClient` (非同步 CompletableFuture 與執行緒池)
 * **日誌紀錄**：SLF4J + Log4j 2
@@ -76,7 +76,7 @@
 ## 🚀 快速開始 (Getting Started)
 
 ### 系統需求
-* 已安裝 **Java JDK 21** 或 **JDK 25**。
+* 已安裝 **Java JDK 25** (LTS)。
 * 建議在專案目錄下使用內建的 Maven Wrapper (`mvnw` / `mvnw.cmd`)。
 
 ### 1. 編譯專案
