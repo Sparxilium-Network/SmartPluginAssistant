@@ -8,7 +8,7 @@
 
 ## 📖 專案簡介 (Overview)
 
-**Smart Plugin Assistant** 是一款受到 **Prism Launcher** 啟發而設計的 Minecraft 伺服器插件管理器（以 JavaFX 與 Java 21+ / JDK 25 開發）。
+**Smart Plugin Assistant** 是一款受到 **Prism Launcher** 啟發而設計的 Minecraft 伺服器插件管理器（以 JavaFX 25 與 Java 25 LTS 開發）。
 
 本工具**並非直接架設伺服器程序**，而是專注於**虛擬伺服器實例與插件生態的管理**：
 * 支援多種伺服器核心分類管理（Paper, Spigot, Purpur, Folia, Velocity, BungeeCord 等）。
