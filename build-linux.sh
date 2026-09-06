@@ -27,6 +27,7 @@ jpackage \
   --input "target/lib" \
   --main-jar "SmartPluginAssistant.jar" \
   --main-class "com.sparxilium.smartpluginassistant.Launcher" \
+  --java-options "--enable-native-access=javafx.graphics,com.sun.jna" \
   --dest "dist"
 
 echo ""

@@ -6,8 +6,8 @@
 
 ## 🛠️ 1. 技術棧與關鍵依賴 (Tech Stack)
 
-* **JDK 版本**：Java 21 (LTS)
-* **GUI 框架**：JavaFX 21.0.6 (`javafx-controls`, `javafx-fxml`)
+* **JDK 版本**：Java 25 (LTS)
+* **GUI 框架**：JavaFX 25.0.3 (`javafx-controls`, `javafx-fxml`)
 * **JSON 序列化**：Jackson 2.18.3 (`jackson-databind`, `jackson-datatype-jsr310`)
 * **日誌框架**：Log4j 2.26.1 (`log4j-api`, `log4j-core`, `log4j-slf4j2-impl`) + SLF4J 2.0.17
 * **本地系統整合 (JNA)**：JNA 5.16.0 (`com.sun.jna.platform.win32` 支援 Windows DWM 深色標題列)

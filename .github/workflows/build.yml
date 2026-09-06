@@ -33,11 +33,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: '25'
           cache: 'maven'
 
       - name: Build & Package (Windows)
@@ -48,7 +48,7 @@ jobs:
           call mvnw.cmd dependency:copy-dependencies -DoutputDirectory=target/lib
           copy target\SmartPluginAssistant-1.0-SNAPSHOT.jar target\lib\SmartPluginAssistant.jar
           if exist dist\SmartPluginAssistant rmdir /s /q dist\SmartPluginAssistant
-          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --dest "dist"
+          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --java-options "--enable-native-access=javafx.graphics,com.sun.jna" --dest "dist"
           tar -a -c -f SmartPluginAssistant-Windows.zip -C dist SmartPluginAssistant
 
       - name: Build & Package (Linux)
@@ -60,7 +60,7 @@ jobs:
           ./mvnw dependency:copy-dependencies -DoutputDirectory=target/lib
           cp target/SmartPluginAssistant-1.0-SNAPSHOT.jar target/lib/SmartPluginAssistant.jar
           rm -rf dist/SmartPluginAssistant
-          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --dest "dist"
+          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --java-options "--enable-native-access=javafx.graphics,com.sun.jna" --dest "dist"
           tar -czvf SmartPluginAssistant-Linux.tar.gz -C dist SmartPluginAssistant
 
       - name: Build & Package (macOS)
@@ -72,7 +72,7 @@ jobs:
           ./mvnw dependency:copy-dependencies -DoutputDirectory=target/lib
           cp target/SmartPluginAssistant-1.0-SNAPSHOT.jar target/lib/SmartPluginAssistant.jar
           rm -rf dist/SmartPluginAssistant
-          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --dest "dist"
+          jpackage --type app-image --name "SmartPluginAssistant" --input "target/lib" --main-jar "SmartPluginAssistant.jar" --main-class "com.sparxilium.smartpluginassistant.Launcher" --java-options "--enable-native-access=javafx.graphics,com.sun.jna" --dest "dist"
           cd dist
           zip -r ../SmartPluginAssistant-macOS.zip SmartPluginAssistant.app
           cd ..
