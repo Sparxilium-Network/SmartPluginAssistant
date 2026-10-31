@@ -85,7 +85,9 @@ mod tests {
 
     #[test]
     fn decodes_supported_formats_and_bounds_size() {
-        for format in [image::ImageFormat::Png, image::ImageFormat::Gif, image::ImageFormat::Bmp, image::ImageFormat::WebP] {
+        for format in
+            [image::ImageFormat::Png, image::ImageFormat::Gif, image::ImageFormat::Bmp, image::ImageFormat::WebP]
+        {
             let decoded = decode(&encode(format, 300, 150)).unwrap();
             assert_eq!((decoded.width, decoded.height), (128, 64), "{format:?}");
             assert_eq!(decoded.pixels.len(), 128 * 64 * 4);

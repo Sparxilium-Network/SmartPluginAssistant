@@ -136,7 +136,11 @@ impl HangarProvider {
                 if let Some(hash) = file.get("sha256Hash").and_then(Value::as_str) {
                     hashes.insert("sha256".to_string(), hash.to_string());
                 }
-                (required(file, "name")?.to_string(), file.get("sizeBytes").and_then(Value::as_u64).unwrap_or(0), hashes)
+                (
+                    required(file, "name")?.to_string(),
+                    file.get("sizeBytes").and_then(Value::as_u64).unwrap_or(0),
+                    hashes,
+                )
             }
             None => (String::new(), 0, BTreeMap::new()),
         };
@@ -146,7 +150,9 @@ impl HangarProvider {
             hashes.clear();
         }
         let mut dependencies = Vec::new();
-        for dep in node.pointer(&format!("/pluginDependencies/{platform}")).and_then(Value::as_array).into_iter().flatten() {
+        for dep in
+            node.pointer(&format!("/pluginDependencies/{platform}")).and_then(Value::as_array).into_iter().flatten()
+        {
             let project = dep.get("projectId").and_then(Value::as_u64).map(|n| n.to_string());
             let external = dep.get("externalUrl").and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string);
             let name = dep.get("name").and_then(Value::as_str).map(str::to_string);
@@ -154,7 +160,9 @@ impl HangarProvider {
             if project.is_none() && external.is_none() && name.is_none() {
                 continue;
             }
-            let external = external.or_else(|| (project.is_none()).then(|| format!("{SITE}/?query={}", encode(name.as_deref().unwrap_or_default()))));
+            let external = external.or_else(|| {
+                (project.is_none()).then(|| format!("{SITE}/?query={}", encode(name.as_deref().unwrap_or_default())))
+            });
             dependencies.push(Dependency::named(project, None, name, external, required, false)?);
         }
         let mut release = Release {
@@ -238,7 +246,7 @@ impl PluginProvider for HangarProvider {
                 }
             }
         }
-        releases.sort_by(|a, b| b.published_at.cmp(&a.published_at));
+        releases.sort_by_key(|r| std::cmp::Reverse(r.published_at));
         Ok(releases)
     }
 
@@ -266,7 +274,9 @@ impl PluginProvider for HangarProvider {
         let parts: Vec<&str> = url.path().trim_end_matches('/').split('/').collect();
         let valid = |s: &&str| !s.is_empty();
         match parts.as_slice() {
-            ["", owner, slug] if valid(owner) && valid(slug) && !["api", "auth", "admin", "tools", "staff"].contains(owner) => {
+            ["", owner, slug]
+                if valid(owner) && valid(slug) && !["api", "auth", "admin", "tools", "staff"].contains(owner) =>
+            {
                 Some(ProjectReference { project_id: (*slug).into(), version_id: None })
             }
             ["", owner, slug, "versions", version] if valid(owner) && valid(slug) && valid(version) => {
@@ -293,7 +303,10 @@ mod tests {
         fn get(&self, url: &str) -> ApiResult<Vec<u8>> {
             let path = url.trim_start_matches("https://api.test/");
             self.requested.lock().unwrap().push(path.to_string());
-            self.routes.get(path.split('?').next().unwrap()).map(|b| b.clone().into_bytes()).ok_or(ApiError::Status(404))
+            self.routes
+                .get(path.split('?').next().unwrap())
+                .map(|b| b.clone().into_bytes())
+                .ok_or(ApiError::Status(404))
         }
     }
 
@@ -320,7 +333,11 @@ mod tests {
 
     #[test]
     fn parses_versions_dependencies_and_confidence() {
-        let beta = VERSION.replace("32888", "32999").replace(r#"["FROZEN"]"#, r#"["UNSTABLE"]"#).replace("Release", "Beta").replace("10-29", "10-30");
+        let beta = VERSION
+            .replace("32888", "32999")
+            .replace(r#"["FROZEN"]"#, r#"["UNSTABLE"]"#)
+            .replace("Release", "Beta")
+            .replace("10-29", "10-30");
         let older = VERSION.replace("32888", "30000").replace("10-29", "09-01");
         let list = format!(r#"{{"pagination":{{"count":3}},"result":[{older},{beta},{VERSION}]}}"#);
         let (p, fixture) = provider(&[("projects/463/versions", &list)]);
@@ -385,7 +402,10 @@ mod tests {
         let request = fixture.requested.lock().unwrap()[0].clone();
         assert!(request.contains("offset=20&limit=20&sort=-downloads"), "{request}");
         p.search(&SearchRequest::new("husk homes", target("velocity", &[]), 0, 20).unwrap()).unwrap();
-        assert!(fixture.requested.lock().unwrap()[1].contains("platform=VELOCITY") && fixture.requested.lock().unwrap()[1].contains("query=husk%20homes"));
+        assert!(
+            fixture.requested.lock().unwrap()[1].contains("platform=VELOCITY")
+                && fixture.requested.lock().unwrap()[1].contains("query=husk%20homes")
+        );
         assert!(p.search(&SearchRequest::new("", target("fabric", &[]), 0, 20).unwrap()).unwrap().projects.is_empty());
     }
 

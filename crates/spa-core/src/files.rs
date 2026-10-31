@@ -178,9 +178,8 @@ impl PluginFiles {
 
     /// Backups stay on the server volume so renames are atomic.
     fn backup_path(&self, instance: &ServerInstance, name: &str) -> Result<PathBuf> {
-        let directory = paths::directory(
-            &instance.server_directory().join(BACKUP_DIRECTORY).join(Uuid::new_v4().to_string()),
-        )?;
+        let directory =
+            paths::directory(&instance.server_directory().join(BACKUP_DIRECTORY).join(Uuid::new_v4().to_string()))?;
         paths::child(&directory, name)
     }
 

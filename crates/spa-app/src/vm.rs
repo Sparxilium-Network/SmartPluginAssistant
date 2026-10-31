@@ -146,20 +146,36 @@ pub struct SettingsVm {
 pub enum UiEvent {
     Busy(bool),
     Status(String),
-    Message { title: String, text: String, error: bool },
+    Message {
+        title: String,
+        text: String,
+        error: bool,
+    },
     /// Ask the user; answer with `Controller::confirm`.
     Confirm(String),
-    Appearance { dark: bool, accent: String },
+    Appearance {
+        dark: bool,
+        accent: String,
+    },
     /// Translated strings changed; rebind static labels.
     Language(String),
-    Instances { items: Vec<InstanceVm>, selected: i32 },
+    Instances {
+        items: Vec<InstanceVm>,
+        selected: i32,
+    },
     Library(Option<LibraryVm>),
-    MarketSources { names: Vec<String>, selected: i32 },
+    MarketSources {
+        names: Vec<String>,
+        selected: i32,
+    },
     MarketReset,
     MarketAppend(Vec<CardVm>),
     MarketStatus(MarketStatusVm),
     /// `None` removes artwork (images disabled or cache cleared).
-    Artwork { url: String, image: Option<Rgba> },
+    Artwork {
+        url: String,
+        image: Option<Rgba>,
+    },
     Detail(Option<DetailVm>),
     Releases(ReleasesVm),
     Plan(PlanVm),

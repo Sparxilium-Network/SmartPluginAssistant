@@ -139,9 +139,7 @@ impl EnvironmentCatalog {
         if self.loaders.is_empty() || self.game_versions.is_empty() {
             return invalid("Empty environment catalog");
         }
-        if !self.loaders.iter().all(|s| is_loader(s))
-            || !self.game_versions.iter().all(|s| is_game_version(s))
-        {
+        if !self.loaders.iter().all(|s| is_loader(s)) || !self.game_versions.iter().all(|s| is_game_version(s)) {
             return invalid("Invalid environment catalog value");
         }
         Ok(())
@@ -324,32 +322,21 @@ pub trait PluginProvider: Send + Sync {
     fn releases(&self, project_id: &str, target: &TargetEnvironment) -> ApiResult<Vec<Release>>;
 
     /// Exact release only; must not fall back to another version.
-    fn release(
-        &self,
-        project_id: Option<&str>,
-        version_id: &str,
-        target: &TargetEnvironment,
-    ) -> ApiResult<Release> {
+    fn release(&self, project_id: Option<&str>, version_id: &str, target: &TargetEnvironment) -> ApiResult<Release> {
         let Some(project_id) = project_id else {
             return invalid("Version-only references are not supported by this provider");
         };
         self.releases(project_id, target)?
             .into_iter()
             .find(|r| r.id == version_id)
-            .ok_or_else(|| {
-                ApiError::Invalid(format!("Exact compatible release unavailable: {version_id}"))
-            })
+            .ok_or_else(|| ApiError::Invalid(format!("Exact compatible release unavailable: {version_id}")))
     }
 
     /// Recognize exact official hosts and paths only.
     fn resolve(&self, url: &Url) -> Option<ProjectReference>;
 
     /// Exact file identity; return the matching file, not another file of the release.
-    fn identify_sha512(
-        &self,
-        _hash: &str,
-        _target: &TargetEnvironment,
-    ) -> ApiResult<Option<Release>> {
+    fn identify_sha512(&self, _hash: &str, _target: &TargetEnvironment) -> ApiResult<Option<Release>> {
         Ok(None)
     }
 }
@@ -394,8 +381,7 @@ mod tests {
         assert!(TargetEnvironment::new("pa per", "1.21", vec![], false).is_err());
         assert!(TargetEnvironment::new("paper", "../1", vec![], false).is_err());
         assert!(TargetEnvironment::new("paper", "1.21", vec!["Bad".into()], false).is_err());
-        let t = TargetEnvironment::new("paper", "1.21", vec!["paper".into(), "spigot".into()], false)
-            .unwrap();
+        let t = TargetEnvironment::new("paper", "1.21", vec!["paper".into(), "spigot".into()], false).unwrap();
         assert_eq!(t.effective_loaders(), vec!["paper", "spigot"]);
     }
 

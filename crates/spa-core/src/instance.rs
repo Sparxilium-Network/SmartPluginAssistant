@@ -32,13 +32,7 @@ pub fn validate_name(name: &str) -> Result<String> {
 }
 
 impl ServerInstance {
-    pub fn new(
-        id: Uuid,
-        name: &str,
-        directory: &Path,
-        target: TargetEnvironment,
-        created_at: i64,
-    ) -> Result<Self> {
+    pub fn new(id: Uuid, name: &str, directory: &Path, target: TargetEnvironment, created_at: i64) -> Result<Self> {
         target.validate()?;
         Ok(Self {
             id,

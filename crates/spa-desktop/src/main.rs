@@ -7,7 +7,10 @@ slint::include_modules!();
 
 mod snapshot;
 
-use slint::{CloseRequestResponse, Color, ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString, VecModel};
+use slint::{
+    CloseRequestResponse, Color, ComponentHandle, Image, Model, ModelRc, Rgba8Pixel, SharedPixelBuffer, SharedString,
+    VecModel,
+};
 use spa_app::artwork::Rgba;
 use spa_app::context::{builtin_providers, default_data_dir};
 use spa_app::i18n::{tr, trf};
@@ -314,13 +317,21 @@ fn set_extras(ui: &MainWindow, extras: Vec<spa_app::Choice>) {
 
 fn file_stem(ui: &MainWindow) -> String {
     let title: String = ui.get_library_title().into();
-    let safe: String = title.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' }).collect();
-    if safe.trim_matches('-').is_empty() { "server".into() } else { safe }
+    let safe: String =
+        title.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' }).collect();
+    if safe.trim_matches('-').is_empty() {
+        "server".into()
+    } else {
+        safe
+    }
 }
 
 /// Connects Slint callbacks to controller actions.
 fn wire(ui: &MainWindow, controller: &Controller) {
     macro_rules! on {
+        ($c:ident, $ui:ident, $setter:ident, || $body:expr) => {
+            on!($c, $ui, $setter, | | $body)
+        };
         ($c:ident, $ui:ident, $setter:ident, |$($arg:ident),*| $body:expr) => {{
             let controller = controller.clone();
             let weak = ui.as_weak();
@@ -335,29 +346,29 @@ fn wire(ui: &MainWindow, controller: &Controller) {
     }
 
     on!(c, ui, on_select_instance, |index| c.select_instance(index));
-    on!(c, ui, on_new_instance, | | c.open_new_instance());
-    on!(c, ui, on_edit_instance, | | c.open_edit_instance());
-    on!(c, ui, on_unregister, | | c.unregister_instance());
-    on!(c, ui, on_open_folder, | | {
+    on!(c, ui, on_new_instance, || c.open_new_instance());
+    on!(c, ui, on_edit_instance, || c.open_edit_instance());
+    on!(c, ui, on_unregister, || c.unregister_instance());
+    on!(c, ui, on_open_folder, || {
         if let Some(dir) = c.server_directory() {
             if let Err(e) = open::that_detached(&dir) {
                 show_message(&ui, tr("app.failed"), trf("app.error_detail", &[&e]), true);
             }
         }
     });
-    on!(c, ui, on_open_settings, | | c.open_settings());
-    on!(c, ui, on_open_providers, | | show_message(&ui, tr("providers.title"), c.providers_text(), false));
+    on!(c, ui, on_open_settings, || c.open_settings());
+    on!(c, ui, on_open_providers, || show_message(&ui, tr("providers.title"), c.providers_text(), false));
 
     on!(c, ui, on_lib_filter, |text| c.filter_library(&text));
     on!(c, ui, on_lib_check, |file, checked| c.check_plugin(&file, checked));
     on!(c, ui, on_lib_check_all, |checked| c.check_all(checked));
-    on!(c, ui, on_lib_refresh, | | c.refresh_library());
-    on!(c, ui, on_lib_link, | | c.link_plugins());
-    on!(c, ui, on_lib_check_updates, | | c.check_updates());
+    on!(c, ui, on_lib_refresh, || c.refresh_library());
+    on!(c, ui, on_lib_link, || c.link_plugins());
+    on!(c, ui, on_lib_check_updates, || c.check_updates());
     on!(c, ui, on_lib_update, |all| c.update_plugins(all));
-    on!(c, ui, on_lib_toggle, | | c.toggle_plugins());
-    on!(c, ui, on_lib_remove, | | c.remove_plugins());
-    on!(c, ui, on_lib_import, | | {
+    on!(c, ui, on_lib_toggle, || c.toggle_plugins());
+    on!(c, ui, on_lib_remove, || c.remove_plugins());
+    on!(c, ui, on_lib_import, || {
         let files = rfd::FileDialog::new()
             .set_title(tr("library.import"))
             .add_filter(tr("file.jar"), &["jar", "disabled"])
@@ -385,11 +396,11 @@ fn wire(ui: &MainWindow, controller: &Controller) {
     on!(c, ui, on_market_activated, |active| c.market_activated(active));
     on!(c, ui, on_set_source, |index| c.set_source(index));
     on!(c, ui, on_search, |query| c.search(&query));
-    on!(c, ui, on_load_more, | | c.load_more());
-    on!(c, ui, on_retry_market, | | c.retry_market());
+    on!(c, ui, on_load_more, || c.load_more());
+    on!(c, ui, on_retry_market, || c.retry_market());
     on!(c, ui, on_select_card, |index| c.select_project(index));
-    on!(c, ui, on_retry_releases, | | c.retry_releases());
-    on!(c, ui, on_open_page, | | {
+    on!(c, ui, on_retry_releases, || c.retry_releases());
+    on!(c, ui, on_open_page, || {
         if let Some(page) = c.project_page() {
             if let Err(e) = open::that_detached(page) {
                 show_message(&ui, tr("app.failed"), trf("app.error_detail", &[&e]), true);
@@ -402,17 +413,17 @@ fn wire(ui: &MainWindow, controller: &Controller) {
             c.add_by_url(&text);
         }
     });
-    on!(c, ui, on_plan_install, | | c.execute_plan());
-    on!(c, ui, on_plan_cancel, | | c.cancel_plan());
+    on!(c, ui, on_plan_install, || c.execute_plan());
+    on!(c, ui, on_plan_cancel, || c.cancel_plan());
     on!(c, ui, on_confirm_answer, |accepted| c.confirm(accepted));
 
-    on!(c, ui, on_instance_browse, | | {
+    on!(c, ui, on_instance_browse, || {
         if let Some(folder) = rfd::FileDialog::new().set_title(tr("instance.directory")).pick_folder() {
             ui.set_inst_directory(folder.to_string_lossy().into_owned().into());
         }
     });
-    on!(c, ui, on_instance_refresh, | | c.refresh_catalog());
-    on!(c, ui, on_instance_cancel, | | c.cancel_instance_dialog());
+    on!(c, ui, on_instance_refresh, || c.refresh_catalog());
+    on!(c, ui, on_instance_cancel, || c.cancel_instance_dialog());
     on!(c, ui, on_instance_loader_changed, |loader| c.loader_changed(&loader));
     on!(c, ui, on_extra_toggled, |index, checked| {
         let model = ui.get_inst_extras();
@@ -421,7 +432,7 @@ fn wire(ui: &MainWindow, controller: &Controller) {
             model.set_row_data(index as usize, row);
         }
     });
-    on!(c, ui, on_instance_save, | | {
+    on!(c, ui, on_instance_save, || {
         let pick = |model: ModelRc<SharedString>, index: i32| {
             usize::try_from(index).ok().and_then(|i| model.row_data(i)).map(String::from).unwrap_or_default()
         };
@@ -436,7 +447,7 @@ fn wire(ui: &MainWindow, controller: &Controller) {
         });
     });
 
-    on!(c, ui, on_settings_save, | | {
+    on!(c, ui, on_settings_save, || {
         let index = |i: i32, len: usize| usize::try_from(i).unwrap_or(0).min(len - 1);
         c.save_settings(SettingsVm {
             dark: ui.get_set_theme_index() == 0,
@@ -446,8 +457,8 @@ fn wire(ui: &MainWindow, controller: &Controller) {
             cache_mb: ui.get_set_cache_mb().clamp(16, 512) as u32,
         });
     });
-    on!(c, ui, on_settings_clear_cache, | | c.clear_image_cache());
-    on!(c, ui, on_settings_open_data, | | {
+    on!(c, ui, on_settings_clear_cache, || c.clear_image_cache());
+    on!(c, ui, on_settings_open_data, || {
         if let Err(e) = open::that_detached(c.data_dir()) {
             show_message(&ui, tr("app.failed"), trf("app.error_detail", &[&e]), true);
         }

@@ -86,7 +86,11 @@ fn failures_text(failures: &[Failure]) -> Vec<String> {
 }
 
 fn initial(title: &str) -> String {
-    title.chars().find(|c| c.is_alphanumeric()).map(|c| c.to_uppercase().collect()).unwrap_or_else(|| tr("artwork.placeholder"))
+    title
+        .chars()
+        .find(|c| c.is_alphanumeric())
+        .map(|c| c.to_uppercase().collect())
+        .unwrap_or_else(|| tr("artwork.placeholder"))
 }
 
 fn channel_name(channel: Channel) -> String {
@@ -172,15 +176,25 @@ impl Inner {
         let plugins = state
             .plugins
             .iter()
-            .filter(|p| filter.is_empty() || p.file_name.to_lowercase().contains(&filter) || p.version.to_lowercase().contains(&filter))
+            .filter(|p| {
+                filter.is_empty()
+                    || p.file_name.to_lowercase().contains(&filter)
+                    || p.version.to_lowercase().contains(&filter)
+            })
             .map(|p| {
                 let update = state.updates.get(&p.file_name);
                 PluginVm {
                     file_name: p.file_name.clone(),
                     version: if p.version.is_empty() { tr("update.none") } else { p.version.clone() },
-                    source: p.provider_id.as_deref().map(|id| self.provider_name(id)).unwrap_or_else(|| tr("source.local")),
+                    source: p
+                        .provider_id
+                        .as_deref()
+                        .map(|id| self.provider_name(id))
+                        .unwrap_or_else(|| tr("source.local")),
                     state: tr(if p.enabled { "state.enabled" } else { "state.disabled" }),
-                    update: update.map(|u| trf("update.available", &[&u.release.version])).unwrap_or_else(|| tr("update.none")),
+                    update: update
+                        .map(|u| trf("update.available", &[&u.release.version]))
+                        .unwrap_or_else(|| tr("update.none")),
                     enabled: p.enabled,
                     linked: p.linked(),
                     has_update: update.is_some(),
@@ -377,7 +391,12 @@ impl Inner {
         } else {
             format!("{} · {}", trf("market.loaded", &[&count]), tr("market.scroll_more"))
         };
-        let vm = MarketStatusVm { text, loading: market.loading, failed: market.failed, can_load_more: has_more && !market.loading };
+        let vm = MarketStatusVm {
+            text,
+            loading: market.loading,
+            failed: market.failed,
+            can_load_more: has_more && !market.loading,
+        };
         drop(state);
         self.emit(UiEvent::MarketStatus(vm));
     }
@@ -562,15 +581,26 @@ impl Inner {
     fn catalog_vm(&self, result: spa_core::Result<spa_core::environment::EnvironmentResult>) -> CatalogVm {
         let mut state = self.lock();
         let Some(dialog) = state.dialog.as_mut() else {
-            return CatalogVm { status: String::new(), loading: false, failed: true, loaders: vec![], versions: vec![], loader_index: -1, version_index: -1, extras: vec![] };
+            return CatalogVm {
+                status: String::new(),
+                loading: false,
+                failed: true,
+                loaders: vec![],
+                versions: vec![],
+                loader_index: -1,
+                version_index: -1,
+                extras: vec![],
+            };
         };
         match result {
             Ok(result) => {
                 let saved = dialog.saved.clone();
                 let loaders = choices::loaders(&result.catalog, saved.as_ref());
                 let versions = choices::versions(&result.catalog, saved.as_ref());
-                let loader = saved.as_ref().map(|s| s.loader.clone()).unwrap_or_else(|| choices::preferred_loader(&loaders));
-                let version = saved.as_ref().map(|s| s.minecraft_version.clone()).unwrap_or_else(|| versions[0].clone());
+                let loader =
+                    saved.as_ref().map(|s| s.loader.clone()).unwrap_or_else(|| choices::preferred_loader(&loaders));
+                let version =
+                    saved.as_ref().map(|s| s.minecraft_version.clone()).unwrap_or_else(|| versions[0].clone());
                 let checked = match &saved {
                     Some(saved) => saved.extra_loaders.clone(),
                     None => choices::defaults(&loader, &loaders),
@@ -727,7 +757,9 @@ impl Controller {
     pub fn select_instance(&self, index: i32) {
         let changed = {
             let mut state = self.inner.lock();
-            let Some(id) = usize::try_from(index).ok().and_then(|i| state.instances.get(i)).map(|i| i.id) else { return };
+            let Some(id) = usize::try_from(index).ok().and_then(|i| state.instances.get(i)).map(|i| i.id) else {
+                return;
+            };
             let changed = state.selected != Some(id);
             state.selected = Some(id);
             changed
@@ -841,7 +873,7 @@ impl Controller {
         }
         match pending {
             Pending::Unregister(id) => self.inner.run(
-                move |inner| Ok(inner.ctx.instances.unregister(id)?),
+                move |inner| inner.ctx.instances.unregister(id),
                 |inner, ()| {
                     inner.lock().selected = None;
                     inner.reload_instances(None);
@@ -964,7 +996,7 @@ impl Controller {
 
     pub fn link_plugins(&self) {
         self.inner.mutate(
-            |inner, instance| Ok(inner.ctx.plugins.link_unlinked(instance)?),
+            |inner, instance| inner.ctx.plugins.link_unlinked(instance),
             |inner, report| {
                 inner.emit(UiEvent::Status(trf("library.link_result", &[&report.linked, &report.failures.len()])));
                 inner.report_failures(failures_text(&report.failures));
@@ -1102,7 +1134,9 @@ impl Controller {
     pub fn select_project(&self, index: i32) {
         let project = {
             let mut state = self.inner.lock();
-            let Some(project) = usize::try_from(index).ok().and_then(|i| state.market.projects.get(i)).cloned() else { return };
+            let Some(project) = usize::try_from(index).ok().and_then(|i| state.market.projects.get(i)).cloned() else {
+                return;
+            };
             if state.market.selected.as_ref() == Some(&project) {
                 return;
             }
@@ -1172,7 +1206,8 @@ impl Controller {
         let (instance, release) = {
             let state = self.inner.lock();
             let Some(instance) = state.instance() else { return };
-            let Some(release) = usize::try_from(release_index).ok().and_then(|i| state.market.releases.get(i)).cloned() else {
+            let Some(release) = usize::try_from(release_index).ok().and_then(|i| state.market.releases.get(i)).cloned()
+            else {
                 return;
             };
             (instance, release)
@@ -1188,7 +1223,7 @@ impl Controller {
         if self.inner.lock().selected != Some(id) {
             return;
         }
-        self.inner.mutate(move |inner, instance| Ok(inner.ctx.plugins.execute(instance, &plan)?), |_, ()| {});
+        self.inner.mutate(move |inner, instance| inner.ctx.plugins.execute(instance, &plan), |_, ()| {});
     }
 
     pub fn cancel_plan(&self) {
@@ -1261,7 +1296,9 @@ impl Controller {
         std::thread::spawn(move || {
             inner.memory.clear();
             match inner.ctx.images.clear() {
-                Ok(stats) => inner.emit(UiEvent::CacheUsage(trf("settings.cache_cleared", &[&mib(stats.bytes), &stats.files]))),
+                Ok(stats) => {
+                    inner.emit(UiEvent::CacheUsage(trf("settings.cache_cleared", &[&mib(stats.bytes), &stats.files])))
+                }
                 Err(e) => inner.emit(UiEvent::CacheUsage(trf("settings.cache_failed", &[&e]))),
             }
         });

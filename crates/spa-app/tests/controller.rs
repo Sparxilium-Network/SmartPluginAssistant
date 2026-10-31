@@ -33,7 +33,10 @@ impl PluginProvider for Provider {
     }
 
     fn environments(&self) -> ApiResult<Option<EnvironmentCatalog>> {
-        Ok(Some(EnvironmentCatalog::new(vec!["paper".into(), "spigot".into(), "bukkit".into()], vec!["1.21.4".into()])?))
+        Ok(Some(EnvironmentCatalog::new(
+            vec!["paper".into(), "spigot".into(), "bukkit".into()],
+            vec!["1.21.4".into()],
+        )?))
     }
 
     fn search(&self, request: &SearchRequest) -> ApiResult<SearchPage> {

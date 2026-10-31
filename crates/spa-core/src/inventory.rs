@@ -105,8 +105,7 @@ impl InventoryStore {
         let _guard = self.guard();
         let directory = paths::directory(&instance.plugins_directory())?;
         let stored = self.read(instance)?;
-        let previous: HashMap<&str, &InstalledPlugin> =
-            stored.iter().map(|p| (p.file_name.as_str(), p)).collect();
+        let previous: HashMap<&str, &InstalledPlugin> = stored.iter().map(|p| (p.file_name.as_str(), p)).collect();
         let mut names: Vec<String> = fs::read_dir(&directory)?
             .filter_map(|e| e.ok())
             .map(|e| e.file_name().to_string_lossy().into_owned())
@@ -130,13 +129,9 @@ impl InventoryStore {
             }
             let enabled = is_enabled_name(&name);
             result.push(match old {
-                Some(old) => InstalledPlugin {
-                    file_name: name,
-                    sha512: hash,
-                    size: meta.len(),
-                    enabled,
-                    ..old.clone()
-                },
+                Some(old) => {
+                    InstalledPlugin { file_name: name, sha512: hash, size: meta.len(), enabled, ..old.clone() }
+                }
                 None => {
                     let version = jar::version(&path).unwrap_or_default();
                     InstalledPlugin::unlinked(name, hash, meta.len(), version, enabled)

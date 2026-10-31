@@ -36,11 +36,8 @@ impl ProjectFeed {
 
     /// Unique projects only; a broken or changing API cannot loop on empty/repeated pages.
     pub fn append(&mut self, response: SearchPage) -> Vec<Project> {
-        let added: Vec<Project> = response
-            .projects
-            .into_iter()
-            .filter(|p| self.seen.insert((p.provider_id.clone(), p.id.clone())))
-            .collect();
+        let added: Vec<Project> =
+            response.projects.into_iter().filter(|p| self.seen.insert((p.provider_id.clone(), p.id.clone()))).collect();
         self.page += 1;
         self.has_more = response.has_more && !added.is_empty() && self.page <= 10_000;
         added

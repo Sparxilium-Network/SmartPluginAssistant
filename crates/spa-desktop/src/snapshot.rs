@@ -172,7 +172,8 @@ pub fn run(probe: &Probe, ui: &MainWindow) {
         // Real install into the isolated data directory, then an update check.
         ui.set_dialog("".into());
         ui.invoke_plan_install();
-        let installed = probe.wait(ui, Duration::from_secs(120), |ui| !ui.get_busy() && ui.get_plugins().row_count() > 0);
+        let installed =
+            probe.wait(ui, Duration::from_secs(120), |ui| !ui.get_busy() && ui.get_plugins().row_count() > 0);
         println!("installed plugins: {} ({installed}) status: {}", ui.get_plugins().row_count(), ui.get_status());
         ui.set_tab(0);
         ui.invoke_market_activated(false);

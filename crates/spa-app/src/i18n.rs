@@ -59,7 +59,8 @@ pub fn tr(key: &str) -> String {
 pub fn missing_keys(source: &str) -> Vec<String> {
     let en = &catalogs()["en"];
     let groups: Vec<&str> = en.keys().filter_map(|k| k.split('.').next()).collect();
-    let file_like = |part: &str| part.rsplit('.').next().is_some_and(|ext| ["log", "json", "jar", "zip", "sh"].contains(&ext));
+    let file_like =
+        |part: &str| part.rsplit('.').next().is_some_and(|ext| ["log", "json", "jar", "zip", "sh"].contains(&ext));
     source
         .split('"')
         .skip(1)

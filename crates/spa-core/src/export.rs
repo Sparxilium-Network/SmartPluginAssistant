@@ -67,8 +67,7 @@ impl ExportService {
         let temp = tempfile::Builder::new().prefix(".spa-export-").suffix(".zip").tempfile_in(parent)?;
         {
             let mut zip = zip::ZipWriter::new(BufWriter::new(temp.as_file()));
-            let options = zip::write::SimpleFileOptions::default()
-                .compression_method(zip::CompressionMethod::Deflated);
+            let options = zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
             let zip_err = |e: zip::result::ZipError| crate::Error::Message(format!("ZIP export failed: {e}"));
             zip.start_file("manifest.json", options).map_err(zip_err)?;
             let manifest = Manifest { schema: 1, name: &instance.name, target: &instance.target, plugins: &plugins };

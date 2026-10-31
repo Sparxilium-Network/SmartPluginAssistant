@@ -64,26 +64,18 @@ impl DownloadService {
 
     /// Downloads and verifies size, every published checksum and JAR structure.
     /// The returned temporary file is deleted when dropped unless persisted.
-    pub fn stage(
-        &self,
-        release: &Release,
-        directory: &Path,
-        progress: Option<&dyn Fn(u64)>,
-    ) -> Result<TempPath> {
+    pub fn stage(&self, release: &Release, directory: &Path, progress: Option<&dyn Fn(u64)>) -> Result<TempPath> {
         let Some(url) = release.download.as_deref() else {
             return fail("Release has no direct download");
         };
         let directory = paths::directory(directory)?;
-        let mut temp =
-            tempfile::Builder::new().prefix(".spa-download-").suffix(".tmp").tempfile_in(&directory)?;
+        let mut temp = tempfile::Builder::new().prefix(".spa-download-").suffix(".tmp").tempfile_in(&directory)?;
         let response = get_following(&self.agent, url, "*/*")
             .map_err(|e| crate::Error::Message(format!("Download failed: {e}")))?;
         // A declared length describes the encoded body; only compare it for identity transfers.
         let encoded = response.header("Content-Encoding").is_some_and(|v| !v.eq_ignore_ascii_case("identity"));
-        let declared = response
-            .header("Content-Length")
-            .and_then(|v| v.trim().parse::<u64>().ok())
-            .filter(|_| !encoded);
+        let declared =
+            response.header("Content-Length").and_then(|v| v.trim().parse::<u64>().ok()).filter(|_| !encoded);
         if declared.is_some_and(|d| d > MAX_BYTES) {
             return fail("Download exceeds size limit");
         }

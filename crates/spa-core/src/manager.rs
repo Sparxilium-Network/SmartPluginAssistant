@@ -183,8 +183,7 @@ impl Planner<'_> {
                             p.project_id.as_deref().unwrap_or_default(),
                         ))
                 });
-                let selected_conflict =
-                    self.selected.values().any(|r| matches(&r.provider_id, &r.project_id, &r.id));
+                let selected_conflict = self.selected.values().any(|r| matches(&r.provider_id, &r.project_id, &r.id));
                 if installed_conflict || selected_conflict {
                     return fail(format!("Incompatible dependency declared by {}", release.project_id));
                 }
@@ -249,10 +248,8 @@ impl PluginManager {
                 continue;
             };
             report.checked += 1;
-            let latest = self
-                .providers
-                .require(provider_id)
-                .and_then(|p| Ok(p.releases(project_id, &instance.target)?));
+            let latest =
+                self.providers.require(provider_id).and_then(|p| Ok(p.releases(project_id, &instance.target)?));
             match latest {
                 Ok(releases) => {
                     if let Some(latest) = releases.into_iter().next() {

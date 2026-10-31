@@ -14,9 +14,7 @@ impl ApplicationLock {
         let file = OpenOptions::new().create(true).write(true).truncate(false).open(path)?;
         match file.try_lock() {
             Ok(()) => Ok(Self { _file: file }),
-            Err(TryLockError::WouldBlock) => {
-                Err(Error::Message("Application data is already in use".into()))
-            }
+            Err(TryLockError::WouldBlock) => Err(Error::Message("Application data is already in use".into())),
             Err(TryLockError::Error(e)) => Err(e.into()),
         }
     }

@@ -38,7 +38,8 @@ fn fixture() -> Fixture {
     let files = Arc::new(PluginFiles::new(inventory.clone(), DownloadService::new(Duration::from_secs(10))));
     let manager = PluginManager::new(registry.clone(), inventory.clone(), files.clone());
     let exports = ExportService::new(inventory.clone(), registry);
-    let instance = InstanceStore::open(&root).unwrap().create("Survival", Some(&dir.path().join("server")), target()).unwrap();
+    let instance =
+        InstanceStore::open(&root).unwrap().create("Survival", Some(&dir.path().join("server")), target()).unwrap();
     Fixture { _dir: dir, root, server: Server::start(), provider, inventory, files, manager, exports, instance }
 }
 
@@ -137,7 +138,8 @@ fn download_rejects_truncation_checksum_and_html() {
     let f = fixture();
     let staging = f.root.join("staging");
     let bytes = plugin_jar("x", "1");
-    let mut truncated = format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", bytes.len() + 50).into_bytes();
+    let mut truncated =
+        format!("HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", bytes.len() + 50).into_bytes();
     truncated.extend_from_slice(&bytes);
     let mut r = release("x", "1", 0, Some(f.server.raw("/t.jar", truncated)), &bytes);
     r.size = 0;
@@ -153,7 +155,16 @@ fn download_rejects_truncation_checksum_and_html() {
     h.size = html.len() as u64;
     assert!(service.stage(&h, &staging, None).is_err());
 
-    let mut redirect = release("x", "1", 0, Some(f.server.raw("/r", b"HTTP/1.1 302 Found\r\nLocation: /ok.jar\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec())), &bytes);
+    let mut redirect = release(
+        "x",
+        "1",
+        0,
+        Some(f.server.raw(
+            "/r",
+            b"HTTP/1.1 302 Found\r\nLocation: /ok.jar\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".to_vec(),
+        )),
+        &bytes,
+    );
     redirect.hashes.insert("sha512".into(), sha512(&bytes));
     let staged = service.stage(&redirect, &staging, None).unwrap();
     assert_eq!(fs::read(&staged).unwrap(), bytes);
@@ -267,7 +278,10 @@ fn plan_rejects_conflicts_cycles_and_disabled_dependencies() {
     let f = fixture();
     // Cycle a -> b -> a terminates with both selected.
     let a = requires(f.publish("a", "a1", 5), "b");
-    let b = requires(release("b", "b1", 5, Some(f.server.file("/b.jar", &plugin_jar("b", "1"))), &plugin_jar("b", "1")), "a");
+    let b = requires(
+        release("b", "b1", 5, Some(f.server.file("/b.jar", &plugin_jar("b", "1"))), &plugin_jar("b", "1")),
+        "a",
+    );
     f.provider.add(b);
     f.provider.releases.lock().unwrap().insert("a".into(), vec![a.clone()]);
     assert_eq!(f.manager.plan(&f.instance, a, false).unwrap().items.len(), 2);
@@ -305,7 +319,8 @@ fn manual_and_unverified_dependencies_need_confirmation() {
     let f = fixture();
     let mut root = f.publish("web", "w1", 5);
     root.dependencies.push(
-        Dependency::named(None, None, Some("Vault".into()), Some("https://example.invalid/vault".into()), true, false).unwrap(),
+        Dependency::named(None, None, Some("Vault".into()), Some("https://example.invalid/vault".into()), true, false)
+            .unwrap(),
     );
     let plan = f.manager.plan(&f.instance, root, false).unwrap();
     assert_eq!(plan.manual.len(), 1);
@@ -379,7 +394,11 @@ fn exports_contain_only_plugins_and_quoted_pinned_script() {
     f.exports.script(&f.instance, &script_path).unwrap();
     let script = fs::read_to_string(script_path).unwrap();
     assert!(script.contains(&shell("Manual upload required: it's.jar")));
-    assert!(script.contains(&format!("if ! download 'alpha-a1.jar' '{}' '{}'", v1.download.unwrap(), v1.hashes["sha512"])));
+    assert!(script.contains(&format!(
+        "if ! download 'alpha-a1.jar' '{}' '{}'",
+        v1.download.unwrap(),
+        v1.hashes["sha512"]
+    )));
     assert_eq!(shell("a'b"), "'a'\"'\"'b'");
 }
 
@@ -392,7 +411,9 @@ fn environment_cache_reuse_stale_fallback_and_no_defaults() {
     let registry = ProviderRegistry::new(vec![provider.clone()]).unwrap();
     let now = Arc::new(std::sync::atomic::AtomicI64::new(1_000));
     let clock = now.clone();
-    let service = EnvironmentService::with_clock(registry.clone(), dir.path(), Arc::new(move || clock.load(Ordering::SeqCst))).unwrap();
+    let service =
+        EnvironmentService::with_clock(registry.clone(), dir.path(), Arc::new(move || clock.load(Ordering::SeqCst)))
+            .unwrap();
     *provider.catalog.lock().unwrap() = Some(Err(ApiError::Transport("offline".into())));
     assert!(service.load(false).is_err(), "first launch never invents defaults");
 
@@ -484,4 +505,3 @@ fn image_cache_evicts_least_recent_entries() {
     let stats = cache.stats().unwrap();
     assert!(stats.bytes <= 100 && stats.files == 2, "{stats:?}");
 }
-

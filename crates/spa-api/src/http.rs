@@ -50,8 +50,7 @@ pub fn validate_url(text: &str) -> ApiResult<Url> {
     let url = Url::parse(text).map_err(|_| ApiError::Transport("Unsafe URL".into()))?;
     let local = matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "[::1]"));
     let scheme_ok = url.scheme() == "https" || (url.scheme() == "http" && local);
-    if !scheme_ok || url.host_str().is_none() || !url.username().is_empty() || url.password().is_some()
-    {
+    if !scheme_ok || url.host_str().is_none() || !url.username().is_empty() || url.password().is_some() {
         return Err(ApiError::Transport("Unsafe URL".into()));
     }
     Ok(url)

@@ -81,9 +81,9 @@ impl ModrinthProvider {
         let files = node.get("files").and_then(Value::as_array).cloned().unwrap_or_default();
         let jars = files.iter().filter(|f| text(f, "filename").to_lowercase().ends_with(".jar"));
         let selected = match identity {
-            Some(hash) => jars
-                .into_iter()
-                .find(|f| f.pointer("/hashes/sha512").and_then(Value::as_str).is_some_and(|h| h.eq_ignore_ascii_case(hash))),
+            Some(hash) => jars.into_iter().find(|f| {
+                f.pointer("/hashes/sha512").and_then(Value::as_str).is_some_and(|h| h.eq_ignore_ascii_case(hash))
+            }),
             None => {
                 let jars: Vec<_> = jars.collect();
                 jars.iter().find(|f| f.get("primary").and_then(Value::as_bool) == Some(true)).or(jars.first()).copied()
@@ -171,9 +171,10 @@ impl PluginProvider for ModrinthProvider {
         loaders.sort();
         let mut versions = Vec::new();
         for node in version_tags.iter().filter(|n| text(n, "version_type") == "release") {
-            versions.push((timestamp(required(node, "date")?, "game version")?, required(node, "version")?.to_string()));
+            versions
+                .push((timestamp(required(node, "date")?, "game version")?, required(node, "version")?.to_string()));
         }
-        versions.sort_by(|a, b| b.0.cmp(&a.0));
+        versions.sort_by_key(|v| std::cmp::Reverse(v.0));
         let catalog = EnvironmentCatalog::new(loaders, versions.into_iter().map(|(_, v)| v).collect())?;
         log::info!(
             "Retrieved {} plugin loaders and {} release game versions",
@@ -184,7 +185,8 @@ impl PluginProvider for ModrinthProvider {
     }
 
     fn search(&self, request: &SearchRequest) -> ApiResult<SearchPage> {
-        let loaders: Vec<String> = request.target.effective_loaders().iter().map(|l| format!("categories:{l}")).collect();
+        let loaders: Vec<String> =
+            request.target.effective_loaders().iter().map(|l| format!("categories:{l}")).collect();
         let facets = serde_json::json!([
             ["all_project_types:plugin"],
             loaders,
@@ -229,7 +231,7 @@ impl PluginProvider for ModrinthProvider {
                 releases.push(release);
             }
         }
-        releases.sort_by(|a, b| b.published_at.cmp(&a.published_at));
+        releases.sort_by_key(|r| std::cmp::Reverse(r.published_at));
         Ok(releases)
     }
 
@@ -318,7 +320,8 @@ mod tests {
     #[test]
     fn parses_releases_dependencies_and_order() {
         let old = VERSION.replace("\"v2\"", "\"v1\"").replace("2026-10-01", "2026-09-01");
-        let beta = VERSION.replace("\"v2\"", "\"v3\"").replace("\"release\"", "\"beta\"").replace("2026-10-01", "2026-11-01");
+        let beta =
+            VERSION.replace("\"v2\"", "\"v3\"").replace("\"release\"", "\"beta\"").replace("2026-10-01", "2026-11-01");
         let list = format!("[{old},{VERSION},{beta}]");
         let (p, fixture) = provider(&[("project/P1/version", &list)]);
         let releases = p.releases("P1", &target()).unwrap();
@@ -333,7 +336,10 @@ mod tests {
 
     #[test]
     fn identity_selects_matching_file() {
-        let (p, _) = provider(&[(&format!("version_file/{}", "b".repeat(128)), &VERSION.replace("\"bb\"", &format!("\"{}\"", "b".repeat(128))))]);
+        let (p, _) = provider(&[(
+            &format!("version_file/{}", "b".repeat(128)),
+            &VERSION.replace("\"bb\"", &format!("\"{}\"", "b".repeat(128))),
+        )]);
         let found = p.identify_sha512(&"b".repeat(128), &target()).unwrap().unwrap();
         assert_eq!(found.file_name, "extra.jar");
         assert!(p.identify_sha512(&"c".repeat(128), &target()).unwrap().is_none());
@@ -368,7 +374,10 @@ mod tests {
         let (p, _) = provider(&[]);
         let parse = |s: &str| p.resolve(&Url::parse(s).unwrap());
         assert_eq!(parse("https://modrinth.com/plugin/luckperms").unwrap().project_id, "luckperms");
-        assert_eq!(parse("https://modrinth.com/plugin/luckperms/version/abc").unwrap().version_id.as_deref(), Some("abc"));
+        assert_eq!(
+            parse("https://modrinth.com/plugin/luckperms/version/abc").unwrap().version_id.as_deref(),
+            Some("abc")
+        );
         assert!(parse("https://modrinth.com.evil.example/plugin/x").is_none());
         assert!(parse("http://modrinth.com/plugin/x").is_none());
         assert!(parse("https://modrinth.com/mod/x").is_none());
@@ -381,7 +390,10 @@ mod tests {
         assert!(p.release(None, "v2", &target()).is_ok());
         let other = TargetEnvironment::new("paper", "1.20.1", vec![], false).unwrap();
         assert!(p.release(Some("P1"), "v2", &other).is_err());
-        let required_file = VERSION.replace(r#"{"project_id":"DEP","version_id":null,"dependency_type":"required"}"#, r#"{"file_name":"x.jar","dependency_type":"required"}"#);
+        let required_file = VERSION.replace(
+            r#"{"project_id":"DEP","version_id":null,"dependency_type":"required"}"#,
+            r#"{"file_name":"x.jar","dependency_type":"required"}"#,
+        );
         let (p, _) = provider(&[("version/v2", &required_file)]);
         assert!(p.release(None, "v2", &target()).is_err());
     }

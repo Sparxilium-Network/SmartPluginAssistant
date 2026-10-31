@@ -85,8 +85,7 @@ mod tests {
 
     #[test]
     fn rejects_unsafe_names() {
-        for bad in ["", " ", ".", "..", "a/b", "a\\b", "c:x", "x.", "x ", "CON", "nul.jar", "COM1.txt", "a\u{1}"]
-        {
+        for bad in ["", " ", ".", "..", "a/b", "a\\b", "c:x", "x.", "x ", "CON", "nul.jar", "COM1.txt", "a\u{1}"] {
             assert!(file_name(bad).is_err(), "{bad:?}");
         }
         for good in ["LuckPerms-5.4.jar", "COM0.jar", "console.jar", "外掛.jar"] {

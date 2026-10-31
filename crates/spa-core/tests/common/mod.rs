@@ -63,7 +63,8 @@ impl Server {
                             let _ = stream.write_all(&route.raw);
                         }
                         None => {
-                            let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+                            let _ = stream
+                                .write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
                         }
                     }
                 });
@@ -205,10 +206,8 @@ impl PluginProvider for FakeProvider {
     }
 
     fn resolve(&self, url: &url::Url) -> Option<ProjectReference> {
-        (url.host_str() == Some("fake.example")).then(|| ProjectReference {
-            project_id: url.path().trim_start_matches('/').into(),
-            version_id: None,
-        })
+        (url.host_str() == Some("fake.example"))
+            .then(|| ProjectReference { project_id: url.path().trim_start_matches('/').into(), version_id: None })
     }
 
     fn identify_sha512(&self, hash: &str, _target: &TargetEnvironment) -> ApiResult<Option<Release>> {

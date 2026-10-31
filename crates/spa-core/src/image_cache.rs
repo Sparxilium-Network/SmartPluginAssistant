@@ -137,7 +137,8 @@ impl Inner {
                 match cached {
                     Ok((bytes, true)) => {
                         // Sliding freshness window: a hit keeps the entry recently used.
-                        let _ = fs::File::options().write(true).open(&file).and_then(|f| f.set_modified(SystemTime::now()));
+                        let _ =
+                            fs::File::options().write(true).open(&file).and_then(|f| f.set_modified(SystemTime::now()));
                         return Ok(bytes);
                     }
                     Ok((bytes, false)) => stale = Some(bytes),
@@ -206,9 +207,7 @@ impl ImageCache {
         let receiver = Arc::new(Mutex::new(receiver));
         for index in 0..WORKERS {
             let (inner, receiver) = (inner.clone(), receiver.clone());
-            std::thread::Builder::new()
-                .name(format!("spa-image-{index}"))
-                .spawn(move || worker(inner, receiver))?;
+            std::thread::Builder::new().name(format!("spa-image-{index}")).spawn(move || worker(inner, receiver))?;
         }
         Ok(Self { inner, sender: Mutex::new(Some(sender)) })
     }

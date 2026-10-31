@@ -42,11 +42,7 @@ pub fn defaults(loader: &str, available: &[String]) -> Vec<String> {
         "waterfall" => &["bungeecord"],
         _ => &[],
     };
-    preferred
-        .iter()
-        .filter(|p| **p != loader && available.iter().any(|a| a == *p))
-        .map(|p| p.to_string())
-        .collect()
+    preferred.iter().filter(|p| **p != loader && available.iter().any(|a| a == *p)).map(|p| p.to_string()).collect()
 }
 
 #[cfg(test)]
