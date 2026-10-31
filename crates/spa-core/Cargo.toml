@@ -1,0 +1,21 @@
+[package]
+name = "spa-core"
+description = "Safe storage, instance management, install transactions, updates and exports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+spa-api.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+log.workspace = true
+ureq.workspace = true
+url.workspace = true
+sha2.workspace = true
+sha1.workspace = true
+hex.workspace = true
+uuid.workspace = true
+tempfile.workspace = true
+zip.workspace = true

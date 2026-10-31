@@ -1,0 +1,14 @@
+[package]
+name = "spa-api"
+description = "Provider SPI and shared data contracts; no UI or core dependencies"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+log.workspace = true
+ureq.workspace = true
+url.workspace = true
