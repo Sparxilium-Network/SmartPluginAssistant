@@ -59,12 +59,14 @@ pub fn tr(key: &str) -> String {
 pub fn missing_keys(source: &str) -> Vec<String> {
     let en = &catalogs()["en"];
     let groups: Vec<&str> = en.keys().filter_map(|k| k.split('.').next()).collect();
+    let file_like = |part: &str| part.rsplit('.').next().is_some_and(|ext| ["log", "json", "jar", "zip", "sh"].contains(&ext));
     source
         .split('"')
         .skip(1)
         .step_by(2)
         .filter(|part| {
-            part.contains('.')
+            !file_like(part)
+                && part.contains('.')
                 && part.chars().all(|c| c.is_ascii_lowercase() || c == '.' || c == '_' || c == '-')
                 && groups.contains(&part.split('.').next().unwrap_or_default())
                 && !en.contains_key(*part)

@@ -4572,9 +4572,11 @@ name = "spa-desktop"
 version = "0.1.0"
 dependencies = [
  "dirs",
+ "image",
  "log",
  "open",
  "rfd",
+ "serde_json",
  "simplelog",
  "slint",
  "slint-build",

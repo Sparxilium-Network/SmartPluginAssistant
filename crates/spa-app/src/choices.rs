@@ -28,6 +28,11 @@ pub fn versions(catalog: &EnvironmentCatalog, saved: Option<&TargetEnvironment>)
     result
 }
 
+/// Initial server software for a new instance: Paper when offered, else the first option.
+pub fn preferred_loader(loaders: &[String]) -> String {
+    loaders.iter().find(|l| *l == "paper").or(loaders.first()).cloned().unwrap_or_default()
+}
+
 /// Upstream loaders commonly compatible with `loader`, limited to available options.
 pub fn defaults(loader: &str, available: &[String]) -> Vec<String> {
     let preferred: &[&str] = match loader {
@@ -56,5 +61,7 @@ mod tests {
         assert_eq!(versions(&catalog, Some(&saved)), vec!["1.21.4", "1.20.1"]);
         assert_eq!(defaults("paper", &catalog.loaders), vec!["spigot"]);
         assert!(defaults("velocity", &catalog.loaders).is_empty());
+        assert_eq!(preferred_loader(&["bukkit".into(), "paper".into()]), "paper");
+        assert_eq!(preferred_loader(&["velocity".into()]), "velocity");
     }
 }

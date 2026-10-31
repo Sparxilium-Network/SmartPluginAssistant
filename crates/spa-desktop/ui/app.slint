@@ -1,0 +1,803 @@
+// Presentation only. Every label comes from the shared catalogs through `Tr.get`, every action
+// is forwarded to the Rust controller through a callback.
+
+import { LineEdit, ComboBox, CheckBox, ListView, ScrollView, SpinBox, Palette } from "std-widgets.slint";
+import { Theme, Tr } from "theme.slint";
+import { AppButton, Badge, Artwork, Muted, SectionTitle, Modal, TextBlock } from "widgets.slint";
+
+export { Theme, Tr }
+
+export struct InstanceRow { name: string, detail: string }
+
+export struct PluginRow {
+    file: string,
+    version: string,
+    source: string,
+    state: string,
+    update: string,
+    enabled: bool,
+    linked: bool,
+    has-update: bool,
+    checked: bool,
+}
+
+export struct CardRow {
+    key: string,
+    title: string,
+    author: string,
+    description: string,
+    provider: string,
+    initial: string,
+    icon-url: string,
+    loaded: bool,
+    artwork: image,
+}
+
+export struct DetailData {
+    visible: bool,
+    title: string,
+    author: string,
+    provider: string,
+    description: string,
+    initial: string,
+    icon-url: string,
+    loaded: bool,
+    artwork: image,
+    external: bool,
+}
+
+export struct ReleaseRow { label: string, detail: string, notice: string, verified: bool, installable: bool }
+
+export struct ChoiceRow { name: string, checked: bool }
+
+component TabButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    callback clicked();
+    HorizontalLayout {
+        padding-left: 4px;
+        padding-right: 4px;
+        VerticalLayout {
+            Text {
+                text: root.text;
+                color: root.active ? Theme.text : Theme.muted;
+                font-weight: 700;
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+            Rectangle { height: 2px; background: root.active ? Theme.accent : transparent; }
+        }
+    }
+    TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+component ColumnHeader inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+    font-weight: 700;
+    vertical-alignment: center;
+    overflow: elide;
+}
+
+component Cell inherits Text {
+    color: Theme.text;
+    font-size: 13px;
+    vertical-alignment: center;
+    overflow: elide;
+}
+
+export component MainWindow inherits Window {
+    title: Tr.get(Tr.revision, "app.title");
+    preferred-width: 1280px;
+    preferred-height: 820px;
+    min-width: 1060px;
+    min-height: 720px;
+    background: Theme.bg;
+    default-font-size: 13px;
+
+    // ---------- state ----------
+    in property <string> status;
+    in property <bool> busy;
+    in-out property <int> tab: 0;
+
+    in property <[InstanceRow]> instances;
+    in-out property <int> selected-instance: -1;
+
+    in property <bool> library-visible;
+    in property <string> library-title;
+    in property <string> library-environment;
+    in property <string> library-summary;
+    in property <bool> library-empty;
+    in property <int> selected-count;
+    in property <string> selected-text;
+    in property <[PluginRow]> plugins;
+    in-out property <string> library-filter;
+
+    in property <[string]> sources;
+    in-out property <int> source-index: 0;
+    in-out property <string> query;
+    in property <[CardRow]> cards;
+    in-out property <int> selected-card: -1;
+    in property <string> market-status;
+    in property <bool> market-loading;
+    in property <bool> market-failed;
+    in property <bool> can-load-more;
+    in property <DetailData> detail;
+    in property <[ReleaseRow]> releases;
+    // 0 none, 1 loading, 2 ready, 3 failed
+    in property <int> releases-state;
+    in property <string> releases-error;
+    in-out property <int> selected-release: -1;
+    in-out property <bool> include-optional;
+
+    // ---------- dialogs ----------
+    // "", "instance", "confirm", "plan", "url", "settings"
+    in-out property <string> dialog;
+    in property <string> confirm-text;
+    in-out property <bool> message-open;
+    in property <string> message-title;
+    in property <string> message-text;
+    in property <bool> message-error;
+    in property <string> plan-summary;
+    in property <string> plan-manual;
+    in property <bool> plan-needs-confirm;
+    in-out property <bool> plan-accepted;
+    in-out property <string> url-text;
+
+    in property <bool> inst-editing;
+    in-out property <string> inst-name;
+    in-out property <string> inst-directory;
+    in-out property <bool> inst-prerelease;
+    in property <[string]> inst-loaders;
+    in property <[string]> inst-versions;
+    in-out property <int> inst-loader-index: -1;
+    in-out property <int> inst-version-index: -1;
+    in property <[ChoiceRow]> inst-extras;
+    in property <string> inst-status;
+    in property <bool> inst-loading;
+    in property <bool> inst-failed;
+
+    in-out property <int> set-theme-index;
+    in-out property <int> set-accent-index;
+    in-out property <int> set-language-index;
+    in-out property <bool> set-images;
+    in-out property <int> set-cache-mb: 128;
+    in property <string> set-usage;
+
+    // ---------- actions ----------
+    callback select-instance(int);
+    callback new-instance();
+    callback edit-instance();
+    callback open-folder();
+    callback unregister();
+    callback open-settings();
+    callback open-providers();
+    callback apply-scheme();
+
+    callback lib-filter(string);
+    callback lib-check(string, bool);
+    callback lib-check-all(bool);
+    callback lib-refresh();
+    callback lib-import();
+    callback lib-link();
+    callback lib-check-updates();
+    callback lib-update(bool);
+    callback lib-toggle();
+    callback lib-remove();
+    callback lib-export(bool);
+
+    callback market-activated(bool);
+    callback set-source(int);
+    callback search(string);
+    callback load-more();
+    callback retry-market();
+    callback select-card(int);
+    callback retry-releases();
+    callback open-page();
+    callback review(int, bool);
+    callback url-submit(string);
+
+    callback plan-install();
+    callback plan-cancel();
+    callback confirm-answer(bool);
+    callback instance-browse();
+    callback instance-save();
+    callback instance-cancel();
+    callback instance-refresh();
+    callback instance-loader-changed(string);
+    callback extra-toggled(int, bool);
+    callback settings-save();
+    callback settings-clear-cache();
+    callback settings-open-data();
+
+    apply-scheme => {
+        Palette.color-scheme = Theme.dark ? ColorScheme.dark : ColorScheme.light;
+    }
+
+    pure function t(key: string) -> string {
+        return Tr.get(Tr.revision, key);
+    }
+
+    function show-tab(index: int) {
+        root.tab = index;
+        root.market-activated(index == 1);
+    }
+
+    HorizontalLayout {
+        // ---------- sidebar ----------
+        Rectangle {
+            width: 270px;
+            background: Theme.sidebar;
+            VerticalLayout {
+                padding: 16px;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    Rectangle {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 11px;
+                        background: Theme.accent;
+                        Text {
+                            text: root.t("brand.mark");
+                            color: Theme.on-accent;
+                            font-size: 22px;
+                            font-weight: 800;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Text { text: root.t("app.title"); color: Theme.title; font-weight: 700; font-size: 13px; overflow: elide; }
+                        Text { text: root.t("app.subtitle"); color: Theme.muted; font-size: 10px; font-weight: 700; }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 8px;
+                    AppButton { text: root.t("settings.menu"); clicked => { root.open-settings(); } }
+                    AppButton { text: root.t("providers.title"); clicked => { root.open-providers(); } }
+                }
+                Rectangle { height: 1px; background: Theme.border; }
+                Text { text: root.t("instances.title"); color: Theme.muted; font-size: 10px; font-weight: 700; }
+                ListView {
+                    vertical-stretch: 1;
+                    for instance[i] in root.instances: Rectangle {
+                        height: 60px;
+                        border-radius: 7px;
+                        background: i == root.selected-instance ? Theme.selected : row-touch.has-hover ? Theme.hover : transparent;
+                        VerticalLayout {
+                            padding-left: 10px;
+                            padding-right: 10px;
+                            alignment: center;
+                            spacing: 2px;
+                            Text { text: instance.name; color: Theme.text; font-weight: 700; font-size: 14px; overflow: elide; }
+                            Text { text: instance.detail; color: Theme.muted; font-size: 12px; overflow: elide; }
+                        }
+                        row-touch := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.selected-instance = i;
+                                root.select-instance(i);
+                            }
+                        }
+                    }
+                }
+                if root.instances.length == 0: VerticalLayout {
+                    spacing: 6px;
+                    Text { text: root.t("app.empty"); color: Theme.text; font-weight: 700; wrap: word-wrap; }
+                    Muted { text: root.t("app.empty_hint"); }
+                }
+                AppButton {
+                    text: root.t("instances.new");
+                    primary: true;
+                    enabled: !root.busy;
+                    clicked => { root.new-instance(); }
+                }
+            }
+        }
+
+        // ---------- workspace ----------
+        VerticalLayout {
+            horizontal-stretch: 1;
+            if !root.library-visible: Rectangle {
+                vertical-stretch: 1;
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 8px;
+                    Text { text: root.t("app.tagline"); color: Theme.title; font-size: 27px; font-weight: 700; horizontal-alignment: center; }
+                    Text { text: root.t("app.choose_instance"); color: Theme.muted; horizontal-alignment: center; }
+                }
+            }
+            if root.library-visible: VerticalLayout {
+                vertical-stretch: 1;
+                padding-left: 22px;
+                padding-right: 22px;
+                padding-top: 18px;
+                spacing: 12px;
+                HorizontalLayout {
+                    spacing: 10px;
+                    VerticalLayout {
+                        horizontal-stretch: 1;
+                        spacing: 4px;
+                        Text { text: root.library-title; color: Theme.title; font-size: 26px; font-weight: 700; overflow: elide; }
+                        Text { text: root.library-environment; color: Theme.muted; font-size: 12px; overflow: elide; }
+                    }
+                    AppButton { text: root.t("instances.settings"); enabled: !root.busy; clicked => { root.edit-instance(); } }
+                    AppButton { text: root.t("instances.open"); clicked => { root.open-folder(); } }
+                    AppButton { text: root.t("instances.remove"); danger: true; enabled: !root.busy; clicked => { root.unregister(); } }
+                }
+                HorizontalLayout {
+                    spacing: 20px;
+                    alignment: start;
+                    height: 34px;
+                    TabButton { text: root.t("tab.library"); active: root.tab == 0; clicked => { root.show-tab(0); } }
+                    TabButton { text: root.t("tab.market"); active: root.tab == 1; clicked => { root.show-tab(1); } }
+                }
+                Rectangle { height: 1px; background: Theme.border; }
+
+                // ---------- library ----------
+                if root.tab == 0: VerticalLayout {
+                    vertical-stretch: 1;
+                    spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        LineEdit {
+                            horizontal-stretch: 1;
+                            placeholder-text: root.t("library.search");
+                            text <=> root.library-filter;
+                            edited(text) => { root.lib-filter(text); }
+                        }
+                        AppButton { text: root.t("library.refresh"); enabled: !root.busy; clicked => { root.lib-refresh(); } }
+                        AppButton { text: root.t("library.import"); enabled: !root.busy; clicked => { root.lib-import(); } }
+                        AppButton { text: root.t("library.link"); enabled: !root.busy; clicked => { root.lib-link(); } }
+                        AppButton { text: root.t("library.check"); enabled: !root.busy; clicked => { root.lib-check-updates(); } }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        AppButton { text: root.t("library.update"); enabled: !root.busy; clicked => { root.lib-update(false); } }
+                        AppButton { text: root.t("library.update_all"); primary: true; enabled: !root.busy; clicked => { root.lib-update(true); } }
+                        AppButton { text: root.t("library.toggle"); enabled: !root.busy; clicked => { root.lib-toggle(); } }
+                        AppButton { text: root.t("library.remove"); danger: true; enabled: !root.busy; clicked => { root.lib-remove(); } }
+                        Rectangle { horizontal-stretch: 1; }
+                        AppButton { text: root.t("library.export_zip"); enabled: !root.busy; clicked => { root.lib-export(false); } }
+                        AppButton { text: root.t("library.export_script"); enabled: !root.busy; clicked => { root.lib-export(true); } }
+                    }
+                    HorizontalLayout {
+                        spacing: 16px;
+                        alignment: start;
+                        Text { text: root.library-summary; color: Theme.muted; vertical-alignment: center; }
+                        Text {
+                            text: root.selected-text;
+                            color: Theme.muted;
+                            vertical-alignment: center;
+                        }
+                    }
+                    Rectangle {
+                        vertical-stretch: 1;
+                        background: Theme.surface;
+                        border-radius: 8px;
+                        border-width: 1px;
+                        border-color: Theme.border;
+                        clip: true;
+                        VerticalLayout {
+                            Rectangle {
+                                height: 40px;
+                                background: Theme.header;
+                                HorizontalLayout {
+                                    padding-left: 12px;
+                                    padding-right: 12px;
+                                    spacing: 10px;
+                                    CheckBox {
+                                        width: 28px;
+                                        checked: root.selected-count > 0 && root.selected-count == root.plugins.length;
+                                        toggled => { root.lib-check-all(self.checked); }
+                                    }
+                                    ColumnHeader { text: root.t("column.file"); horizontal-stretch: 1; }
+                                    ColumnHeader { text: root.t("column.version"); width: 140px; }
+                                    ColumnHeader { text: root.t("column.source"); width: 100px; }
+                                    ColumnHeader { text: root.t("column.state"); width: 90px; }
+                                    ColumnHeader { text: root.t("column.update"); width: 200px; }
+                                }
+                            }
+                            if root.library-empty: VerticalLayout {
+                                vertical-stretch: 1;
+                                alignment: center;
+                                spacing: 6px;
+                                Text { text: root.t("library.empty"); color: Theme.text; font-size: 16px; font-weight: 700; horizontal-alignment: center; }
+                                Muted { text: root.t("library.empty_hint"); horizontal-alignment: center; }
+                            }
+                            if !root.library-empty: ListView {
+                                vertical-stretch: 1;
+                                for plugin[i] in root.plugins: Rectangle {
+                                    height: 46px;
+                                    background: plugin.checked ? Theme.selected : Math.mod(i, 2) == 1 ? Theme.row-odd : Theme.surface;
+                                    TouchArea {
+                                        clicked => { root.lib-check(plugin.file, !plugin.checked); }
+                                    }
+                                    HorizontalLayout {
+                                        padding-left: 12px;
+                                        padding-right: 12px;
+                                        spacing: 10px;
+                                        CheckBox {
+                                            width: 28px;
+                                            checked: plugin.checked;
+                                            toggled => { root.lib-check(plugin.file, self.checked); }
+                                        }
+                                        Cell { text: plugin.file; horizontal-stretch: 1; color: plugin.enabled ? Theme.text : Theme.muted; }
+                                        Cell { text: plugin.version; width: 140px; }
+                                        Cell { text: plugin.source; width: 100px; }
+                                        Cell { text: plugin.state; width: 90px; color: plugin.enabled ? Theme.text : Theme.warning; }
+                                        Cell { text: plugin.update; width: 200px; color: plugin.has-update ? Theme.accent : Theme.muted; }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ---------- discovery ----------
+                if root.tab == 1: HorizontalLayout {
+                    vertical-stretch: 1;
+                    spacing: 16px;
+                    VerticalLayout {
+                        width: 420px;
+                        spacing: 10px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            Text { text: root.t("market.source"); color: Theme.muted; vertical-alignment: center; }
+                            ComboBox {
+                                horizontal-stretch: 1;
+                                model: root.sources;
+                                current-index <=> root.source-index;
+                                selected => { root.set-source(self.current-index); }
+                            }
+                            AppButton { text: root.t("market.url"); clicked => { root.url-text = ""; root.dialog = "url"; } }
+                        }
+                        HorizontalLayout {
+                            spacing: 8px;
+                            LineEdit {
+                                horizontal-stretch: 1;
+                                placeholder-text: root.t("market.search_hint");
+                                text <=> root.query;
+                                accepted(text) => { root.search(text); }
+                            }
+                            AppButton { text: root.t("market.search"); primary: true; clicked => { root.search(root.query); } }
+                        }
+                        Muted { text: root.market-status; color: root.market-failed ? Theme.danger : Theme.muted; }
+                        cards-view := ListView {
+                            vertical-stretch: 1;
+                            changed content-y => {
+                                if (root.can-load-more && self.content-height + self.content-y - self.visible-height < 300px) {
+                                    root.load-more();
+                                }
+                            }
+                            for card[i] in root.cards: Rectangle {
+                                height: 76px;
+                                border-radius: 8px;
+                                background: i == root.selected-card ? Theme.selected : card-touch.has-hover ? Theme.hover : transparent;
+                                HorizontalLayout {
+                                    padding: 8px;
+                                    spacing: 12px;
+                                    Artwork {
+                                        width: 56px;
+                                        height: 56px;
+                                        source: card.artwork;
+                                        loaded: card.loaded;
+                                        initial: card.initial;
+                                    }
+                                    VerticalLayout {
+                                        alignment: center;
+                                        spacing: 2px;
+                                        Text { text: card.title; color: Theme.text; font-weight: 700; font-size: 14px; overflow: elide; }
+                                        Text { text: card.author + " · " + card.provider; color: Theme.muted; font-size: 11px; overflow: elide; }
+                                        Text { text: card.description; color: Theme.muted; font-size: 12px; overflow: elide; }
+                                    }
+                                }
+                                card-touch := TouchArea {
+                                    mouse-cursor: pointer;
+                                    clicked => {
+                                        root.selected-card = i;
+                                        root.selected-release = -1;
+                                        root.select-card(i);
+                                    }
+                                }
+                            }
+                        }
+                        if root.market-failed: AppButton { text: root.t("market.load_retry"); clicked => { root.retry-market(); } }
+                        if !root.market-failed && root.can-load-more: AppButton { text: root.t("market.load_more"); clicked => { root.load-more(); } }
+                    }
+
+                    // ---------- project detail ----------
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        background: Theme.surface;
+                        border-radius: 8px;
+                        border-width: 1px;
+                        border-color: Theme.border;
+                        if !root.detail.visible: VerticalLayout {
+                            alignment: center;
+                            spacing: 6px;
+                            Text { text: root.t("market.title"); color: Theme.title; font-size: 22px; font-weight: 700; horizontal-alignment: center; }
+                            Muted { text: root.t("market.hint"); horizontal-alignment: center; }
+                            Muted { text: root.t("market.select"); horizontal-alignment: center; }
+                        }
+                        if root.detail.visible: VerticalLayout {
+                            padding: 18px;
+                            spacing: 12px;
+                            HorizontalLayout {
+                                spacing: 14px;
+                                Artwork {
+                                    width: 84px;
+                                    height: 84px;
+                                    source: root.detail.artwork;
+                                    loaded: root.detail.loaded;
+                                    initial: root.detail.initial;
+                                }
+                                VerticalLayout {
+                                    alignment: center;
+                                    spacing: 6px;
+                                    Text { text: root.detail.title; color: Theme.title; font-size: 22px; font-weight: 700; overflow: elide; }
+                                    HorizontalLayout {
+                                        spacing: 8px;
+                                        alignment: start;
+                                        Badge { text: root.detail.provider; }
+                                        Text { text: root.detail.author; color: Theme.muted; vertical-alignment: center; }
+                                    }
+                                }
+                                Rectangle { horizontal-stretch: 1; }
+                                VerticalLayout {
+                                    alignment: center;
+                                    AppButton { text: root.t("button.open"); clicked => { root.open-page(); } }
+                                }
+                            }
+                            Text { text: root.t("market.description"); color: Theme.muted; font-size: 11px; font-weight: 700; }
+                            TextBlock { text: root.detail.description; max-height: 90px; }
+                            if root.detail.external: Text { text: root.t("market.external"); color: Theme.warning; wrap: word-wrap; }
+                            SectionTitle { text: root.t("market.versions"); }
+                            if root.releases-state == 1: Muted { text: root.t("market.loading"); }
+                            if root.releases-state == 3: VerticalLayout {
+                                spacing: 8px;
+                                Text { text: root.releases-error; color: Theme.danger; wrap: word-wrap; }
+                                HorizontalLayout { alignment: start; AppButton { text: root.t("market.retry"); clicked => { root.retry-releases(); } } }
+                            }
+                            if root.releases-state == 2 && root.releases.length == 0: Muted { text: root.t("market.no_release"); }
+                            ListView {
+                                vertical-stretch: 1;
+                                min-height: 120px;
+                                for release[i] in root.releases: Rectangle {
+                                    height: 52px;
+                                    border-radius: 6px;
+                                    background: i == root.selected-release ? Theme.selected : release-touch.has-hover ? Theme.hover : transparent;
+                                    VerticalLayout {
+                                        padding-left: 10px;
+                                        padding-right: 10px;
+                                        alignment: center;
+                                        spacing: 2px;
+                                        Text { text: release.label; color: Theme.text; font-weight: 700; overflow: elide; }
+                                        Text { text: release.detail; color: release.verified ? Theme.muted : Theme.warning; font-size: 11px; overflow: elide; }
+                                    }
+                                    release-touch := TouchArea { mouse-cursor: pointer; clicked => { root.selected-release = i; } }
+                                }
+                            }
+                            if root.selected-release >= 0 && root.selected-release < root.releases.length: VerticalLayout {
+                                spacing: 10px;
+                                Text {
+                                    text: root.releases[root.selected-release].installable
+                                        ? root.releases[root.selected-release].notice
+                                        : Tr.get(Tr.revision, "market.manual_download");
+                                    color: root.releases[root.selected-release].verified ? Theme.muted : Theme.warning;
+                                    wrap: word-wrap;
+                                    font-size: 12px;
+                                }
+                                HorizontalLayout {
+                                    spacing: 12px;
+                                    CheckBox { text: root.t("market.optional"); checked <=> root.include-optional; }
+                                    Rectangle { horizontal-stretch: 1; }
+                                    AppButton {
+                                        text: root.t("market.install");
+                                        primary: true;
+                                        enabled: !root.busy && root.releases[root.selected-release].installable;
+                                        clicked => { root.review(root.selected-release, root.include-optional); }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ---------- status bar ----------
+            Rectangle {
+                height: 30px;
+                background: Theme.bg;
+                Rectangle { y: 0; height: 1px; background: Theme.border; }
+                HorizontalLayout {
+                    padding-left: 16px;
+                    padding-right: 16px;
+                    Text { text: root.status; color: root.busy ? Theme.accent : Theme.muted; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                }
+            }
+        }
+    }
+
+    // ---------- modal dialogs ----------
+    if root.dialog == "confirm": Modal {
+        title: root.t("app.title");
+        TextBlock { text: root.confirm-text; }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; root.confirm-answer(false); } }
+            AppButton { text: root.t("button.confirm"); primary: true; clicked => { root.dialog = ""; root.confirm-answer(true); } }
+        }
+    }
+
+    if root.dialog == "url": Modal {
+        title: root.t("market.url_title");
+        Muted { text: root.t("market.url_hint"); }
+        LineEdit {
+            text <=> root.url-text;
+            placeholder-text: "https://modrinth.com/plugin/…";
+            accepted(text) => { root.dialog = ""; root.url-submit(text); }
+        }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; } }
+            AppButton { text: root.t("button.confirm"); primary: true; clicked => { root.dialog = ""; root.url-submit(root.url-text); } }
+        }
+    }
+
+    if root.dialog == "plan": Modal {
+        title: root.t("plan.title");
+        panel-width: 640px;
+        TextBlock { text: root.plan-summary; }
+        if root.plan-manual != "": TextBlock { text: root.plan-manual; color: Theme.warning; }
+        Text { text: root.t("plan.running_server"); color: Theme.warning; wrap: word-wrap; }
+        if root.plan-needs-confirm: Text { text: root.t("plan.compatibility"); color: Theme.warning; wrap: word-wrap; }
+        if root.plan-needs-confirm: CheckBox { text: root.t("plan.accept"); checked <=> root.plan-accepted; }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; root.plan-cancel(); } }
+            AppButton {
+                text: root.t("button.install");
+                primary: true;
+                enabled: !root.plan-needs-confirm || root.plan-accepted;
+                clicked => { root.dialog = ""; root.plan-install(); }
+            }
+        }
+    }
+
+    if root.dialog == "instance": Modal {
+        title: root.inst-editing ? root.t("instance.dialog_edit") : root.t("instance.dialog_new");
+        panel-width: 620px;
+        Text { text: root.t("instance.name"); color: Theme.muted; font-size: 12px; }
+        LineEdit { text <=> root.inst-name; placeholder-text: root.t("instance.name_hint"); }
+        Text { text: root.t("instance.directory"); color: Theme.muted; font-size: 12px; }
+        HorizontalLayout {
+            spacing: 8px;
+            LineEdit {
+                horizontal-stretch: 1;
+                text <=> root.inst-directory;
+                enabled: !root.inst-editing;
+                placeholder-text: root.t("instance.directory_hint");
+            }
+            if !root.inst-editing: AppButton { text: root.t("instance.browse"); clicked => { root.instance-browse(); } }
+        }
+        if root.inst-editing: Muted { text: root.t("instance.directory_fixed"); }
+        HorizontalLayout {
+            spacing: 12px;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 6px;
+                Text { text: root.t("instance.loader"); color: Theme.muted; font-size: 12px; }
+                ComboBox {
+                    model: root.inst-loaders;
+                    enabled: !root.inst-loading && root.inst-loaders.length > 0;
+                    current-index <=> root.inst-loader-index;
+                    selected(value) => { root.instance-loader-changed(value); }
+                }
+            }
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 6px;
+                Text { text: root.t("instance.mc"); color: Theme.muted; font-size: 12px; }
+                ComboBox {
+                    model: root.inst-versions;
+                    enabled: !root.inst-loading && root.inst-versions.length > 0;
+                    current-index <=> root.inst-version-index;
+                }
+            }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            Muted { text: root.inst-status; horizontal-stretch: 1; color: root.inst-failed ? Theme.danger : Theme.muted; }
+            AppButton { text: root.t("instance.catalog_refresh"); enabled: !root.inst-loading; clicked => { root.instance-refresh(); } }
+        }
+        Text { text: root.t("instance.extra"); color: Theme.muted; font-size: 12px; }
+        Muted { text: root.t("instance.extra_hint"); }
+        ScrollView {
+            height: 120px;
+            VerticalLayout {
+                spacing: 6px;
+                for extra[i] in root.inst-extras: CheckBox {
+                    text: extra.name;
+                    checked: extra.checked;
+                    toggled => { root.extra-toggled(i, self.checked); }
+                }
+            }
+        }
+        Muted { text: root.t("instance.compat_hint"); color: Theme.warning; }
+        CheckBox { text: root.t("instance.prerelease"); checked <=> root.inst-prerelease; }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; root.instance-cancel(); } }
+            AppButton {
+                text: root.inst-editing ? root.t("button.save") : root.t("button.create");
+                primary: true;
+                enabled: !root.busy && !root.inst-loading && root.inst-loader-index >= 0 && root.inst-version-index >= 0;
+                clicked => { root.instance-save(); }
+            }
+        }
+    }
+
+    if root.dialog == "settings": Modal {
+        title: root.t("settings.title");
+        panel-width: 600px;
+        SectionTitle { text: root.t("settings.appearance"); }
+        GridLayout {
+            spacing: 10px;
+            Row {
+                Text { text: root.t("settings.theme"); color: Theme.muted; vertical-alignment: center; }
+                ComboBox {
+                    model: [Tr.get(Tr.revision, "settings.theme.dark"), Tr.get(Tr.revision, "settings.theme.light")];
+                    current-index <=> root.set-theme-index;
+                }
+            }
+            Row {
+                Text { text: root.t("settings.accent"); color: Theme.muted; vertical-alignment: center; }
+                ComboBox {
+                    model: [Tr.get(Tr.revision, "settings.accent.teal"), Tr.get(Tr.revision, "settings.accent.blue"), Tr.get(Tr.revision, "settings.accent.violet")];
+                    current-index <=> root.set-accent-index;
+                }
+            }
+            Row {
+                Text { text: root.t("language.label"); color: Theme.muted; vertical-alignment: center; }
+                ComboBox {
+                    model: [Tr.get(Tr.revision, "language.zh-tw"), Tr.get(Tr.revision, "language.en")];
+                    current-index <=> root.set-language-index;
+                }
+            }
+        }
+        SectionTitle { text: root.t("settings.images"); }
+        CheckBox { text: root.t("settings.images_enabled"); checked <=> root.set-images; }
+        HorizontalLayout {
+            spacing: 10px;
+            Text { text: root.t("settings.cache_limit"); color: Theme.muted; vertical-alignment: center; }
+            SpinBox { minimum: 16; maximum: 512; value <=> root.set-cache-mb; }
+        }
+        Muted { text: root.t("settings.cache_hint"); }
+        Text { text: root.set-usage; color: Theme.text; wrap: word-wrap; }
+        HorizontalLayout {
+            spacing: 8px;
+            AppButton { text: root.t("settings.cache_clear"); danger: true; clicked => { root.settings-clear-cache(); } }
+            AppButton { text: root.t("settings.data_folder"); clicked => { root.settings-open-data(); } }
+            Rectangle { horizontal-stretch: 1; }
+            AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; } }
+            AppButton { text: root.t("button.save"); primary: true; clicked => { root.dialog = ""; root.settings-save(); } }
+        }
+    }
+
+    // Messages sit above every other dialog so an error never discards a form in progress.
+    if root.message-open: Modal {
+        title: root.message-title;
+        TextBlock { text: root.message-text; color: root.message-error ? Theme.danger : Theme.text; }
+        HorizontalLayout {
+            alignment: end;
+            AppButton { text: root.t("button.close"); primary: true; clicked => { root.message-open = false; } }
+        }
+    }
+}

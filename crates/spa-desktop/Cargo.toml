@@ -1,0 +1,24 @@
+[package]
+name = "spa-desktop"
+description = "Slint desktop frontend; only binds spa-app view models and actions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "SmartPluginAssistant"
+path = "src/main.rs"
+
+[dependencies]
+spa-app.workspace = true
+log.workspace = true
+slint = { version = "1", features = ["renderer-software", "software-renderer-systemfonts"] }
+rfd = "0.15"
+open = "5"
+simplelog = "0.12"
+dirs = "6"
+serde_json.workspace = true
+image.workspace = true
+
+[build-dependencies]
+slint-build = "1"

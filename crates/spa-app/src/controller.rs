@@ -327,7 +327,7 @@ impl Inner {
             key: format!("{}:{}", project.provider_id, project.id),
             title: project.title.clone(),
             author: project.author.clone(),
-            description: project.description.clone(),
+            description: project.description.split_whitespace().collect::<Vec<_>>().join(" "),
             provider: self.provider_name(&project.provider_id),
             initial: initial(&project.title),
             icon_url: project.icon.clone(),
@@ -459,7 +459,7 @@ impl Inner {
             title: card.title,
             author: card.author,
             provider: card.provider,
-            description: card.description,
+            description: project.description.clone(),
             page: project.page.clone(),
             initial: card.initial,
             icon_url: card.icon_url,
@@ -569,7 +569,7 @@ impl Inner {
                 let saved = dialog.saved.clone();
                 let loaders = choices::loaders(&result.catalog, saved.as_ref());
                 let versions = choices::versions(&result.catalog, saved.as_ref());
-                let loader = saved.as_ref().map(|s| s.loader.clone()).unwrap_or_else(|| loaders[0].clone());
+                let loader = saved.as_ref().map(|s| s.loader.clone()).unwrap_or_else(|| choices::preferred_loader(&loaders));
                 let version = saved.as_ref().map(|s| s.minecraft_version.clone()).unwrap_or_else(|| versions[0].clone());
                 let checked = match &saved {
                     Some(saved) => saved.extra_loaders.clone(),

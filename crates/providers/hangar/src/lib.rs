@@ -67,15 +67,21 @@ fn timestamp(value: &str) -> ApiResult<i64> {
         .map_err(|_| ApiError::Invalid("Invalid Hangar date".into()))
 }
 
-/// Unstable channels are alpha/beta by name; other channels are Hangar's stable releases.
+/// Hangar channels are publisher-named. The UNSTABLE flag or a pre-release name (snapshot,
+/// dev, beta, rc…) marks a test channel; other channels are the publisher's stable releases.
 fn channel(node: &Value) -> Channel {
     let Some(channel) = node.get("channel") else { return Channel::Unknown };
     let unstable = strings(channel.get("flags")).iter().any(|f| f == "UNSTABLE");
     let name = text(channel, "name").to_lowercase();
-    match (unstable, name.contains("alpha")) {
-        (true, true) => Channel::Alpha,
-        (true, false) => Channel::Beta,
-        (false, _) => Channel::Release,
+    let prerelease = ["snapshot", "dev", "beta", "pre", "rc", "nightly", "test", "experimental"]
+        .iter()
+        .any(|marker| name.contains(marker));
+    if name.contains("alpha") {
+        Channel::Alpha
+    } else if unstable || prerelease {
+        Channel::Beta
+    } else {
+        Channel::Release
     }
 }
 
@@ -334,6 +340,16 @@ mod tests {
         let purpur_paper = p.releases("463", &target("purpur", &["paper"])).unwrap();
         assert_eq!(purpur_paper[0].confidence, Confidence::Verified);
         assert!(p.releases("463", &target("spigot", &[])).unwrap().is_empty());
+    }
+
+    #[test]
+    fn channel_names_and_flags() {
+        let parse = |json: &str| channel(&serde_json::from_str(json).unwrap());
+        assert_eq!(parse(r#"{"channel":{"name":"Release","flags":["PINNED"]}}"#), Channel::Release);
+        assert_eq!(parse(r#"{"channel":{"name":"Snapshot","flags":[]}}"#), Channel::Beta);
+        assert_eq!(parse(r#"{"channel":{"name":"Stable","flags":["UNSTABLE"]}}"#), Channel::Beta);
+        assert_eq!(parse(r#"{"channel":{"name":"Alpha","flags":["UNSTABLE"]}}"#), Channel::Alpha);
+        assert_eq!(parse(r#"{}"#), Channel::Unknown);
     }
 
     #[test]

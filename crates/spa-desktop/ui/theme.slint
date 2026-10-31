@@ -1,0 +1,35 @@
+// Shared colors. Rust sets `dark` and the accent palette from the saved preferences.
+
+export global Theme {
+    in-out property <bool> dark: true;
+    in-out property <color> accent: #42c6ab;
+    in-out property <color> accent-hover: #64ddc1;
+    in-out property <color> on-accent: #092a24;
+    in-out property <color> selected: dark ? #21443f : #d5f1ea;
+    in-out property <color> badge-bg: dark ? #203c38 : #d5f1ea;
+    in-out property <color> badge-text: dark ? #67dec3 : #0f6b58;
+
+    out property <color> bg: dark ? #111722 : #f3f5f8;
+    out property <color> surface: dark ? #171f2b : #ffffff;
+    out property <color> sidebar: dark ? #151c27 : #e8edf3;
+    out property <color> field: dark ? #1a2432 : #ffffff;
+    out property <color> border: dark ? #304056 : #cfd7e1;
+    out property <color> text: dark ? #dce5f0 : #1d2733;
+    out property <color> title: dark ? #f2f6fb : #0f1722;
+    out property <color> muted: dark ? #8e9caf : #5d6b7c;
+    out property <color> hover: dark ? #2d3d50 : #d3dce7;
+    out property <color> header: dark ? #1e2938 : #dbe3ec;
+    out property <color> row-odd: dark ? #192230 : #f7f9fb;
+    out property <color> danger: dark ? #f3a4a6 : #b3261e;
+    out property <color> danger-bg: dark ? #362730 : #fbe3e2;
+    out property <color> warning: dark ? #edc17b : #8a5a00;
+    out property <color> icon-bg: dark ? #263a46 : #dde6ee;
+    out property <color> scrim: dark ? #000000a0 : #0000005a;
+}
+
+// Translations come from the shared catalogs. `revision` changes when the language does,
+// which re-evaluates every binding that passes it.
+export global Tr {
+    in-out property <int> revision;
+    pure callback get(int, string) -> string;
+}

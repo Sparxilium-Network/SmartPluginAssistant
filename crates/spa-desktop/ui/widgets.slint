@@ -1,0 +1,123 @@
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+
+export component AppButton inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary: false;
+    in property <bool> danger: false;
+    in property <bool> enabled: true;
+    callback clicked();
+    min-height: 34px;
+    border-radius: 6px;
+    opacity: root.enabled ? 1 : 0.45;
+    background: root.primary
+        ? (touch.has-hover && root.enabled ? Theme.accent-hover : Theme.accent)
+        : root.danger ? Theme.danger-bg : (touch.has-hover && root.enabled ? Theme.hover : Theme.header);
+    HorizontalLayout {
+        padding-left: 13px;
+        padding-right: 13px;
+        Text {
+            text: root.text;
+            color: root.primary ? Theme.on-accent : root.danger ? Theme.danger : Theme.text;
+            font-weight: root.primary ? 700 : 400;
+            font-size: 13px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    touch := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component Badge inherits Rectangle {
+    in property <string> text;
+    background: Theme.badge-bg;
+    border-radius: 5px;
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-top: 3px;
+        padding-bottom: 3px;
+        Text { text: root.text; color: Theme.badge-text; font-size: 11px; vertical-alignment: center; }
+    }
+}
+
+// Project artwork with an initial-letter placeholder when no image is available.
+export component Artwork inherits Rectangle {
+    in property <image> source;
+    in property <bool> loaded: false;
+    in property <string> initial;
+    background: Theme.icon-bg;
+    border-radius: 8px;
+    clip: true;
+    if !root.loaded: Text {
+        text: root.initial;
+        color: Theme.text;
+        font-size: root.height * 0.42;
+        font-weight: 700;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    if root.loaded: Image {
+        source: root.source;
+        width: root.width;
+        height: root.height;
+        image-fit: contain;
+    }
+}
+
+export component Muted inherits Text {
+    color: Theme.muted;
+    font-size: 12px;
+    wrap: word-wrap;
+}
+
+export component SectionTitle inherits Text {
+    color: Theme.title;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+// Modal overlay: dims the window and centers a panel. Clicks outside are swallowed.
+export component Modal inherits Rectangle {
+    in property <string> title;
+    in property <length> panel-width: 560px;
+    background: Theme.scrim;
+    TouchArea { }
+    panel := Rectangle {
+        width: min(root.panel-width, root.width - 40px);
+        height: min(layout.preferred-height, root.height - 40px);
+        background: Theme.surface;
+        border-radius: 10px;
+        border-width: 1px;
+        border-color: Theme.border;
+        drop-shadow-blur: 24px;
+        drop-shadow-color: #00000060;
+        layout := VerticalLayout {
+            padding: 20px;
+            spacing: 14px;
+            Text { text: root.title; color: Theme.title; font-size: 18px; font-weight: 700; }
+            @children
+        }
+    }
+}
+
+// Scrollable multi-line text block for long messages.
+export component TextBlock inherits ScrollView {
+    in property <string> text;
+    in property <color> color: Theme.text;
+    min-height: min(content.preferred-height, 80px);
+    preferred-height: min(content.preferred-height, 320px);
+    content := VerticalLayout {
+        width: root.visible-width;
+        Text {
+            text: root.text;
+            color: root.color;
+            wrap: word-wrap;
+            font-size: 13px;
+        }
+    }
+}
