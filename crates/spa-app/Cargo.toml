@@ -1,0 +1,22 @@
+[package]
+name = "spa-app"
+description = "UI-framework-neutral application layer: context, presenters, i18n and settings"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+spa-api.workspace = true
+spa-core.workspace = true
+spa-modrinth.workspace = true
+spa-hangar.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+url.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+image.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
