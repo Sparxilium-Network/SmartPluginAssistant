@@ -3,9 +3,9 @@
 
 import { LineEdit, ComboBox, CheckBox, ListView, ScrollView, SpinBox, Palette } from "std-widgets.slint";
 import { Theme, Tr } from "theme.slint";
-import { AppButton, Badge, Artwork, Muted, SectionTitle, Modal, TextBlock } from "widgets.slint";
+import { AppButton, Badge, Artwork, Muted, SectionTitle, Modal, TextBlock, Tip, TipBox, MenuItem } from "widgets.slint";
 
-export { Theme, Tr }
+export { Theme, Tr, Tip }
 
 export struct InstanceRow { name: string, detail: string }
 
@@ -172,6 +172,11 @@ export component MainWindow inherits Window {
     in property <string> set-usage;
     in property <string> set-storage;
 
+    // Export drop-down, anchored under the export button (window coordinates).
+    in-out property <bool> export-menu;
+    property <length> export-x;
+    property <length> export-y;
+
     // ---------- actions ----------
     callback select-instance(int);
     callback new-instance();
@@ -286,8 +291,8 @@ export component MainWindow inherits Window {
                 }
                 HorizontalLayout {
                     spacing: 8px;
-                    AppButton { text: root.t("settings.menu"); clicked => { root.open-settings(); } }
-                    AppButton { text: root.t("providers.title"); clicked => { root.open-providers(); } }
+                    AppButton { text: root.t("settings.menu"); tip: root.t("tip.settings"); clicked => { root.open-settings(); } }
+                    AppButton { text: root.t("providers.title"); tip: root.t("tip.providers"); clicked => { root.open-providers(); } }
                 }
                 Rectangle { height: 1px; background: Theme.border; }
                 Text { text: root.t("instances.title"); color: Theme.muted; font-size: 10px; font-weight: 700; }
@@ -354,9 +359,9 @@ export component MainWindow inherits Window {
                         Text { text: root.library-title; color: Theme.title; font-size: 26px; font-weight: 700; overflow: elide; }
                         Text { text: root.library-environment; color: Theme.muted; font-size: 12px; overflow: elide; }
                     }
-                    AppButton { text: root.t("instances.settings"); enabled: !root.busy; clicked => { root.edit-instance(); } }
-                    AppButton { text: root.t("instances.open"); clicked => { root.open-folder(); } }
-                    AppButton { text: root.t("instances.remove"); danger: true; enabled: !root.busy; clicked => { root.unregister(); } }
+                    AppButton { text: root.t("instances.settings"); tip: root.t("tip.instance_settings"); enabled: !root.busy; clicked => { root.edit-instance(); } }
+                    AppButton { text: root.t("instances.open"); tip: root.t("tip.open_folder"); clicked => { root.open-folder(); } }
+                    AppButton { text: root.t("instances.remove"); tip: root.t("tip.unregister"); danger: true; enabled: !root.busy; clicked => { root.unregister(); } }
                 }
                 HorizontalLayout {
                     spacing: 20px;
@@ -379,20 +384,30 @@ export component MainWindow inherits Window {
                             text <=> root.library-filter;
                             edited(text) => { root.lib-filter(text); }
                         }
-                        AppButton { text: root.t("library.refresh"); enabled: !root.busy; clicked => { root.lib-refresh(); } }
-                        AppButton { text: root.t("library.import"); enabled: !root.busy; clicked => { root.lib-import(); } }
-                        AppButton { text: root.t("library.link"); enabled: !root.busy; clicked => { root.lib-link(); } }
-                        AppButton { text: root.t("library.check"); enabled: !root.busy; clicked => { root.lib-check-updates(); } }
+                        AppButton { text: root.t("library.refresh"); tip: root.t("tip.refresh"); enabled: !root.busy; clicked => { root.lib-refresh(); } }
+                        AppButton { text: root.t("library.import"); tip: root.t("tip.import"); enabled: !root.busy; clicked => { root.lib-import(); } }
+                        AppButton { text: root.t("library.link"); tip: root.t("tip.link"); enabled: !root.busy; clicked => { root.lib-link(); } }
+                        AppButton { text: root.t("library.check"); tip: root.t("tip.check"); enabled: !root.busy; clicked => { root.lib-check-updates(); } }
                     }
                     HorizontalLayout {
                         spacing: 8px;
-                        AppButton { text: root.t("library.update"); enabled: !root.busy; clicked => { root.lib-update(false); } }
-                        AppButton { text: root.t("library.update_all"); primary: true; enabled: !root.busy; clicked => { root.lib-update(true); } }
-                        AppButton { text: root.t("library.toggle"); enabled: !root.busy; clicked => { root.lib-toggle(); } }
-                        AppButton { text: root.t("library.remove"); danger: true; enabled: !root.busy; clicked => { root.lib-remove(); } }
+                        AppButton { text: root.t("library.update"); tip: root.t("tip.update"); enabled: !root.busy; clicked => { root.lib-update(false); } }
+                        AppButton { text: root.t("library.update_all"); tip: root.t("tip.update_all"); primary: true; enabled: !root.busy; clicked => { root.lib-update(true); } }
+                        AppButton { text: root.t("library.toggle"); tip: root.t("tip.toggle"); enabled: !root.busy; clicked => { root.lib-toggle(); } }
+                        AppButton { text: root.t("library.remove"); tip: root.t("tip.remove"); danger: true; enabled: !root.busy; clicked => { root.lib-remove(); } }
                         Rectangle { horizontal-stretch: 1; }
-                        AppButton { text: root.t("library.export_zip"); enabled: !root.busy; clicked => { root.lib-export(false); } }
-                        AppButton { text: root.t("library.export_script"); enabled: !root.busy; clicked => { root.lib-export(true); } }
+                        AppButton {
+                            text: root.t("library.export");
+                            dropdown: true;
+                            horizontal-stretch: 0;
+                            tip: root.t("tip.export");
+                            enabled: !root.busy;
+                            clicked => {
+                                root.export-x = self.absolute-position.x + self.width;
+                                root.export-y = self.absolute-position.y + self.height + 4px;
+                                root.export-menu = true;
+                            }
+                        }
                     }
                     HorizontalLayout {
                         spacing: 16px;
@@ -403,7 +418,7 @@ export component MainWindow inherits Window {
                             vertical-alignment: center;
                         }
                         Rectangle { horizontal-stretch: 1; }
-                        AppButton { text: root.t("columns.button"); clicked => { root.dialog = "columns"; } }
+                        AppButton { text: root.t("columns.button"); tip: root.t("tip.columns"); clicked => { root.dialog = "columns"; } }
                     }
                     Rectangle {
                         vertical-stretch: 1;
@@ -534,7 +549,7 @@ export component MainWindow inherits Window {
                                 current-index <=> root.source-index;
                                 selected => { root.set-source(self.current-index); }
                             }
-                            AppButton { text: root.t("market.url"); clicked => { root.url-text = ""; root.dialog = "url"; } }
+                            AppButton { text: root.t("market.url"); tip: root.t("tip.market_url"); clicked => { root.url-text = ""; root.dialog = "url"; } }
                         }
                         HorizontalLayout {
                             spacing: 8px;
@@ -698,6 +713,39 @@ export component MainWindow inherits Window {
                     padding-left: 16px;
                     padding-right: 16px;
                     Text { text: root.status; color: root.busy ? Theme.accent : Theme.muted; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                }
+            }
+        }
+    }
+
+    // ---------- export menu ----------
+    if root.export-menu: Rectangle {
+        // Clicking anywhere outside the menu closes it.
+        TouchArea { clicked => { root.export-menu = false; } }
+        Rectangle {
+            width: 320px;
+            height: menu-layout.preferred-height;
+            x: max(8px, root.export-x - self.width);
+            y: root.export-y;
+            background: Theme.surface;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 16px;
+            drop-shadow-color: #00000050;
+            TouchArea { }
+            menu-layout := VerticalLayout {
+                padding: 6px;
+                spacing: 2px;
+                MenuItem {
+                    text: root.t("library.export_zip");
+                    detail: root.t("library.export_zip_hint");
+                    clicked => { root.export-menu = false; root.lib-export(false); }
+                }
+                MenuItem {
+                    text: root.t("library.export_script");
+                    detail: root.t("library.export_script_hint");
+                    clicked => { root.export-menu = false; root.lib-export(true); }
                 }
             }
         }
@@ -883,8 +931,8 @@ export component MainWindow inherits Window {
         Muted { text: root.set-storage; }
         HorizontalLayout {
             spacing: 8px;
-            AppButton { text: root.t("settings.cache_clear"); danger: true; clicked => { root.settings-clear-cache(); } }
-            AppButton { text: root.t("settings.data_folder"); clicked => { root.settings-open-data(); } }
+            AppButton { text: root.t("settings.cache_clear"); tip: root.t("tip.cache_clear"); danger: true; clicked => { root.settings-clear-cache(); } }
+            AppButton { text: root.t("settings.data_folder"); tip: root.t("tip.data_folder"); clicked => { root.settings-open-data(); } }
             Rectangle { horizontal-stretch: 1; }
             AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; } }
             AppButton { text: root.t("button.save"); primary: true; clicked => { root.dialog = ""; root.settings-save(); } }
@@ -899,5 +947,15 @@ export component MainWindow inherits Window {
             alignment: end;
             AppButton { text: root.t("button.close"); primary: true; clicked => { root.message-open = false; } }
         }
+    }
+
+    // ---------- hover hint ----------
+    if Tip.text != "": TipBox {
+        text: Tip.text;
+        x: max(8px, min(Tip.x, root.width - self.width - 8px));
+        // Below the control, or above it when there is no room underneath.
+        y: Tip.y + Tip.anchor-height + 6px + self.height > root.height - 8px
+            ? Tip.y - self.height - 6px
+            : Tip.y + Tip.anchor-height + 6px;
     }
 }

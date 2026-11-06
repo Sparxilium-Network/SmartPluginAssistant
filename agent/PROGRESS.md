@@ -27,6 +27,9 @@
    version 2 migration); every column can be shown/hidden and resized by dragging, with the layout
    persisted in settings and horizontal scrolling for wide layouts.
 
+10. 2026-11-06: the two export buttons became one "Export" button with a drop-down menu (each entry
+    explains its output), and toolbar/dialog buttons gained delayed hover hints.
+
 ## Next candidates
 
 - Run the CI matrix on Linux/macOS and record results.

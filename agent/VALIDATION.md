@@ -83,6 +83,13 @@ column and an 800 px column with a horizontal scrollbar were inspected. `spa.db`
 non-zero `updated_at`/`checked_at` and the saved `libraryColumns` layout. Real mouse dragging in the
 native window was not automated (the probe calls the same callbacks).
 
+## Export menu and hover hints (2026-11-06)
+
+fmt, clippy and the 57 tests passed (catalog parity covers the new `tip.*` keys). The snapshot probe now
+dispatches real pointer events: resting on "Refresh" for 1.2 s showed its hint under the button;
+clicking "Export" opened the menu and a click outside closed it. Screenshots inspected in zh-TW dark
+and en light.
+
 ## Scope limits
 
 - Only Windows was tested locally. Linux/macOS CI jobs are configured but have not run yet.

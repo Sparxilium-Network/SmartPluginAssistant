@@ -106,5 +106,10 @@ drops unknown ids, appends missing ones, clamps widths to 48-800 px and keeps on
   right edge updates only the Slint model (`column-drag`); release commits through
   `Controller::set_column_width`, which validates, persists and re-emits `UiEvent::Columns`. The
   chooser ("Columns" button or header right-click) calls `set_column_visible` / `reset_columns`.
+- Hover hints: `AppButton.tip` starts a 600 ms `Timer` while hovered (also on disabled buttons) and writes
+  the `Tip` global (text + anchor in window coordinates); MainWindow draws one `TipBox` last, so hints are
+  never clipped, and flips it above the control near the bottom edge. Texts are `tip.*` catalog keys.
+- Menus are root-level overlays like dialogs (the export menu is `export-menu`), anchored from the
+  button's `absolute-position`; a full-window TouchArea closes them on an outside click.
 - `--snapshot=<dir>` installs an offscreen `MinimalSoftwareWindow` platform with its own event queue
   and drives the real UI against live APIs; `--smoke` writes `smoke-result.json`.

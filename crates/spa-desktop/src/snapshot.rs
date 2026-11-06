@@ -3,7 +3,7 @@
 
 use crate::{CardRow, MainWindow};
 use slint::platform::software_renderer::{MinimalSoftwareWindow, RepaintBufferType};
-use slint::platform::{EventLoopProxy, Platform, WindowAdapter};
+use slint::platform::{EventLoopProxy, Platform, PointerEventButton, WindowAdapter, WindowEvent};
 use slint::{ComponentHandle, EventLoopError, Model, PlatformError, Rgb8Pixel};
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
@@ -182,6 +182,30 @@ pub fn run(probe: &Probe, ui: &MainWindow) {
         probe.wait(ui, long, |ui| !ui.get_busy());
         println!("update check: {}", ui.get_status());
         probe.capture("06b-library-installed");
+        // Real pointer input: resting on "Refresh" shows its hint, clicking "Export" opens the menu.
+        let window = ui.window();
+        let at = |x: f32, y: f32| slint::LogicalPosition::new(x, y);
+        window.dispatch_event(WindowEvent::PointerMoved { position: at(1010.0, 154.0) });
+        probe.settle(ui, Duration::from_millis(1200));
+        probe.capture("06f-hover-hint");
+        window.dispatch_event(WindowEvent::PointerMoved { position: at(700.0, 600.0) });
+        let export = at(1310.0, 198.0);
+        window.dispatch_event(WindowEvent::PointerMoved { position: export });
+        window.dispatch_event(WindowEvent::PointerPressed { position: export, button: PointerEventButton::Left });
+        window.dispatch_event(WindowEvent::PointerReleased { position: export, button: PointerEventButton::Left });
+        probe.settle(ui, Duration::from_millis(300));
+        println!("export menu open: {}", ui.get_export_menu());
+        probe.capture("06g-export-menu");
+        window.dispatch_event(WindowEvent::PointerPressed {
+            position: at(700.0, 600.0),
+            button: PointerEventButton::Left,
+        });
+        window.dispatch_event(WindowEvent::PointerReleased {
+            position: at(700.0, 600.0),
+            button: PointerEventButton::Left,
+        });
+        probe.settle(ui, Duration::from_millis(300));
+        println!("export menu closed by outside click: {}", !ui.get_export_menu());
         // Column chooser, then a hidden column and a drag-resized one.
         ui.set_dialog("columns".into());
         probe.settle(ui, Duration::from_millis(300));
