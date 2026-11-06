@@ -4,6 +4,7 @@
 
 use crate::artwork::{self, MemoryCache};
 use crate::choices;
+use crate::columns::{self, ColumnSetting};
 use crate::context::AppContext;
 use crate::feed::ProjectFeed;
 use crate::i18n::{self, tr, trf};
@@ -108,6 +109,15 @@ fn date(millis: i64) -> String {
         .unwrap_or_default()
 }
 
+fn date_time(millis: i64) -> String {
+    if millis <= 0 {
+        return tr("update.none");
+    }
+    chrono::DateTime::from_timestamp_millis(millis)
+        .map(|d| d.with_timezone(&chrono::Local).format("%Y-%m-%d %H:%M").to_string())
+        .unwrap_or_else(|| tr("update.none"))
+}
+
 fn mib(bytes: u64) -> String {
     format!("{:.1}", bytes as f64 / 1024.0 / 1024.0)
 }
@@ -195,6 +205,8 @@ impl Inner {
                     update: update
                         .map(|u| trf("update.available", &[&u.release.version]))
                         .unwrap_or_else(|| tr("update.none")),
+                    updated_at: date_time(p.updated_at),
+                    checked_at: date_time(p.checked_at),
                     enabled: p.enabled,
                     linked: p.linked(),
                     has_update: update.is_some(),
@@ -217,6 +229,40 @@ impl Inner {
         };
         drop(state);
         self.emit(UiEvent::Library(Some(vm)));
+    }
+
+    fn emit_columns(&self) {
+        let columns = self.settings.lock().unwrap_or_else(|e| e.into_inner()).library_columns.clone();
+        self.emit(UiEvent::Columns(
+            columns
+                .into_iter()
+                .map(|c| ColumnVm {
+                    title: tr(&format!("column.{}", c.id)),
+                    id: c.id,
+                    visible: c.visible,
+                    width: c.width,
+                })
+                .collect(),
+        ));
+    }
+
+    /// Applies a layout change, persists it and re-emits the normalized result. A rejected
+    /// change (such as hiding the last column) re-emits the current layout so the view reverts.
+    fn change_columns(&self, change: impl FnOnce(&mut Vec<ColumnSetting>)) {
+        {
+            let mut settings = self.settings.lock().unwrap_or_else(|e| e.into_inner());
+            let mut next = settings.library_columns.clone();
+            change(&mut next);
+            let next = columns::normalize(next);
+            if next != settings.library_columns {
+                let candidate = AppSettings { library_columns: next, ..settings.clone() };
+                match candidate.save(&self.ctx.db) {
+                    Ok(()) => *settings = candidate,
+                    Err(e) => log::error!("Cannot save column layout: {e}"),
+                }
+            }
+        }
+        self.emit_columns();
     }
 
     fn set_plugins(&self, plugins: Vec<InstalledPlugin>, clear_updates: bool) {
@@ -738,6 +784,7 @@ impl Controller {
         inner.emit(UiEvent::Language(i18n::language().to_string()));
         inner.emit_appearance();
         inner.emit_sources();
+        inner.emit_columns();
         inner.emit(UiEvent::Status(tr("app.ready")));
         inner.reload_instances(None);
     }
@@ -1017,6 +1064,9 @@ impl Controller {
                         return;
                     }
                     state.updates = report.updates.iter().map(|u| (u.installed.file_name.clone(), u.clone())).collect();
+                    let names: HashSet<_> = report.plugins.iter().map(|p| p.file_name.clone()).collect();
+                    state.checked.retain(|n| names.contains(n));
+                    state.plugins = report.plugins.clone();
                 }
                 inner.emit_library();
                 inner.emit(UiEvent::Status(trf(
@@ -1084,6 +1134,33 @@ impl Controller {
             },
             |inner, destination| inner.message(trf("library.export_done", &[&destination.display()])),
         );
+    }
+
+    // ---------- table columns ----------
+
+    /// Hiding the last visible column is refused.
+    pub fn set_column_visible(&self, id: &str, visible: bool) {
+        self.inner.change_columns(|columns| {
+            let others_visible = columns.iter().any(|c| c.id != id && c.visible);
+            if let Some(column) = columns.iter_mut().find(|c| c.id == id) {
+                if visible || others_visible {
+                    column.visible = visible;
+                }
+            }
+        });
+    }
+
+    /// Persists a width once a drag finishes.
+    pub fn set_column_width(&self, id: &str, width: f32) {
+        self.inner.change_columns(|columns| {
+            if let Some(column) = columns.iter_mut().find(|c| c.id == id) {
+                column.width = columns::clamp_width(id, width);
+            }
+        });
+    }
+
+    pub fn reset_columns(&self) {
+        self.inner.change_columns(|columns| *columns = columns::defaults());
     }
 
     // ---------- discovery ----------
@@ -1266,6 +1343,7 @@ impl Controller {
             self.inner.emit(UiEvent::Language(next.language.clone()));
             self.inner.emit(UiEvent::Status(tr("app.ready")));
             self.inner.emit_instances();
+            self.inner.emit_columns();
             self.inner.emit_library();
             self.inner.market_status();
             self.rerender_market();

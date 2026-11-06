@@ -58,6 +58,8 @@ pub struct UpdateReport {
     pub updates: Vec<Update>,
     pub failures: Vec<Failure>,
     pub checked: usize,
+    /// The scanned inventory, with `checked_at` set for every successfully checked plugin.
+    pub plugins: Vec<InstalledPlugin>,
 }
 
 #[derive(Debug, Clone)]
@@ -241,7 +243,10 @@ impl PluginManager {
     /// Updates follow release IDs and publication time, never stripped version strings.
     pub fn check_updates(&self, instance: &ServerInstance) -> Result<UpdateReport> {
         let mut report = UpdateReport::default();
+        let mut succeeded = Vec::new();
+        let now = crate::now_millis();
         for plugin in self.inventory.scan(instance)? {
+            report.plugins.push(plugin.clone());
             let (Some(provider_id), Some(project_id), Some(release_id)) =
                 (&plugin.provider_id, &plugin.project_id, &plugin.release_id)
             else {
@@ -252,6 +257,10 @@ impl PluginManager {
                 self.providers.require(provider_id).and_then(|p| Ok(p.releases(project_id, &instance.target)?));
             match latest {
                 Ok(releases) => {
+                    succeeded.push(plugin.sha512.clone());
+                    if let Some(entry) = report.plugins.last_mut() {
+                        entry.checked_at = now;
+                    }
                     if let Some(latest) = releases.into_iter().next() {
                         if &latest.id != release_id
                             && (plugin.published_at == 0 || latest.published_at > plugin.published_at)
@@ -266,6 +275,7 @@ impl PluginManager {
                 }
             }
         }
+        self.inventory.mark_checked(instance, &succeeded, now)?;
         Ok(report)
     }
 

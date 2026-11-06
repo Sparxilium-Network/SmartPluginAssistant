@@ -23,6 +23,10 @@
    (`meta.schema_version` / `PRAGMA user_version`), versioned migrations with pre-migration backups,
    refusal of newer formats, integrity check, one-time Sol JSON import; settings dialog shows the version.
 
+9. 2026-11-06: installed-plugin table gains "last updated" and "last checked" columns (data format
+   version 2 migration); every column can be shown/hidden and resized by dragging, with the layout
+   persisted in settings and horizontal scrolling for wide layouts.
+
 ## Next candidates
 
 - Run the CI matrix on Linux/macOS and record results.

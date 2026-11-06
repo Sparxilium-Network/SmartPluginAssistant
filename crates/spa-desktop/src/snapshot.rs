@@ -182,6 +182,22 @@ pub fn run(probe: &Probe, ui: &MainWindow) {
         probe.wait(ui, long, |ui| !ui.get_busy());
         println!("update check: {}", ui.get_status());
         probe.capture("06b-library-installed");
+        // Column chooser, then a hidden column and a drag-resized one.
+        ui.set_dialog("columns".into());
+        probe.settle(ui, Duration::from_millis(300));
+        probe.capture("06c-columns");
+        ui.set_dialog("".into());
+        ui.invoke_column_visible("source".into(), false);
+        ui.invoke_column_drag(0, 320.0);
+        ui.invoke_column_resized(0);
+        probe.settle(ui, Duration::from_millis(500));
+        probe.capture("06d-library-columns");
+        // Wider than the view: the table scrolls horizontally instead of clipping.
+        ui.invoke_column_drag(0, 800.0);
+        probe.settle(ui, Duration::from_millis(300));
+        probe.capture("06e-library-wide");
+        ui.invoke_columns_reset();
+        probe.settle(ui, Duration::from_millis(300));
         ui.set_tab(1);
         ui.invoke_market_activated(true);
     }

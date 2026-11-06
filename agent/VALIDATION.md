@@ -72,6 +72,17 @@ ViaBackwards + ViaVersion, update check). The resulting data directory contained
 (plus WAL files), with `schema_version` 1, `PRAGMA user_version` 1, the instance, both plugin records,
 settings rows and the environment cache; the settings dialog showed the data format version.
 
+## Library columns (2026-11-06)
+
+`cargo fmt --check`, `cargo clippy --workspace --all-targets -D warnings` and **57 tests** passed (new:
+v1 -> v2 migration keeps plugin rows with unknown times, install/check/failed-check timestamps,
+column normalization, controller hide/resize/reset with the last visible column protected).
+The live `--snapshot` probe passed: after installing ViaBackwards + ViaVersion and checking updates both
+time columns showed the install and check time; the chooser dialog, a hidden column, a drag-resized
+column and an 800 px column with a horizontal scrollbar were inspected. `spa.db` had `user_version` 2,
+non-zero `updated_at`/`checked_at` and the saved `libraryColumns` layout. Real mouse dragging in the
+native window was not automated (the probe calls the same callbacks).
+
 ## Scope limits
 
 - Only Windows was tested locally. Linux/macOS CI jobs are configured but have not run yet.

@@ -12,6 +12,7 @@ use slint::{
     VecModel,
 };
 use spa_app::artwork::Rgba;
+use spa_app::columns::clamp_width;
 use spa_app::context::{builtin_providers, default_data_dir};
 use spa_app::i18n::{tr, trf};
 use spa_app::settings::{ACCENTS, LANGUAGES};
@@ -168,6 +169,8 @@ fn apply(ui: &MainWindow, event: UiEvent) {
                     source: p.source.into(),
                     state: p.state.into(),
                     update: p.update.into(),
+                    updated_at: p.updated_at.into(),
+                    checked_at: p.checked_at.into(),
                     enabled: p.enabled,
                     linked: p.linked,
                     has_update: p.has_update,
@@ -175,6 +178,14 @@ fn apply(ui: &MainWindow, event: UiEvent) {
                 })
                 .collect();
             set_rows(ui.get_plugins(), rows);
+        }
+        UiEvent::Columns(columns) => {
+            let rows = columns
+                .into_iter()
+                .map(|c| ColumnRow { id: c.id.into(), title: c.title.into(), visible: c.visible, width: c.width })
+                .collect();
+            set_rows(ui.get_columns(), rows);
+            update_table_width(ui);
         }
         UiEvent::MarketSources { names, selected } => {
             set_rows(ui.get_sources(), strings(names));
@@ -311,6 +322,12 @@ fn apply(ui: &MainWindow, event: UiEvent) {
     }
 }
 
+/// Row padding (24), checkbox (28) and its gap (10) plus every visible column.
+fn update_table_width(ui: &MainWindow) {
+    let columns: f32 = ui.get_columns().iter().filter(|c| c.visible).map(|c| c.width).sum();
+    ui.set_table_width(62.0 + columns);
+}
+
 fn set_extras(ui: &MainWindow, extras: Vec<spa_app::Choice>) {
     let rows = extras.into_iter().map(|c| ChoiceRow { name: c.name.into(), checked: c.checked }).collect();
     set_rows(ui.get_inst_extras(), rows);
@@ -393,6 +410,22 @@ fn wire(ui: &MainWindow, controller: &Controller) {
             c.export(file, script);
         }
     });
+    // Dragging only changes the view; the controller validates and persists on release.
+    on!(c, ui, on_column_drag, |index, width| {
+        let model = ui.get_columns();
+        if let Some(mut row) = model.row_data(index as usize) {
+            row.width = clamp_width(&row.id, width);
+            model.set_row_data(index as usize, row);
+            update_table_width(&ui);
+        }
+    });
+    on!(c, ui, on_column_resized, |index| {
+        if let Some(row) = ui.get_columns().row_data(index as usize) {
+            c.set_column_width(&row.id, row.width);
+        }
+    });
+    on!(c, ui, on_column_visible, |id, visible| c.set_column_visible(&id, visible));
+    on!(c, ui, on_columns_reset, || c.reset_columns());
 
     on!(c, ui, on_market_activated, |active| c.market_activated(active));
     on!(c, ui, on_set_source, |index| c.set_source(index));
@@ -469,6 +502,7 @@ fn wire(ui: &MainWindow, controller: &Controller) {
 fn init_models(ui: &MainWindow) {
     ui.set_instances(ModelRc::from(Rc::new(VecModel::<InstanceRow>::default())));
     ui.set_plugins(ModelRc::from(Rc::new(VecModel::<PluginRow>::default())));
+    ui.set_columns(ModelRc::from(Rc::new(VecModel::<ColumnRow>::default())));
     ui.set_sources(ModelRc::from(Rc::new(VecModel::<SharedString>::default())));
     ui.set_cards(ModelRc::from(Rc::new(VecModel::<CardRow>::default())));
     ui.set_releases(ModelRc::from(Rc::new(VecModel::<ReleaseRow>::default())));

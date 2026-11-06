@@ -173,6 +173,7 @@ fn scan_binds_identity_to_hash() {
     let changed = f.scan();
     assert!(!changed[0].linked(), "changed content must not trust old metadata");
     assert_eq!(changed[0].version, "changed");
+    assert!(changed[0].updated_at > 0, "unknown files fall back to their modification time");
 }
 
 // ---------- downloads ----------
@@ -386,8 +387,12 @@ fn updates_follow_release_identity_and_report_failures() {
     f.files.install(&f.instance, &old, None).unwrap();
     let other = f.publish("beta", "b1", 10);
     f.files.install(&f.instance, &other, None).unwrap();
+    assert!(f.scan().iter().all(|p| p.updated_at > 0 && p.checked_at == 0), "installs record their time");
     let report = f.manager.check_updates(&f.instance).unwrap();
     assert_eq!((report.checked, report.updates.len()), (2, 0));
+    assert!(report.plugins.iter().all(|p| p.checked_at > 0));
+    let stored = f.scan();
+    assert!(stored.iter().all(|p| p.checked_at > 0), "check time is persisted");
     f.publish("alpha", "a2", 20);
     let mut downgrade = release("beta", "b0", 5, Some("https://x.invalid/b0.jar".into()), b"b0");
     downgrade.file_name = "b0.jar".into();
@@ -395,10 +400,13 @@ fn updates_follow_release_identity_and_report_failures() {
     let report = f.manager.check_updates(&f.instance).unwrap();
     assert_eq!(report.updates.len(), 1);
     assert_eq!(report.updates[0].release.id, "a2");
+    let beta_checked = report.plugins.iter().find(|p| p.project_id.as_deref() == Some("beta")).unwrap().checked_at;
     f.provider.failing.lock().unwrap().push("beta".into());
     let report = f.manager.check_updates(&f.instance).unwrap();
     assert_eq!(report.failures.len(), 1);
     assert_eq!(report.failures[0].detail, "Outage");
+    let beta = report.plugins.iter().find(|p| p.project_id.as_deref() == Some("beta")).unwrap();
+    assert_eq!(beta.checked_at, beta_checked, "a failed check keeps the last successful time");
 }
 
 #[test]

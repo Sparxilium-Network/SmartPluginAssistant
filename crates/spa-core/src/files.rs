@@ -3,7 +3,7 @@
 use crate::download::{DownloadService, MAX_BYTES};
 use crate::instance::ServerInstance;
 use crate::inventory::{is_enabled_name, InstalledPlugin, InventoryStore};
-use crate::{fail, jar, paths, Result};
+use crate::{fail, jar, now_millis, paths, Result};
 use spa_api::Release;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -80,6 +80,8 @@ impl PluginFiles {
             release_id: Some(release.id.clone()),
             published_at: release.published_at,
             enabled: replacing.is_none_or(|r| r.enabled),
+            updated_at: now_millis(),
+            checked_at: replacing.map_or(0, |r| r.checked_at),
         };
         self.publish(instance, staged, &target, replacing, &before, installed.clone())?;
         log::info!(
@@ -122,6 +124,8 @@ impl PluginFiles {
             release_id: None,
             published_at: 0,
             enabled: is_enabled_name(&file_name),
+            updated_at: now_millis(),
+            checked_at: 0,
         };
         self.publish(instance, staged, &target, None, &before, installed.clone())?;
         log::info!("Imported {file_name} into instance {}", instance.id);

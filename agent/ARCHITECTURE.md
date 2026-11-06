@@ -38,6 +38,9 @@ spa-api  <-  spa-core  <-  spa-app  <-  spa-desktop (Slint)
   `foreign_keys=ON`, STRICT tables) behind a mutex; every change runs in an immediate transaction.
   Tables: `meta`, `instances`, `plugins` (FK cascade on unregister; server files untouched),
   `settings` (key -> JSON value), `environment_cache` (single row).
+- Data format history: v1 initial schema; v2 adds `plugins.updated_at` (file content last changed;
+  install/update/import write the current time, unknown files fall back to their modification time)
+  and `plugins.checked_at` (last successful update check, keyed by SHA-512; failures keep the old value).
 - Data format version: `meta.schema_version`, mirrored to `PRAGMA user_version`, plus `created_by`,
   `last_opened_by`, `created_at`, `migrated_at`. On open: `quick_check`; refuse newer versions without
   writing; `VACUUM INTO spa.db.v<old>-<millis>.bak` before migrating an older file; apply numbered
@@ -91,11 +94,17 @@ seven-day freshness window, reuses stale bytes when refresh fails, evicts least 
 over the limit, and fences in-flight writes with a generation counter on clear/disable.
 `spa-app::artwork` decodes the first frame with dimension/allocation limits into 128 px RGBA and keeps
 a 128-entry memory cache. `AppSettings` keeps Sol's fields (one `settings` row each) and missing fields take defaults.
+`libraryColumns` stores the installed-plugin table layout (id, visible, width); `spa-app::columns::normalize`
+drops unknown ids, appends missing ones, clamps widths to 48-800 px and keeps one column visible.
 
 ## UI notes
 
 - Translations: Slint `Tr.get(Tr.revision, key)` pure callback; bumping `revision` re-evaluates labels.
 - Dialogs are in-window modals selected by `dialog`; messages are a separate top layer so errors never
   discard a form in progress.
+- Library table: columns have fixed widths inside a horizontally scrolling `ScrollView`. Dragging a header's
+  right edge updates only the Slint model (`column-drag`); release commits through
+  `Controller::set_column_width`, which validates, persists and re-emits `UiEvent::Columns`. The
+  chooser ("Columns" button or header right-click) calls `set_column_visible` / `reset_columns`.
 - `--snapshot=<dir>` installs an offscreen `MinimalSoftwareWindow` platform with its own event queue
   and drives the real UI against live APIs; `--smoke` writes `smoke-result.json`.

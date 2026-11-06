@@ -20,10 +20,23 @@ pub struct PluginVm {
     pub source: String,
     pub state: String,
     pub update: String,
+    /// When the file content last changed.
+    pub updated_at: String,
+    /// When an update check last succeeded.
+    pub checked_at: String,
     pub enabled: bool,
     pub linked: bool,
     pub has_update: bool,
     pub checked: bool,
+}
+
+/// One installed-plugin table column. Widths are logical pixels.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ColumnVm {
+    pub id: String,
+    pub title: String,
+    pub visible: bool,
+    pub width: f32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -164,6 +177,8 @@ pub enum UiEvent {
         selected: i32,
     },
     Library(Option<LibraryVm>),
+    /// Installed-plugin table layout, in display order.
+    Columns(Vec<ColumnVm>),
     MarketSources {
         names: Vec<String>,
         selected: i32,

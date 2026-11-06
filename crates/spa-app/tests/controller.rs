@@ -247,3 +247,35 @@ fn unregister_requires_confirmation_and_keeps_files() {
     events.wait(|e| matches!(e, UiEvent::Instances { items, .. } if items.is_empty()).then_some(()));
     assert!(server.join("plugins").is_dir());
 }
+
+#[test]
+fn columns_can_be_hidden_resized_and_reset_but_never_all_hidden() {
+    let (_dir, controller, events, _provider) = setup();
+    let initial = events.wait(|e| match e {
+        UiEvent::Columns(c) => Some(c.clone()),
+        _ => None,
+    });
+    let ids: Vec<_> = initial.iter().map(|c| c.id.clone()).collect();
+    assert_eq!(ids, ["file", "version", "source", "state", "update", "updated", "checked"]);
+    assert_eq!((initial[5].title.as_str(), initial[6].title.as_str()), ("Last updated", "Last checked"));
+
+    for id in &ids {
+        controller.set_column_visible(id, false);
+    }
+    let columns = events.wait(|e| match e {
+        UiEvent::Columns(c) if c.iter().filter(|c| c.visible).count() == 1 => Some(c.clone()),
+        _ => None,
+    });
+    assert!(columns.last().unwrap().visible, "the last visible column cannot be hidden");
+
+    controller.set_column_width("checked", 5000.0);
+    events.wait(|e| matches!(e, UiEvent::Columns(c) if c[6].width == 800.0).then_some(()));
+    assert_eq!(controller.settings().library_columns[6].width, 800.0);
+
+    controller.reset_columns();
+    let reset = events.wait(|e| match e {
+        UiEvent::Columns(c) if c.iter().all(|c| c.visible) => Some(c.clone()),
+        _ => None,
+    });
+    assert_eq!(reset[6].width, 130.0);
+}

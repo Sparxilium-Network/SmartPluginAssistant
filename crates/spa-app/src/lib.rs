@@ -3,6 +3,7 @@
 
 pub mod artwork;
 pub mod choices;
+pub mod columns;
 pub mod context;
 pub mod controller;
 pub mod feed;

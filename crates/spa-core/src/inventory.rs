@@ -23,6 +23,12 @@ pub struct InstalledPlugin {
     #[serde(default)]
     pub published_at: i64,
     pub enabled: bool,
+    /// When the file content last changed (Unix ms, 0 = unknown).
+    #[serde(default)]
+    pub updated_at: i64,
+    /// When an update check last succeeded for this file (Unix ms, 0 = never).
+    #[serde(default)]
+    pub checked_at: i64,
 }
 
 impl InstalledPlugin {
@@ -45,6 +51,8 @@ impl InstalledPlugin {
             release_id: None,
             published_at: 0,
             enabled,
+            updated_at: 0,
+            checked_at: 0,
         }
     }
 }
@@ -53,7 +61,7 @@ impl InstalledPlugin {
 pub(crate) fn insert(connection: &Connection, instance: Uuid, plugin: &InstalledPlugin) -> Result<()> {
     connection.execute(
         "INSERT INTO plugins (instance_id, file_name, sha512, size, version, provider_id, project_id, release_id,
-         published_at, enabled) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+         published_at, enabled, updated_at, checked_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
         params![
             instance.to_string(),
             paths::file_name(&plugin.file_name)?,
@@ -65,6 +73,8 @@ pub(crate) fn insert(connection: &Connection, instance: Uuid, plugin: &Installed
             plugin.release_id,
             plugin.published_at,
             plugin.enabled,
+            plugin.updated_at,
+            plugin.checked_at,
         ],
     )?;
     Ok(())
@@ -77,6 +87,13 @@ pub struct InventoryStore {
 
 /// Prefix of host-owned staging files, which are never inventory entries.
 pub const TEMP_PREFIX: &str = ".spa-";
+
+fn modified_millis(meta: &fs::Metadata) -> i64 {
+    meta.modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map_or(0, |d| i64::try_from(d.as_millis()).unwrap_or(0))
+}
 
 pub fn is_enabled_name(name: &str) -> bool {
     !name.to_lowercase().ends_with(".disabled")
@@ -99,8 +116,8 @@ impl InventoryStore {
     fn read(&self, instance: &ServerInstance) -> Result<Vec<InstalledPlugin>> {
         self.db.read(|c| {
             let mut statement = c.prepare(
-                "SELECT file_name, sha512, size, version, provider_id, project_id, release_id, published_at, enabled
-                 FROM plugins WHERE instance_id = ?1 ORDER BY file_name",
+                "SELECT file_name, sha512, size, version, provider_id, project_id, release_id, published_at, enabled,
+                 updated_at, checked_at FROM plugins WHERE instance_id = ?1 ORDER BY file_name",
             )?;
             let rows = statement.query_map([instance.id.to_string()], |r| {
                 Ok(InstalledPlugin {
@@ -113,6 +130,8 @@ impl InventoryStore {
                     release_id: r.get(6)?,
                     published_at: r.get(7)?,
                     enabled: r.get(8)?,
+                    updated_at: r.get(9)?,
+                    checked_at: r.get(10)?,
                 })
             })?;
             Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
@@ -126,6 +145,20 @@ impl InventoryStore {
             t.execute("DELETE FROM plugins WHERE instance_id = ?1", [instance.id.to_string()])?;
             for plugin in plugins {
                 insert(t, instance.id, plugin)?;
+            }
+            Ok(())
+        })
+    }
+
+    /// Records a successful update check for the given file hashes.
+    pub fn mark_checked(&self, instance: &ServerInstance, hashes: &[String], at: i64) -> Result<()> {
+        let _guard = self.guard();
+        self.db.write(|t| {
+            for hash in hashes {
+                t.execute(
+                    "UPDATE plugins SET checked_at = ?1 WHERE instance_id = ?2 AND sha512 = ?3",
+                    params![at, instance.id.to_string(), hash],
+                )?;
             }
             Ok(())
         })
@@ -159,7 +192,7 @@ impl InventoryStore {
                 old = (matches.len() == 1).then(|| matches[0]);
             }
             let enabled = is_enabled_name(&name);
-            result.push(match old {
+            let mut plugin = match old {
                 Some(old) => {
                     InstalledPlugin { file_name: name, sha512: hash, size: meta.len(), enabled, ..old.clone() }
                 }
@@ -167,7 +200,12 @@ impl InventoryStore {
                     let version = jar::version(&path).unwrap_or_default();
                     InstalledPlugin::unlinked(name, hash, meta.len(), version, enabled)
                 }
-            });
+            };
+            if plugin.updated_at == 0 {
+                // Files not written by this application fall back to their modification time.
+                plugin.updated_at = modified_millis(&meta);
+            }
+            result.push(plugin);
         }
         Ok(result)
     }

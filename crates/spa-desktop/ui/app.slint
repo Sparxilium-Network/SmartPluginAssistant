@@ -15,11 +15,15 @@ export struct PluginRow {
     source: string,
     state: string,
     update: string,
+    updated-at: string,
+    checked-at: string,
     enabled: bool,
     linked: bool,
     has-update: bool,
     checked: bool,
 }
+
+export struct ColumnRow { id: string, title: string, visible: bool, width: length }
 
 export struct CardRow {
     key: string,
@@ -112,6 +116,9 @@ export component MainWindow inherits Window {
     in property <string> selected-text;
     in property <[PluginRow]> plugins;
     in-out property <string> library-filter;
+    in property <[ColumnRow]> columns;
+    // Checkbox, padding and the visible column widths; computed by the host.
+    in property <length> table-width;
 
     in property <[string]> sources;
     in-out property <int> source-index: 0;
@@ -131,7 +138,7 @@ export component MainWindow inherits Window {
     in-out property <bool> include-optional;
 
     // ---------- dialogs ----------
-    // "", "instance", "confirm", "plan", "url", "settings"
+    // "", "instance", "confirm", "plan", "url", "settings", "columns"
     in-out property <string> dialog;
     in property <string> confirm-text;
     in-out property <bool> message-open;
@@ -186,6 +193,11 @@ export component MainWindow inherits Window {
     callback lib-toggle();
     callback lib-remove();
     callback lib-export(bool);
+    // Live width while dragging, then a commit when the pointer is released.
+    callback column-drag(int, length);
+    callback column-resized(int);
+    callback column-visible(string, bool);
+    callback columns-reset();
 
     callback market-activated(bool);
     callback set-source(int);
@@ -217,6 +229,24 @@ export component MainWindow inherits Window {
 
     pure function t(key: string) -> string {
         return Tr.get(Tr.revision, key);
+    }
+
+    pure function cell-text(p: PluginRow, id: string) -> string {
+        return id == "file" ? p.file
+            : id == "version" ? p.version
+            : id == "source" ? p.source
+            : id == "state" ? p.state
+            : id == "update" ? p.update
+            : id == "updated" ? p.updated-at
+            : p.checked-at;
+    }
+
+    pure function cell-color(p: PluginRow, id: string) -> brush {
+        return id == "file" ? (p.enabled ? Theme.text : Theme.muted)
+            : id == "state" ? (p.enabled ? Theme.text : Theme.warning)
+            : id == "update" ? (p.has-update ? Theme.accent : Theme.muted)
+            : id == "updated" || id == "checked" ? Theme.muted
+            : Theme.text;
     }
 
     function show-tab(index: int) {
@@ -366,13 +396,14 @@ export component MainWindow inherits Window {
                     }
                     HorizontalLayout {
                         spacing: 16px;
-                        alignment: start;
                         Text { text: root.library-summary; color: Theme.muted; vertical-alignment: center; }
                         Text {
                             text: root.selected-text;
                             color: Theme.muted;
                             vertical-alignment: center;
                         }
+                        Rectangle { horizontal-stretch: 1; }
+                        AppButton { text: root.t("columns.button"); clicked => { root.dialog = "columns"; } }
                     }
                     Rectangle {
                         vertical-stretch: 1;
@@ -381,55 +412,105 @@ export component MainWindow inherits Window {
                         border-width: 1px;
                         border-color: Theme.border;
                         clip: true;
-                        VerticalLayout {
-                            Rectangle {
-                                height: 40px;
-                                background: Theme.header;
-                                HorizontalLayout {
-                                    padding-left: 12px;
-                                    padding-right: 12px;
-                                    spacing: 10px;
-                                    CheckBox {
-                                        width: 28px;
-                                        checked: root.selected-count > 0 && root.selected-count == root.plugins.length;
-                                        toggled => { root.lib-check-all(self.checked); }
-                                    }
-                                    ColumnHeader { text: root.t("column.file"); horizontal-stretch: 1; }
-                                    ColumnHeader { text: root.t("column.version"); width: 140px; }
-                                    ColumnHeader { text: root.t("column.source"); width: 100px; }
-                                    ColumnHeader { text: root.t("column.state"); width: 90px; }
-                                    ColumnHeader { text: root.t("column.update"); width: 200px; }
-                                }
-                            }
-                            if root.library-empty: VerticalLayout {
-                                vertical-stretch: 1;
-                                alignment: center;
-                                spacing: 6px;
-                                Text { text: root.t("library.empty"); color: Theme.text; font-size: 16px; font-weight: 700; horizontal-alignment: center; }
-                                Muted { text: root.t("library.empty_hint"); horizontal-alignment: center; }
-                            }
-                            if !root.library-empty: ListView {
-                                vertical-stretch: 1;
-                                for plugin[i] in root.plugins: Rectangle {
-                                    height: 46px;
-                                    background: plugin.checked ? Theme.selected : Math.mod(i, 2) == 1 ? Theme.row-odd : Theme.surface;
+                        // Columns have fixed widths; the table scrolls horizontally when they exceed the view.
+                        table-scroll := ScrollView {
+                            content-width: max(root.table-width, self.visible-width);
+                            content-height: self.visible-height;
+                            VerticalLayout {
+                                width: table-scroll.content-width;
+                                height: table-scroll.visible-height;
+                                Rectangle {
+                                    height: 40px;
+                                    background: Theme.header;
+                                    // Right-click anywhere on the header opens the column chooser.
                                     TouchArea {
-                                        clicked => { root.lib-check(plugin.file, !plugin.checked); }
+                                        pointer-event(event) => {
+                                            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
+                                                root.dialog = "columns";
+                                            }
+                                        }
                                     }
                                     HorizontalLayout {
                                         padding-left: 12px;
                                         padding-right: 12px;
-                                        spacing: 10px;
                                         CheckBox {
                                             width: 28px;
-                                            checked: plugin.checked;
-                                            toggled => { root.lib-check(plugin.file, self.checked); }
+                                            checked: root.selected-count > 0 && root.selected-count == root.plugins.length;
+                                            toggled => { root.lib-check-all(self.checked); }
                                         }
-                                        Cell { text: plugin.file; horizontal-stretch: 1; color: plugin.enabled ? Theme.text : Theme.muted; }
-                                        Cell { text: plugin.version; width: 140px; }
-                                        Cell { text: plugin.source; width: 100px; }
-                                        Cell { text: plugin.state; width: 90px; color: plugin.enabled ? Theme.text : Theme.warning; }
-                                        Cell { text: plugin.update; width: 200px; color: plugin.has-update ? Theme.accent : Theme.muted; }
+                                        Rectangle { width: 10px; }
+                                        for column[i] in root.columns: Rectangle {
+                                            width: column.visible ? column.width : 0px;
+                                            visible: column.visible;
+                                            ColumnHeader {
+                                                x: 8px;
+                                                width: max(0px, parent.width - 16px);
+                                                height: parent.height;
+                                                text: column.title;
+                                            }
+                                            Rectangle {
+                                                x: parent.width - 1px;
+                                                y: parent.height / 4;
+                                                width: 1px;
+                                                height: parent.height / 2;
+                                                background: resize.has-hover || resize.pressed ? Theme.accent : Theme.border;
+                                            }
+                                            resize := TouchArea {
+                                                x: parent.width - 6px;
+                                                width: 10px;
+                                                mouse-cursor: col-resize;
+                                                moved => {
+                                                    if (self.pressed) {
+                                                        root.column-drag(i, column.width + self.mouse-x - self.pressed-x);
+                                                    }
+                                                }
+                                                pointer-event(event) => {
+                                                    if (event.kind == PointerEventKind.up && event.button == PointerEventButton.left) {
+                                                        root.column-resized(i);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Rectangle { horizontal-stretch: 1; }
+                                    }
+                                }
+                                if root.library-empty: VerticalLayout {
+                                    vertical-stretch: 1;
+                                    alignment: center;
+                                    spacing: 6px;
+                                    Text { text: root.t("library.empty"); color: Theme.text; font-size: 16px; font-weight: 700; horizontal-alignment: center; }
+                                    Muted { text: root.t("library.empty_hint"); horizontal-alignment: center; }
+                                }
+                                if !root.library-empty: ListView {
+                                    vertical-stretch: 1;
+                                    for plugin[i] in root.plugins: Rectangle {
+                                        height: 46px;
+                                        background: plugin.checked ? Theme.selected : Math.mod(i, 2) == 1 ? Theme.row-odd : Theme.surface;
+                                        TouchArea {
+                                            clicked => { root.lib-check(plugin.file, !plugin.checked); }
+                                        }
+                                        HorizontalLayout {
+                                            padding-left: 12px;
+                                            padding-right: 12px;
+                                            CheckBox {
+                                                width: 28px;
+                                                checked: plugin.checked;
+                                                toggled => { root.lib-check(plugin.file, self.checked); }
+                                            }
+                                            Rectangle { width: 10px; }
+                                            for column in root.columns: Rectangle {
+                                                width: column.visible ? column.width : 0px;
+                                                visible: column.visible;
+                                                Cell {
+                                                    x: 8px;
+                                                    width: max(0px, parent.width - 16px);
+                                                    height: parent.height;
+                                                    text: root.cell-text(plugin, column.id);
+                                                    color: root.cell-color(plugin, column.id);
+                                                }
+                                            }
+                                            Rectangle { horizontal-stretch: 1; }
+                                        }
                                     }
                                 }
                             }
@@ -647,6 +728,23 @@ export component MainWindow inherits Window {
             spacing: 8px;
             AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; } }
             AppButton { text: root.t("button.confirm"); primary: true; clicked => { root.dialog = ""; root.url-submit(root.url-text); } }
+        }
+    }
+
+    if root.dialog == "columns": Modal {
+        title: root.t("columns.title");
+        panel-width: 420px;
+        Muted { text: root.t("columns.hint"); }
+        for column in root.columns: CheckBox {
+            text: column.title;
+            checked: column.visible;
+            toggled => { root.column-visible(column.id, self.checked); }
+        }
+        HorizontalLayout {
+            alignment: end;
+            spacing: 8px;
+            AppButton { text: root.t("columns.reset"); clicked => { root.columns-reset(); } }
+            AppButton { text: root.t("button.close"); primary: true; clicked => { root.dialog = ""; } }
         }
     }
 

@@ -1,6 +1,7 @@
 //! Persisted preferences, one database row per field (JSON-encoded value). Missing fields take
 //! defaults so older data keeps working; values are validated before use.
 
+use crate::columns::{self, ColumnSetting};
 use serde::{Deserialize, Serialize};
 use spa_core::db::Database;
 use spa_core::{fail, Result};
@@ -19,6 +20,8 @@ pub struct AppSettings {
     pub accent: String,
     pub images_enabled: bool,
     pub image_cache_mb: u32,
+    /// Installed-plugin table layout.
+    pub library_columns: Vec<ColumnSetting>,
 }
 
 impl Default for AppSettings {
@@ -31,6 +34,7 @@ impl Default for AppSettings {
             accent: "teal".into(),
             images_enabled: true,
             image_cache_mb: 128,
+            library_columns: columns::defaults(),
         }
     }
 }
@@ -52,6 +56,7 @@ impl AppSettings {
         }
         self.width = self.width.clamp(1060.0, 3000.0);
         self.height = self.height.clamp(720.0, 2000.0);
+        self.library_columns = columns::normalize(self.library_columns);
         Ok(self)
     }
 

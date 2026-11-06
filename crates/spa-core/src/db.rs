@@ -72,7 +72,17 @@ CREATE TABLE environment_cache (
 ) STRICT;
 "#;
 
-pub const MIGRATIONS: &[Migration] = &[Migration { version: 1, description: "Initial schema", sql: SCHEMA_V1 }];
+/// Per-plugin timestamps (Unix milliseconds, 0 = unknown): when the file content last changed and
+/// when an update check last succeeded for it.
+const SCHEMA_V2: &str = r#"
+ALTER TABLE plugins ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE plugins ADD COLUMN checked_at INTEGER NOT NULL DEFAULT 0;
+"#;
+
+pub const MIGRATIONS: &[Migration] = &[
+    Migration { version: 1, description: "Initial schema", sql: SCHEMA_V1 },
+    Migration { version: 2, description: "Plugin update and check times", sql: SCHEMA_V2 },
+];
 
 /// The data format version this build reads and writes.
 pub fn current_version() -> i64 {
@@ -376,6 +386,30 @@ mod tests {
         assert!(Database::open_with(dir.path(), &[MIGRATIONS[0].clone_static(), V2, BAD]).is_err());
         let reopened = Database::open_with(dir.path(), &[MIGRATIONS[0].clone_static(), V2]).unwrap();
         assert_eq!(reopened.info().schema_version, 2);
+    }
+
+    #[test]
+    fn version_one_plugins_gain_unknown_timestamps() {
+        let dir = tempfile::tempdir().unwrap();
+        Database::open_with(dir.path(), &MIGRATIONS[..1])
+            .unwrap()
+            .write(|t| {
+                t.execute_batch(
+                    "INSERT INTO instances (id, name, directory, loader, minecraft_version, created_at)
+                     VALUES ('i', 'n', 'd', 'paper', '1.21', 0);
+                     INSERT INTO plugins (instance_id, file_name, sha512, size, enabled) VALUES ('i', 'a.jar', 'h', 1, 1);",
+                )?;
+                Ok(())
+            })
+            .unwrap();
+        let upgraded = Database::open(dir.path()).unwrap();
+        assert_eq!(upgraded.info().migrated_from, Some(1));
+        let times: (i64, i64) = upgraded
+            .read(
+                |c| Ok(c.query_row("SELECT updated_at, checked_at FROM plugins", [], |r| Ok((r.get(0)?, r.get(1)?)))?),
+            )
+            .unwrap();
+        assert_eq!(times, (0, 0));
     }
 
     impl Migration {
