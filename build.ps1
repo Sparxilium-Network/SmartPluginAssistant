@@ -12,6 +12,7 @@ if (Test-Path $target) { $target = Join-Path "dist" (Get-Date -Format "yyyyMMdd-
 New-Item -ItemType Directory -Force $target | Out-Null
 Copy-Item "target/release/SmartPluginAssistant.exe" $target
 Copy-Item "LICENSE", "README.md" $target
+Copy-Item "docs" $target -Recurse
 $smoke = Join-Path $env:TEMP ("spa-smoke-" + [guid]::NewGuid())
 & (Join-Path $target "SmartPluginAssistant.exe") "--data-dir=$smoke" --smoke | Out-Host
 if ($LASTEXITCODE) { throw "Packaged smoke check failed" }
