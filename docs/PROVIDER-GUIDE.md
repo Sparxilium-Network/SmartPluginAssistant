@@ -1,5 +1,7 @@
 # Provider 開發指引
 
+> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+
 Provider 是一般的 crate，只依賴 `spa-api`（以及自己的解析套件），在編譯時連結進程式；不支援執行期載入外掛。
 
 ## 新增 Provider

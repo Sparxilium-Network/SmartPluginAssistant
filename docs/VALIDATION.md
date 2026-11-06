@@ -1,6 +1,8 @@
 # 驗證紀錄
 
-環境：Windows 11、Rust 1.99.1、Slint 1.18.1。每次驗證都執行 `cargo fmt --all -- --check`、`cargo clippy --workspace --all-targets -- -D warnings` 與 `cargo test --workspace`。重新執行方式見 [開發說明](DEV.md#測試)。
+> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+
+環境：Windows 11、Rust 1.99.1、Slint 1.18.1。每次驗證都執行 `cargo fmt --all -- --check`、`cargo clippy --workspace --all-targets -- -D warnings` 與 `cargo test --workspace`。重新執行方式見 [開發說明](PROJECT-DEV.md#測試)。
 
 ## 測試涵蓋範圍
 

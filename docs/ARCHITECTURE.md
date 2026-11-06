@@ -1,5 +1,7 @@
 # 架構
 
+> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+
 Smart Plugin Assistant Sol（Java／JavaFX）的 Rust 重寫版，並加回原版程式的 Hangar 支援。管理虛擬的 Minecraft 伺服器實例，從 Modrinth 與 Hangar 搜尋、安裝插件，匯入既有 JAR，並安全地更新與匯出。不會啟動或停止伺服器。
 
 ```mermaid
@@ -38,7 +40,7 @@ spa-api  <-  spa-core  <-  spa-app  <-  spa-desktop (Slint)
 
 - 實例以 UUID 識別並集中建立索引；解除管理不刪除任何檔案。
 - 程序鎖 `application.lock`（`File::try_lock`）防止多個程式同時寫入。
-- `spa_core::db::Database` 以 mutex 包住一個 SQLite 連線，每次變更都在 immediate transaction 內完成。資料表、存檔格式版本與遷移流程見 [開發說明](DEV.md#資料儲存)。
+- `spa_core::db::Database` 以 mutex 包住一個 SQLite 連線，每次變更都在 immediate transaction 內完成。資料表、存檔格式版本與遷移流程見 [開發說明](PROJECT-DEV.md#資料儲存)。
 - 下載：
   - 暫存檔放在 plugins 目錄內（`.spa-download-*.tmp`），與目標在同一磁碟區。
   - 自行處理轉址，最多 5 次，不可由 HTTPS 降級。
@@ -92,7 +94,7 @@ API 為 `https://hangar.papermc.io/api/v1/`，2026-10-31 以線上 API 核對：
   - 超過容量上限時刪除最久未使用的檔案。
   - 清理或停用時以世代計數器隔離進行中的寫入。
 - `spa-app::artwork` 解碼第一個影格，限制尺寸與記憶體配置，縮成 128 px RGBA，記憶體快取 128 張。
-- 設定的欄位與驗證見 [開發說明](DEV.md#設定)。
+- 設定的欄位與驗證見 [開發說明](PROJECT-DEV.md#設定)。
 
 ## 介面實作
 

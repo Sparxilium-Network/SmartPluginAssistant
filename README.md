@@ -1,10 +1,12 @@
 # Smart Plugin Assistant（Rust 版）
 
+> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+
 Minecraft 伺服器插件管理桌面程式，以 Rust 與 [Slint](https://slint.dev/) 撰寫。功能與安全設計沿用 Smart Plugin Assistant Sol，內建市場為 **Modrinth** 與 **PaperMC Hangar**。
 
 本程式只管理插件檔案，不會啟動、停止或連線到 Minecraft 伺服器。安裝、更新、停用或移除插件前，請先停止伺服器。
 
-開發、建置與內部設計見 [開發說明](docs/DEV.md)。
+從原始碼建置與參與開發，請見 [開發說明](docs/PROJECT-DEV.md)。
 
 ## 取得與執行
 
@@ -86,13 +88,9 @@ bash ./run.sh
 .\SmartPluginAssistant.exe --data-dir=C:\temp\spa-data
 ```
 
-## 文件
+## 開發
 
-- [開發說明](docs/DEV.md)：專案結構、開發規範、建置、資料庫格式與測試。
-- [架構](docs/architecture.md)：分層設計、資料安全、平台轉接與介面實作。
-- [Provider 開發指引](docs/provider-guide.md)：新增插件來源平台的契約與測試方式。
-- [驗證紀錄](docs/validation.md)：各階段的自動化測試與畫面驗證結果。
-- [開發進度](docs/progress.md)：已完成項目與後續候選。
+開發者文件的入口是 [docs/PROJECT-DEV.md](docs/PROJECT-DEV.md)。
 
 ## 授權
 

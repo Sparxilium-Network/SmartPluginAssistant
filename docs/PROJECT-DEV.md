@@ -1,6 +1,17 @@
 # Smart Plugin Assistant（Rust 版）開發說明
 
-一般使用方式見 [README](../README.md)。本文件給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。設計細節見 [架構](architecture.md)。
+> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+
+一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
+
+## 開發文件
+
+- [架構](ARCHITECTURE.md)：已確認的決策、分層、資料安全、Modrinth／Hangar 轉接、探索清單、圖片快取與介面實作。
+- [Provider 開發指引](PROVIDER-GUIDE.md)：新增插件來源平台的步驟、契約與測試方式。
+- [驗證紀錄](VALIDATION.md)：測試涵蓋範圍、各階段驗證結果與尚未驗證的項目。
+- [開發進度](PROGRESS.md)：已完成項目與後續候選。
+
+新增或拆分 `docs/` 下的文件時，記得更新這份清單。每份文件標題下方標註最後修改日期與當時的 `HEAD` 短雜湊，修改內容時一併更新。
 
 AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不納入版本控制；本專案不使用 `AGENTS.md`。
 
@@ -22,7 +33,7 @@ AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不
 - 依賴方向：`spa-api` ← providers；`spa-api` ← `spa-core` ← `spa-app` ← `spa-desktop`。
 - Provider 只依賴 `spa-api`。`spa-core` 不得引用 provider 或任何 UI 套件。
 - 所有行為都在 `spa-app`，且不得引用 Slint。`spa-desktop` 只把 `UiEvent` 轉成畫面並轉送操作；更換 UI 框架時不應改動其他 crate。
-- 應用程式碼不得依 provider ID 分支。Provider 在編譯期註冊於 `spa-app/src/context.rs` 的 `builtin_providers`，不支援執行期外掛。新增方式見 [Provider 開發指引](provider-guide.md)。
+- 應用程式碼不得依 provider ID 分支。Provider 在編譯期註冊於 `spa-app/src/context.rs` 的 `builtin_providers`，不支援執行期外掛。新增方式見 [Provider 開發指引](PROVIDER-GUIDE.md)。
 
 ### 安全
 
@@ -46,7 +57,7 @@ AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不
 
 ### 工作方式
 
-- 一次完成並驗證一個小功能，更新 [開發進度](progress.md) 與 [驗證紀錄](validation.md) 後提交，再進行下一個。
+- 一次完成並驗證一個小功能，更新 [開發進度](PROGRESS.md) 與 [驗證紀錄](VALIDATION.md) 後提交，再進行下一個。
 - 測試保持可重現：使用本機 HTTP fixture，不依賴外部服務。連線到真實 API 的檢查只在明確執行 `--snapshot` 時進行。
 
 ## 啟動與打包
@@ -142,7 +153,7 @@ cargo test --workspace
 - 各 provider crate 以記憶體內的 `HttpTransport` fixture 測試 JSON 解析、分頁與網址辨識。
 - 回滾測試以 SQLite trigger（`RAISE(ABORT)`）注入中繼資料寫入失敗。
 
-測試涵蓋的範圍見 [驗證紀錄](validation.md)。
+測試涵蓋的範圍見 [驗證紀錄](VALIDATION.md)。
 
 ## 畫面擷取
 
