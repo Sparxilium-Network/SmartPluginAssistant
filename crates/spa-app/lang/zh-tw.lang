@@ -159,4 +159,5 @@ settings.cache_usage=已快取圖片：{0} MiB・{1} 個檔案
 settings.cache_clear=清理暫存圖片
 settings.cache_cleared=已清理 {0} MiB，共 {1} 張暫存圖片。
 settings.cache_failed=無法存取圖片快取：{0}
+settings.storage=存檔格式版本 {0}・{1}
 settings.data_folder=開啟資料目錄

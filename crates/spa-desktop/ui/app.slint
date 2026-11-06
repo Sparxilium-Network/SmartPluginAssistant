@@ -163,6 +163,7 @@ export component MainWindow inherits Window {
     in-out property <bool> set-images;
     in-out property <int> set-cache-mb: 128;
     in property <string> set-usage;
+    in property <string> set-storage;
 
     // ---------- actions ----------
     callback select-instance(int);
@@ -781,6 +782,7 @@ export component MainWindow inherits Window {
         }
         Muted { text: root.t("settings.cache_hint"); }
         Text { text: root.set-usage; color: Theme.text; wrap: word-wrap; }
+        Muted { text: root.set-storage; }
         HorizontalLayout {
             spacing: 8px;
             AppButton { text: root.t("settings.cache_clear"); danger: true; clicked => { root.settings-clear-cache(); } }

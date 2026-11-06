@@ -19,3 +19,4 @@ hex.workspace = true
 uuid.workspace = true
 tempfile.workspace = true
 zip.workspace = true
+rusqlite.workspace = true

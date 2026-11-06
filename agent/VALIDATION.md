@@ -12,8 +12,10 @@ Date: 2026-10-31 (Windows 11, Rust 1.99.1, Slint 1.18.1)
 Coverage:
 
 - API contracts: target/loader validation, compatibility rules, pagination, dependency kinds, URL host checks.
-- Storage: atomic JSON replacement, process lock, instance persistence/unregister-only, corrupt index
-  preservation, Sol `instances.json` compatibility, unsafe/reserved file names, symlink rejection (Unix).
+- Storage: SQLite data format version creation/reopen, refusal of newer and foreign databases without
+  modification, backup + migration + rollback of a failing migration, damaged database preservation,
+  one-time Sol JSON import (instances, inventory, settings, environments) leaving files untouched,
+  injected metadata write failure rollback, process lock, unregister-only, unsafe/reserved names, symlinks (Unix).
 - Downloads: truncated bodies, checksum mismatch, HTML masquerading as a JAR, redirects, temp cleanup.
 - Transactions: install/update with backups, disabled-state preservation, stale-scan rejection,
   rollback when metadata persistence fails (install, toggle, remove), import conflicts, recoverable removal.
@@ -61,6 +63,14 @@ Use a fresh data directory per run. The probe downloads public plugin JARs but n
 
 The native window (winit + FemtoVG) was launched for 6 seconds with an isolated data directory and
 stayed up without errors.
+
+## SQLite storage change (2026-11-06)
+
+`cargo fmt --check`, `cargo clippy --workspace --all-targets -D warnings` and **54 tests** passed.
+The live `--snapshot` probe passed again (catalog, both providers, paging 20 -> 40, Hangar install of
+ViaBackwards + ViaVersion, update check). The resulting data directory contained only `spa.db`
+(plus WAL files), with `schema_version` 1, `PRAGMA user_version` 1, the instance, both plugin records,
+settings rows and the environment cache; the settings dialog showed the data format version.
 
 ## Scope limits
 

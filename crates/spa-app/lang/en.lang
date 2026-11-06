@@ -159,4 +159,5 @@ settings.cache_usage=Cached images: {0} MiB · {1} files
 settings.cache_clear=Clear cached images
 settings.cache_cleared=Cleared {0} MiB from {1} cached images.
 settings.cache_failed=Could not access the image cache: {0}
+settings.storage=Data format version {0} · {1}
 settings.data_folder=Open data folder

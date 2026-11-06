@@ -104,7 +104,7 @@ impl Events {
 fn setup() -> (tempfile::TempDir, Controller, Arc<Events>, Arc<Provider>) {
     let dir = tempfile::tempdir().unwrap();
     let provider = Arc::new(Provider::default());
-    let ctx = AppContext::open(dir.path(), vec![provider.clone()], 16 * 1024 * 1024).unwrap();
+    let ctx = AppContext::open(dir.path(), vec![provider.clone()]).unwrap();
     let events = Arc::new(Events::default());
     let sink = events.clone();
     let settings = AppSettings { language: "en".into(), ..AppSettings::default() };
@@ -123,7 +123,7 @@ fn setup() -> (tempfile::TempDir, Controller, Arc<Events>, Arc<Provider>) {
 #[test]
 fn second_application_instance_cannot_open_the_same_data() {
     let (dir, _controller, _events, provider) = setup();
-    assert!(AppContext::open(dir.path(), vec![provider], 1024).is_err());
+    assert!(AppContext::open(dir.path(), vec![provider]).is_err());
 }
 
 #[test]

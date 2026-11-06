@@ -185,4 +185,6 @@ pub enum UiEvent {
     CloseInstanceDialog,
     Settings(SettingsVm),
     CacheUsage(String),
+    /// Data format version and database location.
+    Storage(String),
 }

@@ -19,6 +19,10 @@
    snapshot channels treated as pre-releases.
 7. Tooling: rustfmt (120 columns), clippy clean, `build.ps1`/`build.sh`, run scripts, three-OS CI.
 
+8. 2026-11-06: replaced JSON persistence with SQLite (`spa.db`) and an explicit data format version
+   (`meta.schema_version` / `PRAGMA user_version`), versioned migrations with pre-migration backups,
+   refusal of newer formats, integrity check, one-time Sol JSON import; settings dialog shows the version.
+
 ## Next candidates
 
 - Run the CI matrix on Linux/macOS and record results.

@@ -307,6 +307,7 @@ fn apply(ui: &MainWindow, event: UiEvent) {
             ui.set_dialog("settings".into());
         }
         UiEvent::CacheUsage(text) => ui.set_set_usage(text.into()),
+        UiEvent::Storage(text) => ui.set_set_storage(text.into()),
     }
 }
 
@@ -500,13 +501,12 @@ fn main() {
     let args = parse_args();
     init_logging(&args.data_dir);
     log::info!("Starting with data directory {}", args.data_dir.display());
-    let settings = AppSettings::load(&args.data_dir).unwrap_or_else(|e| {
+    let ctx = AppContext::open(&args.data_dir, builtin_providers()).unwrap_or_else(|e| startup_failure(e));
+    let settings = AppSettings::load(&ctx.db).unwrap_or_else(|e| {
         log::warn!("Using default settings: {e}");
         AppSettings::default()
     });
     spa_app::i18n::set_language(&settings.language);
-    let ctx = AppContext::open(&args.data_dir, builtin_providers(), settings.cache_bytes())
-        .unwrap_or_else(|e| startup_failure(e));
 
     let probe = args.snapshot.as_deref().map(|dir| snapshot::install(dir, 1360, 860));
     let ui = MainWindow::new().unwrap_or_else(|e| startup_failure(e));

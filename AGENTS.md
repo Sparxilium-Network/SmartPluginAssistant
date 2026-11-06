@@ -1,6 +1,7 @@
 # Smart Plugin Assistant (Rust) development rules
 
-- Read `agent/ARCHITECTURE.md`, `agent/PROGRESS.md` and `agent/MEMORY.md` before changing architecture.
+- Agent-specific instructions and memory live in each agent's own directory (`.claude/`, `.codex/`, `.gemini/`);
+  those take precedence. Read `agent/ARCHITECTURE.md` and `agent/PROGRESS.md` before changing architecture.
 - Rust stable, Slint desktop UI. Bundled providers: **Modrinth** and **Hangar** only.
 - Keep the layers: `spa-api` <- providers; `spa-api` <- `spa-core` <- `spa-app` <- `spa-desktop`.
   Providers depend on `spa-api` only. `spa-core` must not import providers or any UI toolkit.
@@ -15,8 +16,10 @@
 - Validate paths (`spa_core::paths`), reject symbolic links for managed writes, and stage/verify
   downloads (size, published hashes, JAR structure) before replacement. Staging files use the
   `.spa-` prefix and a `.tmp` suffix so they are never scanned as plugins.
-- Persist JSON using atomic replacement (`spa_core::json`); errors must reach the caller.
-  Keep JSON field names compatible with Sol (camelCase records).
+- Persist application data only through `spa_core::db::Database` (SQLite `spa.db`), inside transactions;
+  errors must reach the caller. Every schema change is a new numbered entry in `db::MIGRATIONS`
+  (never edit a released migration); `meta.schema_version` / `PRAGMA user_version` identify the format.
+  Newer formats are refused untouched; older ones are backed up before migrating.
 - Use dedicated file editing tools. Keep tests deterministic with local HTTP fixtures; live
   network checks are opt-in (`--snapshot`).
 - Complete and verify one small feature, update `agent/PROGRESS.md`, then commit before the next.

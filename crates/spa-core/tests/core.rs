@@ -2,6 +2,7 @@ mod common;
 
 use common::*;
 use spa_api::*;
+use spa_core::db::Database;
 use spa_core::download::DownloadService;
 use spa_core::environment::EnvironmentService;
 use spa_core::export::{shell, ExportService};
@@ -17,9 +18,14 @@ use std::sync::atomic::Ordering;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
 
+fn open_db(root: &std::path::Path) -> Arc<Database> {
+    Arc::new(Database::open(root).unwrap())
+}
+
 struct Fixture {
     _dir: tempfile::TempDir,
     root: std::path::PathBuf,
+    db: Arc<Database>,
     server: Server,
     provider: Arc<FakeProvider>,
     inventory: Arc<InventoryStore>,
@@ -34,13 +40,16 @@ fn fixture() -> Fixture {
     let root = dir.path().join("data");
     let provider = Arc::new(FakeProvider::default());
     let registry = ProviderRegistry::new(vec![provider.clone()]).unwrap();
-    let inventory = Arc::new(InventoryStore::open(&root).unwrap());
+    let db = open_db(&root);
+    let inventory = Arc::new(InventoryStore::open(db.clone()));
     let files = Arc::new(PluginFiles::new(inventory.clone(), DownloadService::new(Duration::from_secs(10))));
     let manager = PluginManager::new(registry.clone(), inventory.clone(), files.clone());
     let exports = ExportService::new(inventory.clone(), registry);
-    let instance =
-        InstanceStore::open(&root).unwrap().create("Survival", Some(&dir.path().join("server")), target()).unwrap();
-    Fixture { _dir: dir, root, server: Server::start(), provider, inventory, files, manager, exports, instance }
+    let instance = InstanceStore::open(db.clone(), &root)
+        .unwrap()
+        .create("Survival", Some(&dir.path().join("server")), target())
+        .unwrap();
+    Fixture { _dir: dir, root, db, server: Server::start(), provider, inventory, files, manager, exports, instance }
 }
 
 impl Fixture {
@@ -72,7 +81,8 @@ impl Fixture {
 #[test]
 fn instances_persist_and_unregister_keeps_files() {
     let dir = tempfile::tempdir().unwrap();
-    let store = InstanceStore::open(dir.path()).unwrap();
+    let db = open_db(dir.path());
+    let store = InstanceStore::open(db.clone(), dir.path()).unwrap();
     let managed = store.create("Lobby", None, target()).unwrap();
     let external = store.create("External", Some(&dir.path().join("ext")), target()).unwrap();
     assert!(managed.directory.contains(&managed.id.to_string()));
@@ -80,7 +90,9 @@ fn instances_persist_and_unregister_keeps_files() {
     fs::write(external.plugins_directory().join("keep.jar"), b"x").unwrap();
     store.unregister(external.id).unwrap();
     assert!(external.plugins_directory().join("keep.jar").exists());
-    let reopened = InstanceStore::open(dir.path()).unwrap();
+    drop(store);
+    drop(db);
+    let reopened = InstanceStore::open(open_db(dir.path()), dir.path()).unwrap();
     assert_eq!(reopened.all(), vec![managed.clone()]);
     let mut renamed = managed.clone();
     renamed.name = "Hub".into();
@@ -88,30 +100,62 @@ fn instances_persist_and_unregister_keeps_files() {
     let mut moved = reopened.all()[0].clone();
     moved.directory = dir.path().join("other").to_string_lossy().into();
     assert!(reopened.update(moved).is_err());
-    assert!(store.create("  ", None, target()).is_err());
+    assert!(reopened.create("  ", None, target()).is_err());
 }
 
 #[test]
-fn corrupt_index_is_preserved() {
+fn corrupt_legacy_index_and_database_are_preserved() {
     let dir = tempfile::tempdir().unwrap();
     fs::write(dir.path().join("instances.json"), b"{broken").unwrap();
-    assert!(InstanceStore::open(dir.path()).is_err());
+    assert!(Database::open(dir.path()).is_err(), "nothing is half-imported");
     assert_eq!(fs::read(dir.path().join("instances.json")).unwrap(), b"{broken");
+
+    let damaged = tempfile::tempdir().unwrap();
+    let garbage = vec![0x5a; 8192];
+    fs::write(damaged.path().join(spa_core::db::FILE_NAME), &garbage).unwrap();
+    assert!(Database::open(damaged.path()).is_err());
+    assert_eq!(fs::read(damaged.path().join(spa_core::db::FILE_NAME)).unwrap(), garbage);
 }
 
 #[test]
-fn sol_index_format_is_readable() {
+fn sol_json_files_are_imported_once_and_left_untouched() {
     let dir = tempfile::tempdir().unwrap();
+    let id = "7d444840-9dc0-11d1-b245-5ffdce74fad2";
     let server = dir.path().join("srv").to_string_lossy().replace('\\', "\\\\");
+    let index = format!(
+        r#"{{"schema":1,"instances":[{{"id":"{id}","name":"Sol","directory":"{server}","target":{{"loader":"paper","minecraftVersion":"1.21.4","extraLoaders":["spigot"],"allowPrereleases":false}},"createdAt":1}}]}}"#
+    );
+    fs::write(dir.path().join("instances.json"), &index).unwrap();
+    fs::create_dir(dir.path().join("inventory")).unwrap();
     fs::write(
-        dir.path().join("instances.json"),
-        format!(
-            r#"{{"schema":1,"instances":[{{"id":"7d444840-9dc0-11d1-b245-5ffdce74fad2","name":"Sol","directory":"{server}","target":{{"loader":"paper","minecraftVersion":"1.21.4","extraLoaders":["spigot"],"allowPrereleases":false}},"createdAt":1}}]}}"#
-        ),
+        dir.path().join(format!("inventory/{id}.json")),
+        r#"{"schema":1,"plugins":[{"fileName":"a.jar","sha512":"ab","size":3,"version":"1","providerId":"modrinth","projectId":"P","releaseId":"R","publishedAt":5,"enabled":true}]}"#,
     )
     .unwrap();
-    let store = InstanceStore::open(dir.path()).unwrap();
-    assert_eq!(store.all()[0].target.extra_loaders, vec!["spigot"]);
+    fs::write(dir.path().join("settings.json"), r#"{"language":"en","width":1300.0,"theme":"light"}"#).unwrap();
+    fs::write(
+        dir.path().join("environments.json"),
+        r#"{"schema":1,"fetchedAt":7,"catalog":{"loaders":["paper"],"gameVersions":["1.21.4"]},"sources":["Modrinth"]}"#,
+    )
+    .unwrap();
+
+    let db = open_db(dir.path());
+    assert!(db.info().imported_legacy);
+    let store = InstanceStore::open(db.clone(), dir.path()).unwrap();
+    let instance = store.all().remove(0);
+    assert_eq!(instance.target.extra_loaders, vec!["spigot"]);
+    let records = InventoryStore::open(db.clone()).records(&instance).unwrap();
+    assert_eq!((records[0].file_name.as_str(), records[0].release_id.as_deref()), ("a.jar", Some("R")));
+    assert!(db.settings().unwrap().contains(&("language".to_string(), "\"en\"".to_string())));
+    assert_eq!(fs::read_to_string(dir.path().join("instances.json")).unwrap(), index);
+
+    // Later launches never import again, even if the JSON changes.
+    drop(store);
+    drop(db);
+    fs::write(dir.path().join("instances.json"), r#"{"schema":1,"instances":[]}"#).unwrap();
+    let db = open_db(dir.path());
+    assert!(!db.info().imported_legacy);
+    assert_eq!(InstanceStore::open(db, dir.path()).unwrap().all().len(), 1);
 }
 
 #[test]
@@ -200,15 +244,14 @@ fn stale_scan_and_failed_metadata_roll_back() {
     stale.sha512 = "0".repeat(128);
     assert!(f.files.remove(&f.instance, &stale).is_err());
 
-    // Keep the inventory readable but make atomic replacement fail.
-    let inventory = f.root.join("inventory");
-    #[cfg(windows)]
-    let locked = inventory.join(format!("{}.json", f.instance.id));
-    #[cfg(not(windows))]
-    let locked = inventory.clone();
-    let mut permissions = fs::metadata(&locked).unwrap().permissions();
-    permissions.set_readonly(true);
-    fs::set_permissions(&locked, permissions).unwrap();
+    // Keep the inventory readable but make every metadata write fail.
+    f.db.write(|t| {
+        t.execute_batch(
+            "CREATE TRIGGER reject_plugins BEFORE DELETE ON plugins BEGIN SELECT RAISE(ABORT, 'injected'); END;",
+        )?;
+        Ok(())
+    })
+    .unwrap();
     let v2 = f.publish("alpha", "a2", 20);
     let current = f.scan().remove(0);
     assert!(f.files.install(&f.instance, &v2, Some(&current)).is_err());
@@ -411,9 +454,11 @@ fn environment_cache_reuse_stale_fallback_and_no_defaults() {
     let registry = ProviderRegistry::new(vec![provider.clone()]).unwrap();
     let now = Arc::new(std::sync::atomic::AtomicI64::new(1_000));
     let clock = now.clone();
-    let service =
-        EnvironmentService::with_clock(registry.clone(), dir.path(), Arc::new(move || clock.load(Ordering::SeqCst)))
-            .unwrap();
+    let service = EnvironmentService::with_clock(
+        registry.clone(),
+        open_db(dir.path()),
+        Arc::new(move || clock.load(Ordering::SeqCst)),
+    );
     *provider.catalog.lock().unwrap() = Some(Err(ApiError::Transport("offline".into())));
     assert!(service.load(false).is_err(), "first launch never invents defaults");
 
@@ -432,7 +477,8 @@ fn environment_cache_reuse_stale_fallback_and_no_defaults() {
     assert!(stale.stale && stale.catalog == catalog && stale.failures.len() == 1);
 
     // Persisted across restarts.
-    let restarted = EnvironmentService::with_clock(registry, dir.path(), Arc::new(|| 2_000)).unwrap();
+    drop(service);
+    let restarted = EnvironmentService::with_clock(registry, open_db(dir.path()), Arc::new(|| 2_000));
     assert!(restarted.load(false).unwrap().cached);
 }
 

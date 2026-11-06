@@ -1,21 +1,55 @@
 //! Provider-neutral environment discovery with a persisted six-hour last-known-good catalog.
 
+use crate::db::Database;
 use crate::registry::ProviderRegistry;
-use crate::{fail, json, now_millis, paths, Result};
-use serde::{Deserialize, Serialize};
+use crate::{fail, now_millis, Result};
+use rusqlite::{params, Connection, OptionalExtension};
 use spa_api::EnvironmentCatalog;
-use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 const CACHE_MILLIS: i64 = 6 * 60 * 60 * 1000;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone)]
 struct Cache {
-    schema: i32,
     fetched_at: i64,
     catalog: EnvironmentCatalog,
     sources: Vec<String>,
+}
+
+/// Replaces the single cached catalog row (also used by the legacy JSON import).
+pub(crate) fn store(
+    connection: &Connection,
+    fetched_at: i64,
+    catalog: &EnvironmentCatalog,
+    sources: &[String],
+) -> Result<()> {
+    connection.execute(
+        "INSERT INTO environment_cache (id, fetched_at, loaders, game_versions, sources) VALUES (1, ?1, ?2, ?3, ?4)
+         ON CONFLICT (id) DO UPDATE SET fetched_at = excluded.fetched_at, loaders = excluded.loaders,
+         game_versions = excluded.game_versions, sources = excluded.sources",
+        params![
+            fetched_at,
+            serde_json::to_string(&catalog.loaders)?,
+            serde_json::to_string(&catalog.game_versions)?,
+            serde_json::to_string(sources)?,
+        ],
+    )?;
+    Ok(())
+}
+
+fn load(connection: &Connection) -> Result<Option<Cache>> {
+    let row = connection
+        .query_row("SELECT fetched_at, loaders, game_versions, sources FROM environment_cache WHERE id = 1", [], |r| {
+            Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?, r.get::<_, String>(3)?))
+        })
+        .optional()?;
+    let Some((fetched_at, loaders, versions, sources)) = row else { return Ok(None) };
+    let catalog = EnvironmentCatalog {
+        loaders: serde_json::from_str(&loaders)?,
+        game_versions: serde_json::from_str(&versions)?,
+    };
+    catalog.validate()?;
+    Ok(Some(Cache { fetched_at, catalog, sources: serde_json::from_str(&sources)? }))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,31 +66,23 @@ pub type Clock = Arc<dyn Fn() -> i64 + Send + Sync>;
 
 pub struct EnvironmentService {
     providers: ProviderRegistry,
-    file: PathBuf,
+    db: Arc<Database>,
     clock: Clock,
     lock: Mutex<()>,
 }
 
 impl EnvironmentService {
-    pub fn new(providers: ProviderRegistry, root: &Path) -> Result<Self> {
-        Self::with_clock(providers, root, Arc::new(now_millis))
+    pub fn new(providers: ProviderRegistry, db: Arc<Database>) -> Self {
+        Self::with_clock(providers, db, Arc::new(now_millis))
     }
 
-    pub fn with_clock(providers: ProviderRegistry, root: &Path, clock: Clock) -> Result<Self> {
-        let file = paths::child(&paths::directory(root)?, "environments.json")?;
-        Ok(Self { providers, file, clock, lock: Mutex::new(()) })
+    pub fn with_clock(providers: ProviderRegistry, db: Arc<Database>, clock: Clock) -> Self {
+        Self { providers, db, clock, lock: Mutex::new(()) }
     }
 
     fn previous(&self) -> Option<Cache> {
-        if !self.file.exists() {
-            return None;
-        }
-        match json::read::<Cache>(&self.file) {
-            Ok(cache) if cache.schema == 1 && cache.catalog.validate().is_ok() => Some(cache),
-            Ok(_) => {
-                log::warn!("Ignoring invalid environment cache");
-                None
-            }
+        match self.db.read(load) {
+            Ok(cache) => cache,
             Err(e) => {
                 log::warn!("Cannot read environment cache: {e}");
                 None
@@ -99,8 +125,7 @@ impl EnvironmentService {
         }
         if !sources.is_empty() {
             let catalog = EnvironmentCatalog::new(loaders, versions)?;
-            let cache = Cache { schema: 1, fetched_at: now, catalog: catalog.clone(), sources: sources.clone() };
-            if let Err(e) = json::write(&self.file, &cache) {
+            if let Err(e) = self.db.write(|t| store(t, now, &catalog, &sources)) {
                 log::warn!("Cannot persist environment catalog: {e}");
                 failures.push(e.to_string());
             }

@@ -1,6 +1,7 @@
 //! Host core: safe storage, instance index, install transactions, updates and exports.
 //! Depends on `spa-api` only; never on a provider implementation or UI framework.
 
+pub mod db;
 pub mod download;
 pub mod environment;
 pub mod export;
@@ -23,6 +24,8 @@ pub enum Error {
     Io(#[from] std::io::Error),
     #[error("{0}")]
     Api(#[from] spa_api::ApiError),
+    #[error("Database error: {0}")]
+    Sqlite(#[from] rusqlite::Error),
     #[error("Invalid JSON: {0}")]
     Json(#[from] serde_json::Error),
     #[error("{0}")]

@@ -1,12 +1,14 @@
 //! Hash-bound local plugin inventory. Provider identity is trusted only for an exact hash match.
 
+use crate::db::Database;
 use crate::instance::ServerInstance;
-use crate::{fail, jar, json, paths, Result};
+use crate::{jar, paths, Result};
+use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -47,14 +49,29 @@ impl InstalledPlugin {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct Index {
-    schema: i32,
-    plugins: Vec<InstalledPlugin>,
+/// Inserts one record (also used by the legacy JSON import).
+pub(crate) fn insert(connection: &Connection, instance: Uuid, plugin: &InstalledPlugin) -> Result<()> {
+    connection.execute(
+        "INSERT INTO plugins (instance_id, file_name, sha512, size, version, provider_id, project_id, release_id,
+         published_at, enabled) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        params![
+            instance.to_string(),
+            paths::file_name(&plugin.file_name)?,
+            plugin.sha512,
+            i64::try_from(plugin.size).unwrap_or(i64::MAX),
+            plugin.version,
+            plugin.provider_id,
+            plugin.project_id,
+            plugin.release_id,
+            plugin.published_at,
+            plugin.enabled,
+        ],
+    )?;
+    Ok(())
 }
 
 pub struct InventoryStore {
-    root: PathBuf,
+    db: Arc<Database>,
     lock: Mutex<()>,
 }
 
@@ -66,12 +83,8 @@ pub fn is_enabled_name(name: &str) -> bool {
 }
 
 impl InventoryStore {
-    pub fn open(root: &Path) -> Result<Self> {
-        Ok(Self { root: paths::directory(&root.join("inventory"))?, lock: Mutex::new(()) })
-    }
-
-    fn file(&self, instance: &ServerInstance) -> Result<PathBuf> {
-        paths::child(&self.root, &format!("{}.json", instance.id))
+    pub fn open(db: Arc<Database>) -> Self {
+        Self { db, lock: Mutex::new(()) }
     }
 
     fn guard(&self) -> std::sync::MutexGuard<'_, ()> {
@@ -84,20 +97,38 @@ impl InventoryStore {
     }
 
     fn read(&self, instance: &ServerInstance) -> Result<Vec<InstalledPlugin>> {
-        let path = self.file(instance)?;
-        if !path.exists() {
-            return Ok(Vec::new());
-        }
-        let data: Index = json::read(&path)?;
-        if data.schema != 1 {
-            return fail("Invalid inventory index");
-        }
-        Ok(data.plugins)
+        self.db.read(|c| {
+            let mut statement = c.prepare(
+                "SELECT file_name, sha512, size, version, provider_id, project_id, release_id, published_at, enabled
+                 FROM plugins WHERE instance_id = ?1 ORDER BY file_name",
+            )?;
+            let rows = statement.query_map([instance.id.to_string()], |r| {
+                Ok(InstalledPlugin {
+                    file_name: r.get(0)?,
+                    sha512: r.get(1)?,
+                    size: r.get::<_, i64>(2)?.max(0) as u64,
+                    version: r.get(3)?,
+                    provider_id: r.get(4)?,
+                    project_id: r.get(5)?,
+                    release_id: r.get(6)?,
+                    published_at: r.get(7)?,
+                    enabled: r.get(8)?,
+                })
+            })?;
+            Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+        })
     }
 
+    /// Replaces the instance's records in one transaction.
     pub fn save(&self, instance: &ServerInstance, plugins: &[InstalledPlugin]) -> Result<()> {
         let _guard = self.guard();
-        json::write(&self.file(instance)?, &Index { schema: 1, plugins: plugins.to_vec() })
+        self.db.write(|t| {
+            t.execute("DELETE FROM plugins WHERE instance_id = ?1", [instance.id.to_string()])?;
+            for plugin in plugins {
+                insert(t, instance.id, plugin)?;
+            }
+            Ok(())
+        })
     }
 
     /// Current files with metadata carried over only when the SHA-512 still matches.

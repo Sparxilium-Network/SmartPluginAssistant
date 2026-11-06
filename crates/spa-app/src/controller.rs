@@ -688,6 +688,8 @@ impl Inner {
             images_enabled: settings.images_enabled,
             cache_mb: settings.image_cache_mb,
         }));
+        let info = self.ctx.db.info();
+        self.emit(UiEvent::Storage(trf("settings.storage", &[&info.schema_version, &info.path.display()])));
     }
 
     fn emit_appearance(&self) {
@@ -1251,7 +1253,7 @@ impl Controller {
             Ok(next) => next,
             Err(e) => return self.inner.fail(e),
         };
-        if let Err(e) = next.save(&self.inner.ctx.root) {
+        if let Err(e) = next.save(&self.inner.ctx.db) {
             return self.inner.fail(e);
         }
         *self.inner.settings.lock().unwrap_or_else(|e| e.into_inner()) = next.clone();
@@ -1329,7 +1331,7 @@ impl Controller {
         settings.width = width;
         settings.height = height;
         if let Ok(settings) = settings.validated() {
-            if let Err(e) = settings.save(&self.inner.ctx.root) {
+            if let Err(e) = settings.save(&self.inner.ctx.db) {
                 log::error!("Cannot save window settings: {e}");
             }
         }

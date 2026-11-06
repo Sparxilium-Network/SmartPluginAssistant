@@ -1,39 +1,23 @@
-//! Persisted preferences. Older JSON gains defaults; values are validated before use.
+//! Persisted preferences, one database row per field (JSON-encoded value). Missing fields take
+//! defaults so older data keeps working; values are validated before use.
 
 use serde::{Deserialize, Serialize};
-use spa_core::{fail, json, Result};
-use std::path::Path;
+use spa_core::db::Database;
+use spa_core::{fail, Result};
 
 pub const LANGUAGES: [&str; 2] = ["zh-tw", "en"];
 pub const THEMES: [&str; 2] = ["dark", "light"];
 pub const ACCENTS: [&str; 3] = ["teal", "blue", "violet"];
 
-fn dark() -> String {
-    "dark".into()
-}
-fn teal() -> String {
-    "teal".into()
-}
-fn yes() -> bool {
-    true
-}
-fn cache() -> u32 {
-    128
-}
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct AppSettings {
     pub language: String,
     pub width: f64,
     pub height: f64,
-    #[serde(default = "dark")]
     pub theme: String,
-    #[serde(default = "teal")]
     pub accent: String,
-    #[serde(default = "yes")]
     pub images_enabled: bool,
-    #[serde(default = "cache")]
     pub image_cache_mb: u32,
 }
 
@@ -43,10 +27,10 @@ impl Default for AppSettings {
             language: "zh-tw".into(),
             width: 1280.0,
             height: 820.0,
-            theme: dark(),
-            accent: teal(),
+            theme: "dark".into(),
+            accent: "teal".into(),
             images_enabled: true,
-            image_cache_mb: cache(),
+            image_cache_mb: 128,
         }
     }
 }
@@ -71,17 +55,22 @@ impl AppSettings {
         Ok(self)
     }
 
-    pub fn load(root: &Path) -> Result<Self> {
-        let file = root.join("settings.json");
-        if file.exists() {
-            json::read::<Self>(&file)?.validated()
-        } else {
-            Ok(Self::default())
+    /// Unknown keys are ignored; an invalid value fails rather than being silently replaced.
+    pub fn load(db: &Database) -> Result<Self> {
+        let mut object = serde_json::Map::new();
+        for (key, value) in db.settings()? {
+            object.insert(key, serde_json::from_str(&value)?);
         }
+        serde_json::from_value::<Self>(serde_json::Value::Object(object))?.validated()
     }
 
-    pub fn save(&self, root: &Path) -> Result<()> {
-        json::write(&root.join("settings.json"), &self.clone().validated()?)
+    /// All fields are written in one transaction.
+    pub fn save(&self, db: &Database) -> Result<()> {
+        let serde_json::Value::Object(object) = serde_json::to_value(self.clone().validated()?)? else {
+            return fail("Settings must serialize to an object");
+        };
+        let rows: Vec<(String, String)> = object.into_iter().map(|(k, v)| (k, v.to_string())).collect();
+        db.put_settings(&rows)
     }
 
     pub fn cache_bytes(&self) -> u64 {
@@ -94,17 +83,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn old_json_gains_defaults_and_round_trips() {
+    fn missing_fields_gain_defaults_and_round_trip() {
         let dir = tempfile::tempdir().unwrap();
-        std::fs::write(dir.path().join("settings.json"), r#"{"language":"en","width":5000,"height":10}"#).unwrap();
-        let loaded = AppSettings::load(dir.path()).unwrap();
+        let db = Database::open(dir.path()).unwrap();
+        assert_eq!(AppSettings::load(&db).unwrap(), AppSettings::default());
+        db.put_settings(&[
+            ("language".into(), "\"en\"".into()),
+            ("width".into(), "5000".into()),
+            ("height".into(), "10".into()),
+        ])
+        .unwrap();
+        let loaded = AppSettings::load(&db).unwrap();
         assert_eq!((loaded.theme.as_str(), loaded.accent.as_str(), loaded.image_cache_mb), ("dark", "teal", 128));
-        assert_eq!((loaded.width, loaded.height), (3000.0, 720.0));
+        assert_eq!((loaded.language.as_str(), loaded.width, loaded.height), ("en", 3000.0, 720.0));
         let changed = AppSettings { theme: "light".into(), accent: "violet".into(), images_enabled: false, ..loaded };
-        changed.save(dir.path()).unwrap();
-        assert_eq!(AppSettings::load(dir.path()).unwrap(), changed);
+        changed.save(&db).unwrap();
+        assert_eq!(AppSettings::load(&db).unwrap(), changed);
         let bad = AppSettings { image_cache_mb: 8, ..AppSettings::default() };
-        assert!(bad.save(dir.path()).is_err());
-        assert!(AppSettings { language: "fr".into(), ..AppSettings::default() }.validated().is_err());
+        assert!(bad.save(&db).is_err());
+        assert_eq!(AppSettings::load(&db).unwrap(), changed, "rejected save leaves stored settings intact");
+        db.put_settings(&[("theme".into(), "\"neon\"".into())]).unwrap();
+        assert!(AppSettings::load(&db).is_err());
     }
 }

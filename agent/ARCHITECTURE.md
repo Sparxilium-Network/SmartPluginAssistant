@@ -11,7 +11,8 @@ imports existing JARs, and safely updates/exports them. It never starts or stops
 - UI framework: Slint, with strict frontend/backend separation so the toolkit can be replaced.
 - Bundled providers: Modrinth + Hangar (Spigot from Sol and Voxel from the original are not included).
 - Extension model: compile-time trait implementations in separate crates; no runtime plugin loading.
-- Data: new directory `~/.smartpluginassistant-rust/`, JSON compatible with Sol (camelCase records).
+- Data: new directory `~/.smartpluginassistant-rust/` with one SQLite database `spa.db` (changed from JSON on
+  2026-11-06 at the user's request), with an explicit data format version. Sol JSON is imported once.
 
 ## Layers
 
@@ -33,7 +34,18 @@ spa-api  <-  spa-core  <-  spa-app  <-  spa-desktop (Slint)
 
 - Central instance index with UUID identity; unregister never deletes files.
 - Process lock (`application.lock`, `File::try_lock`) prevents concurrent writers.
-- JSON: sibling temp file, `sync_all`, atomic rename; 8 MiB read limit; corrupt index fails visibly.
+- Storage: `spa_core::db::Database` wraps one bundled-SQLite connection (WAL, `synchronous=FULL`,
+  `foreign_keys=ON`, STRICT tables) behind a mutex; every change runs in an immediate transaction.
+  Tables: `meta`, `instances`, `plugins` (FK cascade on unregister; server files untouched),
+  `settings` (key -> JSON value), `environment_cache` (single row).
+- Data format version: `meta.schema_version`, mirrored to `PRAGMA user_version`, plus `created_by`,
+  `last_opened_by`, `created_at`, `migrated_at`. On open: `quick_check`; refuse newer versions without
+  writing; `VACUUM INTO spa.db.v<old>-<millis>.bak` before migrating an older file; apply numbered
+  migrations and the version bump in one transaction. Foreign or unversioned databases are refused.
+- Legacy import: only when creating the database (version 0 -> current), Sol-format `instances.json`,
+  `inventory/<id>.json`, `settings.json` and `environments.json` are imported in the same transaction;
+  invalid files abort the open, JSON files are never modified. `spa_core::json` remains for that import
+  and for atomic file writes (exports, image cache).
 - Downloads: temp file in the plugins directory (`.spa-download-*.tmp`), manual redirects (max 5,
   no HTTPS downgrade), 256 MiB limit, declared-length truncation check, provider size/hashes, full
   JAR read (1 GiB expanded limit). Publishing uses `persist_noclobber`; replaced files move to
@@ -78,7 +90,7 @@ Provider page indices are zero-based.
 seven-day freshness window, reuses stale bytes when refresh fails, evicts least recently used files
 over the limit, and fences in-flight writes with a generation counter on clear/disable.
 `spa-app::artwork` decodes the first frame with dimension/allocation limits into 128 px RGBA and keeps
-a 128-entry memory cache. `AppSettings` keeps Sol's fields and gains defaults for older JSON.
+a 128-entry memory cache. `AppSettings` keeps Sol's fields (one `settings` row each) and missing fields take defaults.
 
 ## UI notes
 
