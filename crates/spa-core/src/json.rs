@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn round_trip_and_replace() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         let file = dir.path().join("nested/value.json");
         write(&file, &vec![1, 2]).unwrap();
         write(&file, &vec![3]).unwrap();

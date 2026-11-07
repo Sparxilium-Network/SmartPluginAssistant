@@ -25,7 +25,7 @@ jobs:
       - name: Lint
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Test
-        run: cargo test --workspace
+        run: cargo test --workspace --no-fail-fast
       - name: Release build
         run: cargo build --release -p spa-desktop
       - uses: actions/upload-artifact@v4

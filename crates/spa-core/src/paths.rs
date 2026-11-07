@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn child_stays_inside_parent() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         assert!(child(dir.path(), "a.jar").unwrap().starts_with(normalize(dir.path()).unwrap()));
         assert!(child(dir.path(), "..").is_err());
         assert!(is_plugin("A.JAR") && is_plugin("a.jar.disabled") && !is_plugin("a.zip"));
@@ -104,7 +104,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn rejects_symlinks() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         let real = dir.path().join("real");
         fs::create_dir(&real).unwrap();
         std::os::unix::fs::symlink(&real, dir.path().join("link")).unwrap();

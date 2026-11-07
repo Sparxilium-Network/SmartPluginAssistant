@@ -15,6 +15,8 @@ pub mod lock;
 pub mod manager;
 pub mod paths;
 pub mod registry;
+#[cfg(test)]
+mod test_support;
 
 pub use spa_api as api;
 

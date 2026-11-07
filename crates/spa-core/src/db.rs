@@ -339,7 +339,7 @@ mod tests {
 
     #[test]
     fn creates_versioned_database_and_reopens() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         let db = Database::open(dir.path()).unwrap();
         assert_eq!(db.info().schema_version, current_version());
         assert_eq!(db.info().created_by, APP_VERSION);
@@ -353,21 +353,21 @@ mod tests {
 
     #[test]
     fn refuses_newer_and_foreign_databases_without_changing_them() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         Database::open(dir.path()).unwrap().write(|t| set_meta(t, "schema_version", "999")).unwrap();
         let before = std::fs::read(dir.path().join(FILE_NAME)).unwrap();
         let error = Database::open(dir.path()).err().unwrap().to_string();
         assert!(error.contains("newer"), "{error}");
         assert_eq!(std::fs::read(dir.path().join(FILE_NAME)).unwrap(), before);
 
-        let foreign = tempfile::tempdir().unwrap();
+        let foreign = crate::test_support::temp_dir();
         Connection::open(foreign.path().join(FILE_NAME)).unwrap().execute_batch("CREATE TABLE other (x)").unwrap();
         assert!(Database::open(foreign.path()).is_err());
     }
 
     #[test]
     fn migrates_older_database_after_backup() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         let v1 = &MIGRATIONS[..1];
         Database::open_with(dir.path(), v1).unwrap().put_settings(&[("language".into(), "\"en\"".into())]).unwrap();
         const V2: Migration =
@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn version_one_plugins_gain_unknown_timestamps() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         Database::open_with(dir.path(), &MIGRATIONS[..1])
             .unwrap()
             .write(|t| {

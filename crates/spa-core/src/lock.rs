@@ -26,7 +26,7 @@ mod tests {
 
     #[test]
     fn second_lock_fails_until_released() {
-        let dir = tempfile::tempdir().unwrap();
+        let dir = crate::test_support::temp_dir();
         let first = ApplicationLock::acquire(dir.path()).unwrap();
         assert!(ApplicationLock::acquire(dir.path()).is_err());
         drop(first);

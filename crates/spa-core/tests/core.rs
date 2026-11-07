@@ -36,7 +36,7 @@ struct Fixture {
 }
 
 fn fixture() -> Fixture {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     let root = dir.path().join("data");
     let provider = Arc::new(FakeProvider::default());
     let registry = ProviderRegistry::new(vec![provider.clone()]).unwrap();
@@ -80,7 +80,7 @@ impl Fixture {
 
 #[test]
 fn instances_persist_and_unregister_keeps_files() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     let db = open_db(dir.path());
     let store = InstanceStore::open(db.clone(), dir.path()).unwrap();
     let managed = store.create("Lobby", None, target()).unwrap();
@@ -105,12 +105,12 @@ fn instances_persist_and_unregister_keeps_files() {
 
 #[test]
 fn corrupt_legacy_index_and_database_are_preserved() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     fs::write(dir.path().join("instances.json"), b"{broken").unwrap();
     assert!(Database::open(dir.path()).is_err(), "nothing is half-imported");
     assert_eq!(fs::read(dir.path().join("instances.json")).unwrap(), b"{broken");
 
-    let damaged = tempfile::tempdir().unwrap();
+    let damaged = temp_dir();
     let garbage = vec![0x5a; 8192];
     fs::write(damaged.path().join(spa_core::db::FILE_NAME), &garbage).unwrap();
     assert!(Database::open(damaged.path()).is_err());
@@ -119,7 +119,7 @@ fn corrupt_legacy_index_and_database_are_preserved() {
 
 #[test]
 fn sol_json_files_are_imported_once_and_left_untouched() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     let id = "7d444840-9dc0-11d1-b245-5ffdce74fad2";
     let server = dir.path().join("srv").to_string_lossy().replace('\\', "\\\\");
     let index = format!(
@@ -457,7 +457,7 @@ fn exports_contain_only_plugins_and_quoted_pinned_script() {
 
 #[test]
 fn environment_cache_reuse_stale_fallback_and_no_defaults() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     let provider = Arc::new(FakeProvider::default());
     let registry = ProviderRegistry::new(vec![provider.clone()]).unwrap();
     let now = Arc::new(std::sync::atomic::AtomicI64::new(1_000));
@@ -506,7 +506,7 @@ fn load(cache: &ImageCache, url: &str) -> Result<Arc<Vec<u8>>, String> {
 
 #[test]
 fn image_cache_reuses_coalesces_and_fences_cleanup() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     let server = Server::start();
     let url = server.delayed("/icon.png", ok("image/png", &png()), Duration::from_millis(300));
     let cache = ImageCache::new(dir.path(), 1024 * 1024).unwrap();
@@ -546,7 +546,7 @@ fn image_cache_reuses_coalesces_and_fences_cleanup() {
 
 #[test]
 fn image_cache_evicts_least_recent_entries() {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     let server = Server::start();
     let cache = ImageCache::new(dir.path(), 100).unwrap();
     for i in 0..3 {

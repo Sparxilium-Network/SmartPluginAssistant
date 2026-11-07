@@ -7,6 +7,15 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 
+/// Temporary directory with no symbolic links in its path. On macOS the default temporary
+/// directory sits under `/var`, a link to `/private/var`, which the path checks reject.
+fn temp_dir() -> tempfile::TempDir {
+    let base = std::env::temp_dir();
+    #[cfg(unix)]
+    let base = base.canonicalize().unwrap();
+    tempfile::tempdir_in(base).unwrap()
+}
+
 #[derive(Default)]
 struct Provider {
     fail_next: AtomicBool,
@@ -102,7 +111,7 @@ impl Events {
 }
 
 fn setup() -> (tempfile::TempDir, Controller, Arc<Events>, Arc<Provider>) {
-    let dir = tempfile::tempdir().unwrap();
+    let dir = temp_dir();
     let provider = Arc::new(Provider::default());
     let ctx = AppContext::open(dir.path(), vec![provider.clone()]).unwrap();
     let events = Arc::new(Events::default());

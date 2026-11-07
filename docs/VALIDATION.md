@@ -1,6 +1,6 @@
 # 驗證紀錄
 
-> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+> 最後修改：2026-11-08 ｜ 基於 commit：`6891dcc`
 
 環境：Windows 11、Rust 1.99.1、Slint 1.18.1。每次驗證都執行 `cargo fmt --all -- --check`、`cargo clippy --workspace --all-targets -- -D warnings` 與 `cargo test --workspace`。重新執行方式見 [開發說明](PROJECT-DEV.md#測試)。
 
@@ -75,9 +75,16 @@
 
 `--snapshot` 改為送出真實指標事件：滑鼠停在「重新整理」1.2 秒後，說明框出現在按鈕下方；點「匯出」開啟選單，點選單外關閉。已檢查繁中深色與英文淺色截圖。
 
+## 2026-11-08：macOS CI
+
+GitHub Actions 首次執行時，Windows 與 Ubuntu 通過，macOS 的 `settings::tests::missing_fields_gain_defaults_and_round_trip` 失敗：`Symbolic link rejected: /var`。原因是 macOS 的暫存目錄位於 `/var/folders/…`，而 `/var` 是指向 `/private/var` 的符號連結，路徑檢查會拒絕任何一層符號連結。
+
+測試改用 `temp_dir()` 建立暫存目錄：Unix 上先解析暫存目錄的實際路徑，再在其中建立。路徑檢查本身沒有放寬。`rejects_symlinks` 因此真正測到測試建立的連結，而不是 `/var`。CI 的測試改用 `--no-fail-fast`，一次列出所有失敗。本機 Windows 57 個測試通過；macOS 結果待 CI 重新執行確認。
+
 ## 尚未驗證
 
-- 只在本機 Windows 測試過；Linux／macOS 的 CI 已設定但尚未執行。
+- 只在本機 Windows 實際操作過；Ubuntu CI 已通過，macOS CI 修正後待重新執行。
+- macOS／Linux 上，伺服器目錄或 `--data-dir` 的上層路徑若含系統符號連結（例如 macOS 的 `/tmp`、`/var`），會被拒絕。預設資料目錄在使用者目錄下，不受影響。
 - 原生視窗的滑鼠與鍵盤操作沒有自動化；離線擷取送出的事件與介面使用相同的回呼。
 - 沒有啟動 Minecraft 伺服器；插件實際執行時的行為由管理者負責。
 - 一次安裝多個插件是一連串個別交易，後面的項目失敗時已完成的依賴會保留。取代檔案途中突然斷電，需要從 `.spa-backups/` 手動復原。
