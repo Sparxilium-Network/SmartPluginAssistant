@@ -1,8 +1,8 @@
 # 架構
 
-> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+> 最後修改：2026-11-08 ｜ 基於 commit：`9c569ba`
 
-Smart Plugin Assistant Sol（Java／JavaFX）的 Rust 重寫版，並加回原版程式的 Hangar 支援。管理虛擬的 Minecraft 伺服器實例，從 Modrinth 與 Hangar 搜尋、安裝插件，匯入既有 JAR，並安全地更新與匯出。不會啟動或停止伺服器。
+Smart Plugin Assistant 的完全 Rust 重寫版，取代原本的 Java／JavaFX 實作（保留在 `javafx` 分支）。功能與安全設計以 Smart Plugin Assistant Sol（JavaFX 版的後續改寫）為規格，並加回 JavaFX 版的 Hangar 支援。管理虛擬的 Minecraft 伺服器實例，從 Modrinth 與 Hangar 搜尋、安裝插件，匯入既有 JAR，並安全地更新與匯出。不會啟動或停止伺服器。
 
 ```mermaid
 flowchart LR
@@ -20,9 +20,9 @@ flowchart LR
 2026-10-31 與使用者確認：
 
 - UI 框架使用 Slint，前後端嚴格分離，方便日後更換 UI 框架。
-- 內建平台只有 Modrinth 與 Hangar；不包含 Sol 的 Spigot 與原版的 Voxel。
+- 內建平台只有 Modrinth 與 Hangar；不包含 Sol 的 Spigot 與 JavaFX 版的 Voxel。
 - 擴充方式是編譯期的 trait 實作，各平台一個 crate，不支援執行期載入外掛。
-- 使用新的資料目錄 `~/.smartpluginassistant-rust/`。2026-11-06 依使用者要求由 JSON 改為單一 SQLite 資料庫 `spa.db`，並記錄明確的存檔格式版本；Sol 的 JSON 只匯入一次。
+- 使用新的資料目錄 `~/.smartpluginassistant-rust/`，不與 JavaFX 版的 `~/.smartpluginassistant/` 共用。2026-11-06 依使用者要求由 JSON 改為單一 SQLite 資料庫 `spa.db`，並記錄明確的存檔格式版本；Sol 的 JSON 只匯入一次。
 
 ## 分層
 

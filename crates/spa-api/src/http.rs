@@ -6,7 +6,7 @@ use std::sync::{Condvar, Mutex};
 use std::time::Duration;
 use url::Url;
 
-pub const USER_AGENT: &str = "SmartPluginAssistantRust/0.1 (Sparxilium)";
+pub const USER_AGENT: &str = "SmartPluginAssistant/0.1 (Sparxilium)";
 const MAX_RESPONSE: u64 = 8 * 1024 * 1024;
 
 pub trait HttpTransport: Send + Sync {

@@ -1,8 +1,8 @@
-# Smart Plugin Assistant（Rust 版）開發說明
+# Smart Plugin Assistant 開發說明
 
-> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+> 最後修改：2026-11-08 ｜ 基於 commit：`9c569ba`
 
-一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
+Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作保留在 `javafx` 分支。一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
 
 ## 開發文件
 

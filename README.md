@@ -1,8 +1,10 @@
-# Smart Plugin Assistant（Rust 版）
+# Smart Plugin Assistant
 
-> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+> 最後修改：2026-11-08 ｜ 基於 commit：`9c569ba`
 
-Minecraft 伺服器插件管理桌面程式，以 Rust 與 [Slint](https://slint.dev/) 撰寫。功能與安全設計沿用 Smart Plugin Assistant Sol，內建市場為 **Modrinth** 與 **PaperMC Hangar**。
+Minecraft 伺服器插件管理桌面程式，內建市場為 **Modrinth** 與 **PaperMC Hangar**。
+
+這是 Smart Plugin Assistant 以 Rust 與 [Slint](https://slint.dev/) 完全重寫的版本，不含任何 Java 程式碼，也不需要安裝 Java。原本的 Java／JavaFX 版本保留在 [`javafx` 分支](https://github.com/Sparxilium-Network/SmartPluginAssistant/tree/javafx)，不再是主要開發版本。
 
 本程式只管理插件檔案，不會啟動、停止或連線到 Minecraft 伺服器。安裝、更新、停用或移除插件前，請先停止伺服器。
 
@@ -66,7 +68,7 @@ bash ./run.sh
 
 ## 資料位置
 
-預設資料目錄為使用者目錄下的 `.smartpluginassistant-rust/`，與 Sol 及原版程式分開：
+預設資料目錄為使用者目錄下的 `.smartpluginassistant-rust/`。JavaFX 版使用 `.smartpluginassistant/`，兩者分開存放、互不影響：
 
 ```text
 .smartpluginassistant-rust/
@@ -80,7 +82,7 @@ bash ./run.sh
 - 設定視窗會顯示存檔格式版本（目前為 2），並可開啟資料目錄。
 - 程式較新版本建立的資料庫不會被開啟或修改，請更新程式。
 - 升級存檔格式前會先自動備份。
-- 第一次啟動時，若資料目錄中有 Sol 格式的 JSON 資料，會一次匯入；原始檔案不會被修改或刪除。
+- 第一次啟動時，若資料目錄中有 Smart Plugin Assistant Sol 格式的 JSON 資料，會一次匯入；原始檔案不會被修改或刪除。
 
 使用另一個資料目錄（例如測試用）：
 
@@ -94,4 +96,4 @@ bash ./run.sh
 
 ## 授權
 
-沿用原專案的 GNU AGPL v3，詳見 [LICENSE](LICENSE)。
+沿用 JavaFX 版的 GNU AGPL v3，詳見 [LICENSE](LICENSE)。

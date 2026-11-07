@@ -14,6 +14,7 @@ version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-only"
 authors = ["Sparxilium"]
+repository = "https://github.com/Sparxilium-Network/SmartPluginAssistant"
 
 [workspace.dependencies]
 spa-api = { path = "crates/spa-api" }

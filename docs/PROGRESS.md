@@ -1,6 +1,6 @@
 # 開發進度
 
-> 最後修改：2026-11-07 ｜ 基於 commit：`1fe507b`
+> 最後修改：2026-11-08 ｜ 基於 commit：`9c569ba`
 
 ## 已完成
 
@@ -28,6 +28,8 @@
 
 11. 文件重寫為繁體中文並移到 `docs/`，移除 `AGENTS.md`（Agent 指示改放各 Agent 專屬目錄）；打包時一併附上 `docs/`。
 12. 依文件結構規範：開發文件入口改為 `docs/PROJECT-DEV.md`，其他開發文件改為大寫檔名並由入口連結；README 不再說明架構；每份文件標題下方標註最後修改日期與基於的 commit。
+
+13. 2026-11-08：確定以 Rust 版作為 `Sparxilium-Network/SmartPluginAssistant` 的主分支，名稱維持 Smart Plugin Assistant，JavaFX 版移到 `javafx` 分支；文件改為說明本專案是完全 Rust 重寫版，HTTP User-Agent 改為 `SmartPluginAssistant/0.1`。
 
 ## 後續候選
 
