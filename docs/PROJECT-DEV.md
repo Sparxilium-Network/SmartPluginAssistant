@@ -1,6 +1,6 @@
 # Smart Plugin Assistant 開發說明
 
-> 最後修改：2026-11-11 ｜ 基於 commit：`ee1093d`
+> 最後修改：2026-11-12 ｜ 基於 commit：`8707c8e`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作保留在 `javafx` 分支。一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
 
@@ -89,7 +89,7 @@ bash ./run.sh
 bash ./build.sh
 ```
 
-建置腳本依序執行格式檢查、Clippy、全部測試與 release 建置，再把執行檔、`LICENSE`、`README.md` 與 `docs/` 複製到暫存目錄 `dist/.staging-<時間戳>/`，以隔離資料目錄執行打包後的 `--smoke` 檢查（輸出 `smoke-result.json`）。檢查通過後才刪除先前的 `dist/SmartPluginAssistant/` 並換成新產物，`dist/` 只保留最新構建；需要比對兩個版本時，先自行把舊版複製到其他名稱的資料夾，腳本不會動 `dist/` 中的其他資料夾。檢查失敗時不動既有產物，失敗的套件留在暫存目錄。各平台必須在對應作業系統建置。
+建置腳本依序執行格式檢查、Clippy、全部測試與 release 建置，再把執行檔、`LICENSE`、`README.md` 與 `docs/` 複製到暫存目錄 `dist/.staging-<時間戳>/`，以隔離資料目錄執行打包後的 `--smoke` 檢查（輸出 `smoke-result.json`）。檢查通過後才把先前的 `dist/SmartPluginAssistant/` 改名移開、換上新產物，再刪除舊版；若程式正從 `dist/SmartPluginAssistant/` 執行，腳本會中止並提示先關閉程式（新產物留在暫存目錄，舊版不動）。腳本每次執行會先清掉前次失敗留下的 `.staging-*`／`.old-*`。`dist/` 只保留最新構建；需要比對兩個版本時，先自行把舊版複製到其他名稱的資料夾，腳本不會動 `dist/` 中的其他資料夾。檢查失敗時不動既有產物，失敗的套件留在暫存目錄。各平台必須在對應作業系統建置。
 
 ## 自動建置
 

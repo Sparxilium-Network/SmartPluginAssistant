@@ -45,3 +45,7 @@
 - 57 個測試通過，翻譯一致性測試涵蓋 `tip.*`。
 - `--snapshot` 改送真實指標事件：停在「重新整理」1.2 秒後說明出現在按鈕下方；點「匯出」開選單，點外部關閉。看過繁中深色與英文淺色截圖。
 - 2026-11-11 側欄調整：`--snapshot` 全流程通過；看過 06b（左上角小型「設定」按鈕、無 S 方塊）與 07-settings-about（顯示應用程式圖示）。
+- 2026-11-12 打包替換問題：使用者在 8707c8e 打包時正執行 dist 內的 exe；`Remove-Item -Recurse` 刪掉其他檔案但 exe 被鎖，`$ErrorActionPreference = "Continue"` 未中止，`Move-Item` 把暫存資料夾移進舊資料夾內（`dist/SmartPluginAssistant/.staging-*`），使用者開到的仍是舊版。
+  - 實測：Windows 上 exe 執行中時其資料夾仍可改名，但改名後舊資料夾無法刪除，所以單靠改名不夠。
+  - 修正：替換前檢查是否有從 dist 執行的 SmartPluginAssistant 行程，有就 throw；替換改為「改名移開 → 移入新版 → 刪舊版」，每個步驟 `-ErrorAction Stop`；開頭清除 `.staging-*`／`.old-*`。
+  - 驗證：程式執行中打包 → 中止並提示、舊版不動；關閉後打包 → 成功，dist 只剩 SmartPluginAssistant，exe 時間為新建置，且不含已刪除的 `brand.mark`。
