@@ -1,6 +1,6 @@
 # Smart Plugin Assistant 開發說明
 
-> 最後修改：2026-11-11 ｜ 基於 commit：`d99a89b`
+> 最後修改：2026-11-11 ｜ 基於 commit：`ee1093d`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作保留在 `javafx` 分支。一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
 
@@ -23,6 +23,13 @@ AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不
 | `crates/spa-core` | 所有碰觸磁碟與下載的功能：安全路徑、SQLite 資料庫與遷移、實例、插件清單、下載驗證、安裝交易、依賴規劃、更新、匯出、環境清單與圖片快取 |
 | `crates/spa-app` | 與 UI 框架無關的應用層：`Controller`（presenter）、View Model、事件、翻譯與設定 |
 | `crates/spa-desktop` | Slint 介面，只呈現 View Model 並轉送操作；檔案對話框與開啟資料夾／網址也在這裡 |
+
+應用程式圖示的唯一來源是 `assets/icon.png`（建議正方形、透明背景、至少 256×256）。`crates/spa-desktop/build.rs` 在建置時從它產生：
+
+- 256×256 視窗圖示，由 `app.slint` 以 `@image-url("@generated/window-icon.png")` 編進程式。
+- Windows 執行檔圖示 `app.ico`（16–256 共 7 種尺寸），以 `winresource` 嵌入 exe，供檔案總管、工作列與捷徑使用。
+
+更換圖示只要取代 `assets/icon.png` 後重新建置。
 
 ## 開發規範
 

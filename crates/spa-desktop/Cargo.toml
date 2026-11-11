@@ -21,3 +21,5 @@ image.workspace = true
 
 [build-dependencies]
 slint-build = "1"
+image = { version = "0.25", default-features = false, features = ["png", "ico"] }
+winresource = "0.1"
