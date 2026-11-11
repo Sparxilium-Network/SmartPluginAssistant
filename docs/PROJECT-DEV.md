@@ -1,6 +1,6 @@
 # Smart Plugin Assistant 開發說明
 
-> 最後修改：2026-11-11 ｜ 基於 commit：`cd8b770`
+> 最後修改：2026-11-11 ｜ 基於 commit：`dce44c0`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作保留在 `javafx` 分支。一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
 
@@ -134,7 +134,7 @@ sqlite3 "$env:USERPROFILE\.smartpluginassistant-rust\spa.db" "PRAGMA user_versio
 
 ## 日誌
 
-日誌寫入資料目錄的 `logs/app.log`，等級 INFO，超過 5 MiB 時在啟動時改名為 `app.1.log`。HTTP 函式庫（ureq、rustls）的訊息不記錄。不記錄任何憑證。
+日誌由 `spa_app::logging::init` 初始化，寫入資料目錄的 `logs/app.log`，等級 INFO，超過 5 MiB 時在啟動時改名為 `app.1.log`。HTTP 函式庫（ureq、rustls）的訊息不記錄。不記錄任何憑證。
 
 ## 測試
 

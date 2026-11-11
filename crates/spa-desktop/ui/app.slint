@@ -169,6 +169,9 @@ export component MainWindow inherits Window {
     in-out property <int> set-language-index;
     in-out property <bool> set-images;
     in-out property <int> set-cache-mb: 128;
+    // Bounds come from `spa_app::settings::IMAGE_CACHE_MB`.
+    in property <int> cache-mb-min: 16;
+    in property <int> cache-mb-max: 512;
     in property <string> set-usage;
     in property <string> set-storage;
 
@@ -924,7 +927,7 @@ export component MainWindow inherits Window {
         HorizontalLayout {
             spacing: 10px;
             Text { text: root.t("settings.cache_limit"); color: Theme.muted; vertical-alignment: center; }
-            SpinBox { minimum: 16; maximum: 512; value <=> root.set-cache-mb; }
+            SpinBox { minimum: root.cache-mb-min; maximum: root.cache-mb-max; value <=> root.set-cache-mb; }
         }
         Muted { text: root.t("settings.cache_hint"); }
         Text { text: root.set-usage; color: Theme.text; wrap: word-wrap; }

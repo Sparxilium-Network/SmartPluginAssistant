@@ -19,4 +19,5 @@
 12. 文件結構規範 v1：入口 `docs/PROJECT-DEV.md`、文件標頭（9c569ba）。
 13. 定位為 Smart Plugin Assistant 的完全 Rust 重寫版，User-Agent 去掉 Rust（6891dcc）。
 14. macOS CI 測試暫存目錄修正、CI `--no-fail-fast`（cd8b770）。
-15. 2026-11-11：依規範 v2 建立 `.cowork/`，`docs/VALIDATION.md`、`docs/PROGRESS.md` 與 MEMORY 中的決策搬入。
+15. 2026-11-11：依規範 v2 建立 `.cowork/`，`docs/VALIDATION.md`、`docs/PROGRESS.md` 與 MEMORY 中的決策搬入（dce44c0）。
+16. 2026-11-11：前後端分離補強：匯出預設檔名、快取上限範圍、日誌初始化移到 spa-app。

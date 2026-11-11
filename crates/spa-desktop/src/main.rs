@@ -15,7 +15,7 @@ use spa_app::artwork::Rgba;
 use spa_app::columns::clamp_width;
 use spa_app::context::{builtin_providers, default_data_dir};
 use spa_app::i18n::{tr, trf};
-use spa_app::settings::{ACCENTS, LANGUAGES};
+use spa_app::settings::{ACCENTS, IMAGE_CACHE_MB, LANGUAGES};
 use spa_app::{AppContext, AppSettings, Controller, InstanceForm, ReleasesVm, SettingsVm, UiEvent};
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
@@ -42,19 +42,6 @@ fn parse_args() -> Args {
     }
     let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
     Args { data_dir: data_dir.unwrap_or_else(|| default_data_dir(&home)), smoke, snapshot }
-}
-
-fn init_logging(data_dir: &Path) {
-    let logs = data_dir.join("logs");
-    let _ = std::fs::create_dir_all(&logs);
-    let file = logs.join("app.log");
-    if std::fs::metadata(&file).is_ok_and(|m| m.len() > 5 * 1024 * 1024) {
-        let _ = std::fs::rename(&file, logs.join("app.1.log"));
-    }
-    let config = simplelog::ConfigBuilder::new().add_filter_ignore_str("ureq").add_filter_ignore_str("rustls").build();
-    if let Ok(output) = std::fs::OpenOptions::new().create(true).append(true).open(&file) {
-        let _ = simplelog::WriteLogger::init(log::LevelFilter::Info, config, output);
-    }
 }
 
 // ---------- model helpers ----------
@@ -333,19 +320,10 @@ fn set_extras(ui: &MainWindow, extras: Vec<spa_app::Choice>) {
     set_rows(ui.get_inst_extras(), rows);
 }
 
-fn file_stem(ui: &MainWindow) -> String {
-    let title: String = ui.get_library_title().into();
-    let safe: String =
-        title.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' }).collect();
-    if safe.trim_matches('-').is_empty() {
-        "server".into()
-    } else {
-        safe
-    }
-}
-
 /// Connects Slint callbacks to controller actions.
 fn wire(ui: &MainWindow, controller: &Controller) {
+    ui.set_cache_mb_min(*IMAGE_CACHE_MB.start() as i32);
+    ui.set_cache_mb_max(*IMAGE_CACHE_MB.end() as i32);
     macro_rules! on {
         ($c:ident, $ui:ident, $setter:ident, || $body:expr) => {
             on!($c, $ui, $setter, | | $body)
@@ -396,15 +374,15 @@ fn wire(ui: &MainWindow, controller: &Controller) {
         }
     });
     on!(c, ui, on_lib_export, |script| {
-        let (key, filter, extension, name) = if script {
-            ("library.export_script", "file.script", "sh", "deploy.sh".to_string())
+        let (key, filter, extension) = if script {
+            ("library.export_script", "file.script", "sh")
         } else {
-            ("library.export_zip", "file.zip", "zip", format!("{}-plugins.zip", file_stem(&ui)))
+            ("library.export_zip", "file.zip", "zip")
         };
         let file = rfd::FileDialog::new()
             .set_title(tr(key))
             .add_filter(tr(filter), &[extension])
-            .set_file_name(name)
+            .set_file_name(c.export_file_name(script))
             .save_file();
         if let Some(file) = file {
             c.export(file, script);
@@ -488,7 +466,7 @@ fn wire(ui: &MainWindow, controller: &Controller) {
             accent: ACCENTS[index(ui.get_set_accent_index(), ACCENTS.len())].into(),
             language: LANGUAGES[index(ui.get_set_language_index(), LANGUAGES.len())].into(),
             images_enabled: ui.get_set_images(),
-            cache_mb: ui.get_set_cache_mb().clamp(16, 512) as u32,
+            cache_mb: u32::try_from(ui.get_set_cache_mb()).unwrap_or(0),
         });
     });
     on!(c, ui, on_settings_clear_cache, || c.clear_image_cache());
@@ -533,7 +511,7 @@ fn smoke(controller: &Controller, data_dir: &Path) -> Result<(), Box<dyn std::er
 
 fn main() {
     let args = parse_args();
-    init_logging(&args.data_dir);
+    spa_app::logging::init(&args.data_dir);
     log::info!("Starting with data directory {}", args.data_dir.display());
     let ctx = AppContext::open(&args.data_dir, builtin_providers()).unwrap_or_else(|e| startup_failure(e));
     let settings = AppSettings::load(&ctx.db).unwrap_or_else(|e| {

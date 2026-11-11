@@ -15,7 +15,6 @@ log.workspace = true
 slint = { version = "1", features = ["renderer-software", "software-renderer-systemfonts"] }
 rfd = "0.15"
 open = "5"
-simplelog = "0.12"
 dirs = "6"
 serde_json.workspace = true
 image.workspace = true

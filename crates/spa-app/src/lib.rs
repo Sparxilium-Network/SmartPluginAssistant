@@ -8,6 +8,7 @@ pub mod context;
 pub mod controller;
 pub mod feed;
 pub mod i18n;
+pub mod logging;
 pub mod settings;
 pub mod vm;
 

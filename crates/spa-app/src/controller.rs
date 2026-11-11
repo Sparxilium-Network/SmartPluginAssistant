@@ -94,6 +94,18 @@ fn initial(title: &str) -> String {
         .unwrap_or_else(|| tr("artwork.placeholder"))
 }
 
+/// The deploy script has a fixed name; the ZIP is named after the instance with characters
+/// outside letters, digits, `-` and `_` replaced, falling back to `server`.
+fn export_file_name(instance: &str, script: bool) -> String {
+    if script {
+        return "deploy.sh".into();
+    }
+    let safe: String =
+        instance.chars().map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '-' }).collect();
+    let stem = if safe.trim_matches('-').is_empty() { "server" } else { &safe };
+    format!("{stem}-plugins.zip")
+}
+
 fn channel_name(channel: Channel) -> String {
     tr(match channel {
         Channel::Release => "channel.release",
@@ -1121,6 +1133,12 @@ impl Controller {
         self.inner.emit(UiEvent::Confirm(trf("library.remove_confirm", &[&count])));
     }
 
+    /// Suggested file name for an export of the selected instance.
+    pub fn export_file_name(&self, script: bool) -> String {
+        let name = self.inner.lock().instance().map(|i| i.name).unwrap_or_default();
+        export_file_name(&name, script)
+    }
+
     pub fn export(&self, destination: PathBuf, script: bool) {
         let Some(instance) = self.inner.lock().instance() else { return };
         self.inner.run(
@@ -1413,5 +1431,19 @@ impl Controller {
                 log::error!("Cannot save window settings: {e}");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::export_file_name;
+
+    #[test]
+    fn export_names_are_safe_and_never_empty() {
+        assert_eq!(export_file_name("Survival 1.21", false), "Survival-1-21-plugins.zip");
+        assert_eq!(export_file_name("生存_服", false), "生存_服-plugins.zip");
+        assert_eq!(export_file_name("../..", false), "server-plugins.zip");
+        assert_eq!(export_file_name("", false), "server-plugins.zip");
+        assert_eq!(export_file_name("anything", true), "deploy.sh");
     }
 }

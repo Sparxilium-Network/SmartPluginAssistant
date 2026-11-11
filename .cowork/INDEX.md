@@ -9,10 +9,10 @@
 | `decisions/library-table-and-menus.md` | 上次更新／上次檢查欄位、欄位自訂、匯出選單、懸浮說明、overlay 理由 | table, columns, export, tooltip, overlay, slint |
 | `decisions/repository-and-branches.md` | 目標 GitHub 儲存庫、名稱、javafx／main 分支、User-Agent、不主動 push | github, branch, javafx, main, user-agent, push |
 | `decisions/symlink-path-policy.md` | 拒絕路徑中任何符號連結，使用者決定維持；測試用 temp_dir() | symlink, paths, macos, security, tempdir |
-| `verification/workspace-tests.md` | 最新 fmt／Clippy／測試結果與 57 個測試的涵蓋範圍 | test, clippy, fmt, coverage |
+| `verification/workspace-tests.md` | 最新 fmt／Clippy／測試結果與 58 個測試的涵蓋範圍 | test, clippy, fmt, coverage |
 | `verification/snapshot-walkthroughs.md` | 各階段 --snapshot 線上流程、截圖檢查與 build.ps1／--smoke 結果 | snapshot, smoke, build, ui, screenshot |
 | `verification/ci.md` | GitHub Actions 設定、macOS /var 符號連結失敗與修正 | ci, github-actions, macos |
 | `verification/unverified.md` | 尚未驗證項目與已知限制 | unverified, limitation, todo |
 | `progress/history.md` | 已完成項目與對應 commit | progress, history, commit |
 | `progress/backlog.md` | 後續候選工作 | backlog, todo, next |
-| `reasoning/frontend-separation.md` | 前後端分離檢查：已分離的證據與 main.rs 剩餘的應用邏輯 | architecture, frontend, backend, controller, spa-desktop |
+| `reasoning/frontend-separation.md` | 前後端分離檢查與補強：main.rs 剩餘應用邏輯已移到 spa-app | architecture, frontend, backend, controller, spa-desktop |

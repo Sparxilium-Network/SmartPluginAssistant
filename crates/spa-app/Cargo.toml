@@ -17,6 +17,7 @@ url.workspace = true
 uuid.workspace = true
 chrono.workspace = true
 image.workspace = true
+simplelog = "0.12"
 
 [dev-dependencies]
 tempfile.workspace = true

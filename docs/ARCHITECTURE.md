@@ -1,6 +1,6 @@
 # 架構
 
-> 最後修改：2026-11-11 ｜ 基於 commit：`cd8b770`
+> 最後修改：2026-11-11 ｜ 基於 commit：`dce44c0`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，取代原本的 Java／JavaFX 實作（保留在 `javafx` 分支）。功能與安全設計以 Smart Plugin Assistant Sol（JavaFX 版的後續改寫）為規格，並加回 JavaFX 版的 Hangar 支援。管理虛擬的 Minecraft 伺服器實例，從 Modrinth 與 Hangar 搜尋、安裝插件，匯入既有 JAR，並安全地更新與匯出。不會啟動或停止伺服器。
 
@@ -32,8 +32,8 @@ spa-api  <-  spa-core  <-  spa-app  <-  spa-desktop (Slint)
 
 - `spa-api`：`PluginProvider` trait（阻塞式、`Send + Sync`）與不可變的資料契約。`HttpTransport` 只允許 HTTPS（測試可用 loopback HTTP）、不自動轉址、回應上限 8 MiB，並以 semaphore 限制最多 4 個同時請求。
 - `spa-core`：所有碰觸磁碟或下載的功能，不引用 provider 或 UI。
-- `spa-app`：`Controller` 持有狀態，從背景執行緒透過 `Sink`（`Arc<dyn Fn(UiEvent) + Send + Sync>`）送出 `UiEvent`。翻譯、設定、探索清單、圖片解碼與環境選項規則都在這裡，不含任何 UI 型別。
-- `spa-desktop`：在事件迴圈（`invoke_from_event_loop`）把事件轉成 Slint model，並把介面回呼接到 Controller 方法。檔案對話框（`rfd`）與開啟資料夾／網址（`open`）也在這裡。
+- `spa-app`：`Controller` 持有狀態，從背景執行緒透過 `Sink`（`Arc<dyn Fn(UiEvent) + Send + Sync>`）送出 `UiEvent`。翻譯、設定（含允許範圍，例如 `IMAGE_CACHE_MB`）、探索清單、圖片解碼、環境選項規則、匯出預設檔名（`Controller::export_file_name`）與日誌初始化（`logging::init`）都在這裡，不含任何 UI 型別。
+- `spa-desktop`：在事件迴圈（`invoke_from_event_loop`）把事件轉成 Slint model，並把介面回呼接到 Controller 方法。檔案對話框（`rfd`）與開啟資料夾／網址（`open`）也在這裡。輸入元件的範圍從 `spa-app` 的常數取得，不在介面層另外寫死或夾值，驗證一律由 Controller 執行。
 
 ## 資料安全
 

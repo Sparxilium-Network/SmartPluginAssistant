@@ -17,7 +17,9 @@
 ## 可接受、屬於呈現層
 - 主題色計算、表格總寬、拖曳中的寬度預覽（`clamp_width` 由 spa-app 提供）、檔案對話框（rfd）、開啟資料夾／網址（open）、命令列參數解析。
 
-## 建議做法（尚未實作，待使用者決定）
-- `Controller::export_file_name(script)` 取代 `file_stem`。
-- UI 不夾值，或由 spa-app 匯出 `CACHE_MB_RANGE` 供 UI 設定 spinbox 範圍。
-- 日誌初始化移到 `spa-app::logging`。
+## 處理結果（2026-11-11，使用者同意後實作）
+- 1 → `Controller::export_file_name(script)`，邏輯為 controller.rs 的 `export_file_name`，有單元測試。
+- 2 → `spa_app::settings::IMAGE_CACHE_MB`；`validated` 與 Slint SpinBox 的 min／max（`cache-mb-min`／`cache-mb-max`）都用它，UI 不再夾值，原值交給 Controller 驗證。
+- 3 → `spa_app::logging::init`；simplelog 相依移到 spa-app。
+- 4（--smoke）維持在 desktop：只用 Controller 公開方法，屬打包檢查。
+- 目前 main.rs 只剩呈現與平台整合。

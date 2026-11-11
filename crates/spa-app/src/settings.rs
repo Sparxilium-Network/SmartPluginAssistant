@@ -9,6 +9,8 @@ use spa_core::{fail, Result};
 pub const LANGUAGES: [&str; 2] = ["zh-tw", "en"];
 pub const THEMES: [&str; 2] = ["dark", "light"];
 pub const ACCENTS: [&str; 3] = ["teal", "blue", "violet"];
+/// Allowed image cache limit in MiB; frontends use it to bound their input.
+pub const IMAGE_CACHE_MB: std::ops::RangeInclusive<u32> = 16..=512;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -45,7 +47,7 @@ impl AppSettings {
         if !THEMES.contains(&self.theme.as_str()) || !ACCENTS.contains(&self.accent.as_str()) {
             return fail("Invalid appearance setting");
         }
-        if !(16..=512).contains(&self.image_cache_mb) {
+        if !IMAGE_CACHE_MB.contains(&self.image_cache_mb) {
             return fail("Invalid image cache limit");
         }
         if !LANGUAGES.contains(&self.language.as_str()) {
