@@ -188,6 +188,10 @@ export component MainWindow inherits Window {
     in-out property <bool> export-menu;
     property <length> export-x;
     property <length> export-y;
+    // Local plugin drop-down (refresh, import, identify), anchored the same way.
+    in-out property <bool> local-menu;
+    property <length> local-x;
+    property <length> local-y;
 
     // ---------- actions ----------
     callback select-instance(int);
@@ -411,9 +415,18 @@ export component MainWindow inherits Window {
                             text <=> root.library-filter;
                             edited(text) => { root.lib-filter(text); }
                         }
-                        AppButton { text: root.t("library.refresh"); tip: root.t("tip.refresh"); enabled: !root.busy; clicked => { root.lib-refresh(); } }
-                        AppButton { text: root.t("library.import"); tip: root.t("tip.import"); enabled: !root.busy; clicked => { root.lib-import(); } }
-                        AppButton { text: root.t("library.link"); tip: root.t("tip.link"); enabled: !root.busy; clicked => { root.lib-link(); } }
+                        AppButton {
+                            text: root.t("library.local");
+                            dropdown: true;
+                            horizontal-stretch: 0;
+                            tip: root.t("tip.local");
+                            enabled: !root.busy;
+                            clicked => {
+                                root.local-x = self.absolute-position.x + self.width;
+                                root.local-y = self.absolute-position.y + self.height + 4px;
+                                root.local-menu = true;
+                            }
+                        }
                         AppButton { text: root.t("library.check"); tip: root.t("tip.check"); enabled: !root.busy; clicked => { root.lib-check-updates(); } }
                     }
                     HorizontalLayout {
@@ -445,7 +458,6 @@ export component MainWindow inherits Window {
                             vertical-alignment: center;
                         }
                         Rectangle { horizontal-stretch: 1; }
-                        AppButton { text: root.t("columns.button"); tip: root.t("tip.columns"); clicked => { root.show-settings("columns"); } }
                     }
                     Rectangle {
                         vertical-stretch: 1;
@@ -464,14 +476,6 @@ export component MainWindow inherits Window {
                                 Rectangle {
                                     height: 40px;
                                     background: Theme.header;
-                                    // Right-click anywhere on the header opens the column chooser.
-                                    TouchArea {
-                                        pointer-event(event) => {
-                                            if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
-                                                root.show-settings("columns");
-                                            }
-                                        }
-                                    }
                                     HorizontalLayout {
                                         padding-left: 12px;
                                         padding-right: 12px;
@@ -740,6 +744,44 @@ export component MainWindow inherits Window {
                     padding-left: 16px;
                     padding-right: 16px;
                     Text { text: root.status; color: root.busy ? Theme.accent : Theme.muted; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                }
+            }
+        }
+    }
+
+    // ---------- local plugin menu ----------
+    if root.local-menu: Rectangle {
+        // Clicking anywhere outside the menu closes it.
+        TouchArea { clicked => { root.local-menu = false; } }
+        Rectangle {
+            width: 360px;
+            height: local-layout.preferred-height;
+            x: max(8px, root.local-x - self.width);
+            y: root.local-y;
+            background: Theme.surface;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Theme.border;
+            drop-shadow-blur: 16px;
+            drop-shadow-color: #00000050;
+            TouchArea { }
+            local-layout := VerticalLayout {
+                padding: 6px;
+                spacing: 2px;
+                MenuItem {
+                    text: root.t("library.refresh");
+                    detail: root.t("library.refresh_hint");
+                    clicked => { root.local-menu = false; root.lib-refresh(); }
+                }
+                MenuItem {
+                    text: root.t("library.import");
+                    detail: root.t("library.import_hint");
+                    clicked => { root.local-menu = false; root.lib-import(); }
+                }
+                MenuItem {
+                    text: root.t("library.link");
+                    detail: root.t("library.link_hint");
+                    clicked => { root.local-menu = false; root.lib-link(); }
                 }
             }
         }

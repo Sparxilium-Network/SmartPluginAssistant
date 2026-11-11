@@ -121,6 +121,9 @@ fn loaded_artwork(ui: &MainWindow) -> usize {
 }
 
 /// Scripted walkthrough using live provider APIs in an isolated data directory.
+/// Centre of the "Local plugins" drop-down button in the 1360×860 snapshot window.
+const LOCAL_BUTTON: (f32, f32) = (1190.0, 154.0);
+
 pub fn run(probe: &Probe, ui: &MainWindow) {
     let long = Duration::from_secs(30);
     ui.show().expect("show window");
@@ -182,28 +185,32 @@ pub fn run(probe: &Probe, ui: &MainWindow) {
         probe.wait(ui, long, |ui| !ui.get_busy());
         println!("update check: {}", ui.get_status());
         probe.capture("06b-library-installed");
-        // Real pointer input: resting on "Refresh" shows its hint, clicking "Export" opens the menu.
+        // Real pointer input: resting on "Local plugins" shows its hint, clicking it and "Export"
+        // opens their menus, and a click outside closes them.
         let window = ui.window();
         let at = |x: f32, y: f32| slint::LogicalPosition::new(x, y);
-        window.dispatch_event(WindowEvent::PointerMoved { position: at(1010.0, 154.0) });
+        let click = |x: f32, y: f32| {
+            let position = at(x, y);
+            window.dispatch_event(WindowEvent::PointerMoved { position });
+            window.dispatch_event(WindowEvent::PointerPressed { position, button: PointerEventButton::Left });
+            window.dispatch_event(WindowEvent::PointerReleased { position, button: PointerEventButton::Left });
+        };
+        let (local_x, local_y) = (LOCAL_BUTTON.0, LOCAL_BUTTON.1);
+        window.dispatch_event(WindowEvent::PointerMoved { position: at(local_x, local_y) });
         probe.settle(ui, Duration::from_millis(1200));
         probe.capture("06f-hover-hint");
-        window.dispatch_event(WindowEvent::PointerMoved { position: at(700.0, 600.0) });
-        let export = at(1310.0, 198.0);
-        window.dispatch_event(WindowEvent::PointerMoved { position: export });
-        window.dispatch_event(WindowEvent::PointerPressed { position: export, button: PointerEventButton::Left });
-        window.dispatch_event(WindowEvent::PointerReleased { position: export, button: PointerEventButton::Left });
+        click(local_x, local_y);
+        probe.settle(ui, Duration::from_millis(300));
+        println!("local menu open: {}", ui.get_local_menu());
+        probe.capture("06h-local-menu");
+        click(700.0, 600.0);
+        probe.settle(ui, Duration::from_millis(300));
+        println!("local menu closed by outside click: {}", !ui.get_local_menu());
+        click(1310.0, 198.0);
         probe.settle(ui, Duration::from_millis(300));
         println!("export menu open: {}", ui.get_export_menu());
         probe.capture("06g-export-menu");
-        window.dispatch_event(WindowEvent::PointerPressed {
-            position: at(700.0, 600.0),
-            button: PointerEventButton::Left,
-        });
-        window.dispatch_event(WindowEvent::PointerReleased {
-            position: at(700.0, 600.0),
-            button: PointerEventButton::Left,
-        });
+        click(700.0, 600.0);
         probe.settle(ui, Duration::from_millis(300));
         println!("export menu closed by outside click: {}", !ui.get_export_menu());
         // Column chooser on its settings page, then a hidden column and a drag-resized one.

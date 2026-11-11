@@ -1,5 +1,9 @@
 # 離線畫面擷取（--snapshot）與打包檢查
 
+## 2026-11-11：本機插件選單
+- `--snapshot` 以真實指標事件：停在「本機插件」（1190,154）1.2 秒顯示說明（06f-hover-hint），點擊開啟選單（06h-local-menu），點外部關閉；匯出選單同樣開啟／關閉。已看過截圖：三個項目與說明完整，表格上方已無「欄位」按鈕。
+- 未驗證：原生視窗中點選單項目實際執行匯入（檔案對話框）。
+
 ## 2026-11-11：打包規則
 - 使用者要求每次編譯完成都要放到 dist。依此規則以 738779c 執行 `./build.ps1`：smoke 成功，`dist/SmartPluginAssistant/` 含 exe（26.8 MB）、LICENSE、README.md、docs/；前一版改名為 `dist/SmartPluginAssistant-20261111-211841`。
 
