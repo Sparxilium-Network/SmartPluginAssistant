@@ -1,6 +1,6 @@
 # Smart Plugin Assistant 開發說明
 
-> 最後修改：2026-11-11 ｜ 基於 commit：`6c5a138`
+> 最後修改：2026-11-11 ｜ 基於 commit：`738779c`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作保留在 `javafx` 分支。一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
 
@@ -55,7 +55,7 @@ AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不
 
 ### 工作方式
 
-- 一次完成並驗證一個小功能後提交，再進行下一個。commit 標題寫英文，空一行後以繁體中文說明。
+- 一次完成並驗證一個小功能後提交，再進行下一個。修改程式碼並驗證後，一律執行 `build.ps1`（或 `build.sh`）把最新產物打包到 `dist/SmartPluginAssistant/`；只改文件時不需要。commit 標題寫英文，空一行後以繁體中文說明。
 - 測試保持可重現：使用本機 HTTP fixture，不依賴外部服務。連線到真實 API 的檢查只在明確執行 `--snapshot` 時進行。
 
 ## 啟動與打包

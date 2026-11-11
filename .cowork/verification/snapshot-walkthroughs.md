@@ -1,5 +1,8 @@
 # 離線畫面擷取（--snapshot）與打包檢查
 
+## 2026-11-11：打包規則
+- 使用者要求每次編譯完成都要放到 dist。依此規則以 738779c 執行 `./build.ps1`：smoke 成功，`dist/SmartPluginAssistant/` 含 exe（26.8 MB）、LICENSE、README.md、docs/；前一版改名為 `dist/SmartPluginAssistant-20261111-211841`。
+
 ## 2026-11-11：設定視窗改版
 - `--snapshot` 全流程通過，新增截圖 07-settings（外觀與語言）、07-settings-images／storage／providers／about、07-settings-light-english、07-settings-collapsed；06c-columns 改為設定的表格欄位頁。
 - 已看過：深色繁中各頁、淺色英文（即時儲存後主題、主色、語言立即套用且視窗保持開啟）、收合「偏好設定」群組。
