@@ -1,5 +1,9 @@
 # 離線畫面擷取（--snapshot）與打包檢查
 
+## 2026-11-11：dist 只保留最新構建
+- 使用者要求 dist 只放最新構建（比對兩版時例外）。build.ps1／build.sh 改為 smoke 通過後刪除舊的 `dist/SmartPluginAssistant/` 再換上新版，不再改名保留；不碰 dist 其他資料夾。
+- 已刪除舊產物：`20261106-231135`、`20261111-211758`、`SmartPluginAssistant-20261031-164210`、`-20261111-211841`、`-20261111-220839`。
+
 ## 2026-11-11：本機插件選單
 - `--snapshot` 以真實指標事件：停在「本機插件」（1190,154）1.2 秒顯示說明（06f-hover-hint），點擊開啟選單（06h-local-menu），點外部關閉；匯出選單同樣開啟／關閉。已看過截圖：三個項目與說明完整，表格上方已無「欄位」按鈕。
 - 未驗證：原生視窗中點選單項目實際執行匯入（檔案對話框）。
@@ -15,7 +19,6 @@
 ## 2026-11-11：打包位置
 - 問題：`dist/SmartPluginAssistant/` 自 2026-10-31 存在，之後的打包都放到 `dist/<時間戳>/`，使用者看到的一直是舊版，誤以為沒打包。
 - 修正後 `./build.ps1` 通過：smoke `{"providers":["modrinth","hangar"],"success":true}`，舊產物改名為 `dist/SmartPluginAssistant-20261031-164210`，新產物在 `dist/SmartPluginAssistant/`。`build.sh` 只做 `bash -n` 語法檢查，未在 Linux／macOS 實際執行。
-- `dist/20261106-231135`、`dist/20261111-211758` 是舊規則留下的產物，未刪除，由使用者決定。
 
 ## 2026-10-31：初版
 - `./build.ps1` 通過：51 個測試、release 建置、打包後 `--smoke`（`{"providers":["modrinth","hangar"],"success":true}`）。輸出單一 23 MB `SmartPluginAssistant.exe`。
