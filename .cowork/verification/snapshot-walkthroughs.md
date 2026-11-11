@@ -1,5 +1,10 @@
 # 離線畫面擷取（--snapshot）與打包檢查
 
+## 2026-11-11：打包位置
+- 問題：`dist/SmartPluginAssistant/` 自 2026-10-31 存在，之後的打包都放到 `dist/<時間戳>/`，使用者看到的一直是舊版，誤以為沒打包。
+- 修正後 `./build.ps1` 通過：smoke `{"providers":["modrinth","hangar"],"success":true}`，舊產物改名為 `dist/SmartPluginAssistant-20261031-164210`，新產物在 `dist/SmartPluginAssistant/`。`build.sh` 只做 `bash -n` 語法檢查，未在 Linux／macOS 實際執行。
+- `dist/20261106-231135`、`dist/20261111-211758` 是舊規則留下的產物，未刪除，由使用者決定。
+
 ## 2026-10-31：初版
 - `./build.ps1` 通過：51 個測試、release 建置、打包後 `--smoke`（`{"providers":["modrinth","hangar"],"success":true}`）。輸出單一 23 MB `SmartPluginAssistant.exe`。
 - `--snapshot` 以 debug 與打包 release 各跑一次（隔離資料目錄、公開 API）：
