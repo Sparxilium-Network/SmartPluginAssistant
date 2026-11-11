@@ -6,9 +6,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo build --release -p spa-desktop
+cargo clippy --locked --workspace --all-targets -- -D warnings
+cargo test --locked --workspace
+cargo build --locked --release -p spa-desktop
 final=dist/SmartPluginAssistant
 # Leftovers of earlier failed runs are this script's own temporary folders.
 rm -rf -- dist/.staging-* dist/.old-*

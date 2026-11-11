@@ -6,9 +6,9 @@
 $ErrorActionPreference = "Continue"
 Set-Location $PSScriptRoot
 cargo fmt --all -- --check; if ($LASTEXITCODE) { throw "Formatting check failed; run cargo fmt --all" }
-cargo clippy --workspace --all-targets -- -D warnings; if ($LASTEXITCODE) { throw "Clippy failed" }
-cargo test --workspace; if ($LASTEXITCODE) { throw "Tests failed" }
-cargo build --release -p spa-desktop; if ($LASTEXITCODE) { throw "Release build failed" }
+cargo clippy --locked --workspace --all-targets -- -D warnings; if ($LASTEXITCODE) { throw "Clippy failed" }
+cargo test --locked --workspace; if ($LASTEXITCODE) { throw "Tests failed" }
+cargo build --locked --release -p spa-desktop; if ($LASTEXITCODE) { throw "Release build failed" }
 $final = Join-Path "dist" "SmartPluginAssistant"
 # Leftovers of earlier failed runs are this script's own temporary folders.
 Get-ChildItem "dist" -Directory -Force -ErrorAction SilentlyContinue |

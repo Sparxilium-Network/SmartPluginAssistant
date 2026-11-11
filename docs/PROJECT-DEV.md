@@ -1,6 +1,6 @@
 # Smart Plugin Assistant 開發說明
 
-> 最後修改：2026-11-12 ｜ 基於 commit：`8707c8e`
+> 最後修改：2026-11-12 ｜ 基於 commit：`4456339`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作保留在 `javafx` 分支。一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
 
@@ -93,7 +93,12 @@ bash ./build.sh
 
 ## 自動建置
 
-[GitHub Actions](../.github/workflows/build.yml) 在每次 push 與 PR 時，於 Windows、Ubuntu 與 macOS 執行格式檢查、Clippy、測試與 release 建置，並上傳執行檔為 artifact。測試使用 `--no-fail-fast`，一次列出所有失敗。工作流程不使用任何 secret。
+[GitHub Actions](../.github/workflows/build-prerelease.yml)（Build and pre-release）在 push 到 `main`、推送 `v*` tag、對 `main` 的 PR 與手動觸發時執行：
+
+1. **build**：Windows x86_64、Linux x86_64、macOS aarch64 各自執行 `build.ps1`／`build.sh`（含格式檢查、Clippy、測試、`--locked` release 建置與打包後 smoke 檢查；Linux 以 `xvfb-run` 提供虛擬顯示），再封存為 `SmartPluginAssistant-<平台>.zip`／`.tar.gz` 並產生 `.sha256`，上傳為 artifact（保留 14 天）。
+2. **publish**：只在 push 到 `main` 或 `v*` tag 時執行（PR 不發布）。下載三個平台套件並核對校驗值後，建立 GitHub **Pre-release**。tag 命名為 `dev-<run 編號>.<重試次數>-<commit 前 7 碼>`，例如 `dev-12.1-4456339`；推送 `v*` tag 時沿用該 tag。標題為 `SmartPluginAssistant <tag> (Pre-release)`，不標記為 latest。已發布的版本不會被重跑覆蓋。
+
+權限：工作流程預設只有 `contents: read`，只有 publish 工作取得 `contents: write`，使用 GitHub 自動產生的 `GITHUB_TOKEN`，不需要其他 secret。checkout 不保留憑證，第三方 action 皆以 commit SHA 固定版本。
 
 ## 資料儲存
 

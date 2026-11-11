@@ -1,6 +1,6 @@
 # Smart Plugin Assistant
 
-> 最後修改：2026-11-11 ｜ 基於 commit：`74f7f8e`
+> 最後修改：2026-11-12 ｜ 基於 commit：`4456339`
 
 Minecraft 伺服器插件管理桌面程式，內建市場為 **Modrinth** 與 **PaperMC Hangar**。
 
@@ -12,10 +12,11 @@ Minecraft 伺服器插件管理桌面程式，內建市場為 **Modrinth** 與 *
 
 ## 取得與執行
 
-發行版是單一執行檔，不需要另外安裝 Runtime：
+發行版是單一執行檔，不需要另外安裝 Runtime。目前只提供開發中的 Pre-release，可從 [Releases](https://github.com/Sparxilium-Network/SmartPluginAssistant/releases) 下載對應平台的壓縮檔（Windows x86_64、Linux x86_64、macOS Apple Silicon），每個檔案附 `.sha256` 校驗值。
+
 
 - Windows：執行 `SmartPluginAssistant.exe`。
-- Linux／macOS：執行 `SmartPluginAssistant`。Linux 需要圖形桌面與 fontconfig、xkbcommon、GTK 3 等系統函式庫。
+- Linux／macOS：執行 `SmartPluginAssistant`。Linux 需要圖形桌面與 fontconfig、xkbcommon、GTK 3 等系統函式庫。macOS 執行檔未簽署，第一次執行需在「系統設定 › 隱私權與安全性」允許。
 
 從原始碼執行需要 Rust stable：
 
