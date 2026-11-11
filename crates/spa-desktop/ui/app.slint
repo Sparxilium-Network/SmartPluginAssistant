@@ -303,29 +303,16 @@ export component MainWindow inherits Window {
             VerticalLayout {
                 padding: 16px;
                 spacing: 12px;
+                // Settings sits compact in the top-left corner, above the application name.
                 HorizontalLayout {
-                    spacing: 10px;
-                    Rectangle {
-                        width: 40px;
-                        height: 40px;
-                        border-radius: 11px;
-                        background: Theme.accent;
-                        Text {
-                            text: root.t("brand.mark");
-                            color: Theme.on-accent;
-                            font-size: 22px;
-                            font-weight: 800;
-                            horizontal-alignment: center;
-                            vertical-alignment: center;
-                        }
-                    }
-                    VerticalLayout {
-                        alignment: center;
-                        Text { text: root.t("app.title"); color: Theme.title; font-weight: 700; font-size: 13px; overflow: elide; }
-                        Text { text: root.t("app.subtitle"); color: Theme.muted; font-size: 10px; font-weight: 700; }
-                    }
+                    alignment: start;
+                    AppButton { text: root.t("settings.menu"); tip: root.t("tip.settings"); clicked => { root.show-settings("appearance"); } }
                 }
-                AppButton { text: root.t("settings.menu"); tip: root.t("tip.settings"); clicked => { root.show-settings("appearance"); } }
+                VerticalLayout {
+                    spacing: 2px;
+                    Text { text: root.t("app.title"); color: Theme.title; font-weight: 700; font-size: 13px; overflow: elide; }
+                    Text { text: root.t("app.subtitle"); color: Theme.muted; font-size: 10px; font-weight: 700; }
+                }
                 Rectangle { height: 1px; background: Theme.border; }
                 Text { text: root.t("instances.title"); color: Theme.muted; font-size: 10px; font-weight: 700; }
                 ListView {
@@ -1174,19 +1161,10 @@ export component MainWindow inherits Window {
                     HorizontalLayout {
                         spacing: 14px;
                         alignment: start;
-                        Rectangle {
+                        Image {
+                            source: @image-url("@generated/window-icon.png");
                             width: 56px;
                             height: 56px;
-                            border-radius: 14px;
-                            background: Theme.accent;
-                            Text {
-                                text: root.t("brand.mark");
-                                color: Theme.on-accent;
-                                font-size: 30px;
-                                font-weight: 800;
-                                horizontal-alignment: center;
-                                vertical-alignment: center;
-                            }
                         }
                         VerticalLayout {
                             alignment: center;

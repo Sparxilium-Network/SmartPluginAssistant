@@ -13,3 +13,4 @@
   - `open-link` 只開啟 provider 首頁與 about 儲存庫網址，且必須是 https://，不信任任意字串。
 - 2026-11-11：使用者要求欄位功能只由設定負責：移除表格上方「欄位」按鈕，也移除標題列右鍵開設定（同一理由，只保留設定入口）。翻譯刪除 `columns.button`、`tip.columns`。
 - 2026-11-11：「重新整理」「匯入 JAR」「辨識本機插件」合併為「本機插件 ▾」下拉選單，比照匯出選單（根層 overlay `local-menu`，項目附說明）。原 `tip.refresh／import／link` 改為選單說明 `library.*_hint`，按鈕本身用 `tip.local`。
+- 2026-11-11：使用者要求移除側欄標題左側的「S」方塊（意義不明），設定按鈕縮小放到側欄左上角（應用程式名稱上方）。「關於本程式」頁的 S 方塊改顯示實際應用程式圖示（`@generated/window-icon.png`）；翻譯鍵 `brand.mark` 刪除。
