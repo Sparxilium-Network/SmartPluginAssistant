@@ -1,6 +1,6 @@
 # 架構
 
-> 最後修改：2026-11-08 ｜ 基於 commit：`9c569ba`
+> 最後修改：2026-11-11 ｜ 基於 commit：`cd8b770`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，取代原本的 Java／JavaFX 實作（保留在 `javafx` 分支）。功能與安全設計以 Smart Plugin Assistant Sol（JavaFX 版的後續改寫）為規格，並加回 JavaFX 版的 Hangar 支援。管理虛擬的 Minecraft 伺服器實例，從 Modrinth 與 Hangar 搜尋、安裝插件，匯入既有 JAR，並安全地更新與匯出。不會啟動或停止伺服器。
 
@@ -15,14 +15,13 @@ flowchart LR
     P -->|HTTPS| API[市場 API]
 ```
 
-## 已確認的決策
-
-2026-10-31 與使用者確認：
+## 設計原則
 
 - UI 框架使用 Slint，前後端嚴格分離，方便日後更換 UI 框架。
 - 內建平台只有 Modrinth 與 Hangar；不包含 Sol 的 Spigot 與 JavaFX 版的 Voxel。
 - 擴充方式是編譯期的 trait 實作，各平台一個 crate，不支援執行期載入外掛。
-- 使用新的資料目錄 `~/.smartpluginassistant-rust/`，不與 JavaFX 版的 `~/.smartpluginassistant/` 共用。2026-11-06 依使用者要求由 JSON 改為單一 SQLite 資料庫 `spa.db`，並記錄明確的存檔格式版本；Sol 的 JSON 只匯入一次。
+- 資料目錄 `~/.smartpluginassistant-rust/`，不與 JavaFX 版的 `~/.smartpluginassistant/` 共用。所有資料存放於單一 SQLite 資料庫 `spa.db`，並記錄明確的存檔格式版本；Sol 的 JSON 只在首次建立時匯入一次。
+- 新實例的預設核心為 Paper。
 
 ## 分層
 
@@ -66,7 +65,7 @@ spa-api  <-  spa-core  <-  spa-app  <-  spa-desktop (Slint)
 
 ### Hangar
 
-API 為 `https://hangar.papermc.io/api/v1/`，2026-10-31 以線上 API 核對：
+API 為 `https://hangar.papermc.io/api/v1/`：
 
 - 平台由實例的有效載入器決定：paper／purpur／folia → PAPER，waterfall／bungeecord → WATERFALL，velocity → VELOCITY。其他載入器沒有 Hangar 結果，這不是錯誤。
 - 搜尋 `projects?platform&version&offset&limit`；空白搜尋時加上 `sort=-downloads`。

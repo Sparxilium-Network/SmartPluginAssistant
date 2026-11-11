@@ -1,6 +1,6 @@
 # Smart Plugin Assistant 開發說明
 
-> 最後修改：2026-11-08 ｜ 基於 commit：`9c569ba`
+> 最後修改：2026-11-11 ｜ 基於 commit：`cd8b770`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作保留在 `javafx` 分支。一般使用方式見 [README](../README.md)。本文件是開發文件的入口，給開發者與維護者，記錄專案結構、開發規範、建置、資料庫格式與測試方式。
 
@@ -8,12 +8,10 @@ Smart Plugin Assistant 的完全 Rust 重寫版，原本的 Java／JavaFX 實作
 
 - [架構](ARCHITECTURE.md)：已確認的決策、分層、資料安全、Modrinth／Hangar 轉接、探索清單、圖片快取與介面實作。
 - [Provider 開發指引](PROVIDER-GUIDE.md)：新增插件來源平台的步驟、契約與測試方式。
-- [驗證紀錄](VALIDATION.md)：測試涵蓋範圍、各階段驗證結果與尚未驗證的項目。
-- [開發進度](PROGRESS.md)：已完成項目與後續候選。
 
 新增或拆分 `docs/` 下的文件時，記得更新這份清單。每份文件標題下方標註最後修改日期與當時的 `HEAD` 短雜湊，修改內容時一併更新。
 
-AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不納入版本控制；本專案不使用 `AGENTS.md`。
+AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不納入版本控制；本專案不使用 `AGENTS.md`。決策紀錄、驗證結果與開發進度等工作紀錄放在 `.cowork/`（入口 `.cowork/INDEX.md`），主要給 AI Agent 查閱。
 
 ## 結構
 
@@ -57,7 +55,7 @@ AI Agent 的專屬指示與記憶放在各自的目錄（`.claude/` 等），不
 
 ### 工作方式
 
-- 一次完成並驗證一個小功能，更新 [開發進度](PROGRESS.md) 與 [驗證紀錄](VALIDATION.md) 後提交，再進行下一個。
+- 一次完成並驗證一個小功能後提交，再進行下一個。commit 標題寫英文，空一行後以繁體中文說明。
 - 測試保持可重現：使用本機 HTTP fixture，不依賴外部服務。連線到真實 API 的檢查只在明確執行 `--snapshot` 時進行。
 
 ## 啟動與打包
@@ -88,7 +86,7 @@ bash ./build.sh
 
 ## 自動建置
 
-[GitHub Actions](../.github/workflows/build.yml) 在每次 push 與 PR 時，於 Windows、Ubuntu 與 macOS 執行格式檢查、Clippy、測試與 release 建置，並上傳執行檔為 artifact。目前只在本機 Windows 驗證過，Linux／macOS 工作尚未實際執行。
+[GitHub Actions](../.github/workflows/build.yml) 在每次 push 與 PR 時，於 Windows、Ubuntu 與 macOS 執行格式檢查、Clippy、測試與 release 建置，並上傳執行檔為 artifact。測試使用 `--no-fail-fast`，一次列出所有失敗。工作流程不使用任何 secret。
 
 ## 資料儲存
 
@@ -146,14 +144,14 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-目前有 57 個測試，全部使用隔離目錄與本機 HTTP，不連線外部服務：
+測試全部使用隔離目錄與本機 HTTP，不連線外部服務：
 
 - `spa-core/tests/common`：本機 HTTP 伺服器、JAR 產生器與假 provider，供核心流程測試使用。
 - `spa-app/tests/controller.rs`：以 headless 方式驅動 `Controller`，與 UI 使用相同的事件流程。
 - 各 provider crate 以記憶體內的 `HttpTransport` fixture 測試 JSON 解析、分頁與網址辨識。
 - 回滾測試以 SQLite trigger（`RAISE(ABORT)`）注入中繼資料寫入失敗。
-
-測試涵蓋的範圍見 [驗證紀錄](VALIDATION.md)。
+- 暫存目錄一律用各測試模組的 `temp_dir()`（`spa-core` 的 `test_support`、`tests/common`），不要直接呼叫 `tempfile::tempdir()`。macOS 的暫存目錄在 `/var` 底下，而 `/var` 是符號連結，會被路徑檢查拒絕。
+- Controller 測試啟用探索前，先等切換實例產生的 `MarketReset`，否則兩個探索清單會競爭，請求次數不固定。
 
 ## 畫面擷取
 
