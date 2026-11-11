@@ -1,6 +1,6 @@
 # 架構
 
-> 最後修改：2026-11-11 ｜ 基於 commit：`dce44c0`
+> 最後修改：2026-11-11 ｜ 基於 commit：`f5d3c1b`
 
 Smart Plugin Assistant 的完全 Rust 重寫版，取代原本的 Java／JavaFX 實作（保留在 `javafx` 分支）。功能與安全設計以 Smart Plugin Assistant Sol（JavaFX 版的後續改寫）為規格，並加回 JavaFX 版的 Hangar 支援。管理虛擬的 Minecraft 伺服器實例，從 Modrinth 與 Hangar 搜尋、安裝插件，匯入既有 JAR，並安全地更新與匯出。不會啟動或停止伺服器。
 
@@ -99,10 +99,14 @@ API 為 `https://hangar.papermc.io/api/v1/`：
 
 - 翻譯：Slint 的 `Tr.get(Tr.revision, key)` 是 pure callback；遞增 `revision` 會重新計算所有文字。
 - 對話框是視窗內的 modal，由 `dialog` 屬性選擇。訊息框是獨立的最上層，錯誤訊息不會讓填到一半的表單消失。
+- 設定視窗：
+  - 左側 `NavItem` 導覽（「偏好設定」群組可收合），右側依 `settings-page` 顯示頁面，標題列顯示「群組 › 頁面」。頁面為 `appearance`、`columns`、`images`、`storage`、`providers`、`about`；其他位置以 `show-settings(page)` 直接開到指定頁。
+  - 沒有「儲存／取消」：每個控制項變更時呼叫 `settings-save`，由 `Controller::save_settings` 驗證並儲存；切換語言時 Controller 會重新送出設定頁需要的文字。
+  - 平台清單來自 `Controller::providers()`，程式資訊來自 `Controller::about()`（套件版本、授權與儲存庫）。`open-link` 只開啟這兩處列出的 `https://` 網址。
 - 已安裝插件表格：
   - 欄位為固定寬度，放在可水平捲動的 `ScrollView` 內。
   - 拖曳標題右側邊界時只更新 Slint model（`column-drag`）；放開後才呼叫 `Controller::set_column_width`，由 Controller 驗證、儲存並重新送出 `UiEvent::Columns`。
-  - 欄位選擇（「欄位」按鈕或標題列右鍵）呼叫 `set_column_visible`／`reset_columns`。
+  - 欄位選擇在設定的 `columns` 頁（「欄位」按鈕或標題列右鍵會直接開到這頁），呼叫 `set_column_visible`／`reset_columns`。
 - 懸浮說明：
   - `AppButton.tip` 在滑鼠停留時啟動 600 ms 的 `Timer`，停用的按鈕也會啟動。時間到後寫入 `Tip` global（文字與按鈕在視窗中的位置）。
   - MainWindow 最後繪製唯一的 `TipBox`，因此說明框不會被裁切或遮住。靠近視窗底部時改顯示在按鈕上方。

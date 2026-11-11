@@ -3,7 +3,7 @@
 
 import { LineEdit, ComboBox, CheckBox, ListView, ScrollView, SpinBox, Palette } from "std-widgets.slint";
 import { Theme, Tr } from "theme.slint";
-import { AppButton, Badge, Artwork, Muted, SectionTitle, Modal, TextBlock, Tip, TipBox, MenuItem } from "widgets.slint";
+import { AppButton, Badge, Artwork, Muted, SectionTitle, Modal, TextBlock, Tip, TipBox, MenuItem, NavItem, SettingsSection, SettingRow } from "widgets.slint";
 
 export { Theme, Tr, Tip }
 
@@ -53,6 +53,8 @@ export struct DetailData {
 export struct ReleaseRow { label: string, detail: string, notice: string, verified: bool, installable: bool }
 
 export struct ChoiceRow { name: string, checked: bool }
+
+export struct ProviderRow { name: string, id: string, homepage: string }
 
 component TabButton inherits Rectangle {
     in property <string> text;
@@ -138,8 +140,11 @@ export component MainWindow inherits Window {
     in-out property <bool> include-optional;
 
     // ---------- dialogs ----------
-    // "", "instance", "confirm", "plan", "url", "settings", "columns"
+    // "", "instance", "confirm", "plan", "url", "settings"
     in-out property <string> dialog;
+    // Settings page: "appearance", "columns", "images", "storage", "providers", "about"
+    in-out property <string> settings-page: "appearance";
+    in-out property <bool> preferences-open: true;
     in property <string> confirm-text;
     in-out property <bool> message-open;
     in property <string> message-title;
@@ -174,6 +179,10 @@ export component MainWindow inherits Window {
     in property <int> cache-mb-max: 512;
     in property <string> set-usage;
     in property <string> set-storage;
+    in property <[ProviderRow]> provider-rows;
+    in property <string> about-version;
+    in property <string> about-license;
+    in property <string> about-repository;
 
     // Export drop-down, anchored under the export button (window coordinates).
     in-out property <bool> export-menu;
@@ -187,7 +196,8 @@ export component MainWindow inherits Window {
     callback open-folder();
     callback unregister();
     callback open-settings();
-    callback open-providers();
+    // Opens an https:// address from the settings pages in the default browser.
+    callback open-link(string);
     callback apply-scheme();
 
     callback lib-filter(string);
@@ -257,6 +267,24 @@ export component MainWindow inherits Window {
             : Theme.text;
     }
 
+    public function show-settings(page: string) {
+        root.settings-page = page;
+        root.open-settings();
+    }
+
+    pure function page-title(page: string) -> string {
+        return page == "appearance" ? root.t("settings.page.appearance")
+            : page == "columns" ? root.t("settings.page.columns")
+            : page == "images" ? root.t("settings.page.images")
+            : page == "storage" ? root.t("settings.page.storage")
+            : page == "providers" ? root.t("settings.page.providers")
+            : root.t("settings.page.about");
+    }
+
+    pure function is-preference(page: string) -> bool {
+        return page == "appearance" || page == "columns" || page == "images";
+    }
+
     function show-tab(index: int) {
         root.tab = index;
         root.market-activated(index == 1);
@@ -292,11 +320,7 @@ export component MainWindow inherits Window {
                         Text { text: root.t("app.subtitle"); color: Theme.muted; font-size: 10px; font-weight: 700; }
                     }
                 }
-                HorizontalLayout {
-                    spacing: 8px;
-                    AppButton { text: root.t("settings.menu"); tip: root.t("tip.settings"); clicked => { root.open-settings(); } }
-                    AppButton { text: root.t("providers.title"); tip: root.t("tip.providers"); clicked => { root.open-providers(); } }
-                }
+                AppButton { text: root.t("settings.menu"); tip: root.t("tip.settings"); clicked => { root.show-settings("appearance"); } }
                 Rectangle { height: 1px; background: Theme.border; }
                 Text { text: root.t("instances.title"); color: Theme.muted; font-size: 10px; font-weight: 700; }
                 ListView {
@@ -421,7 +445,7 @@ export component MainWindow inherits Window {
                             vertical-alignment: center;
                         }
                         Rectangle { horizontal-stretch: 1; }
-                        AppButton { text: root.t("columns.button"); tip: root.t("tip.columns"); clicked => { root.dialog = "columns"; } }
+                        AppButton { text: root.t("columns.button"); tip: root.t("tip.columns"); clicked => { root.show-settings("columns"); } }
                     }
                     Rectangle {
                         vertical-stretch: 1;
@@ -444,7 +468,7 @@ export component MainWindow inherits Window {
                                     TouchArea {
                                         pointer-event(event) => {
                                             if (event.kind == PointerEventKind.down && event.button == PointerEventButton.right) {
-                                                root.dialog = "columns";
+                                                root.show-settings("columns");
                                             }
                                         }
                                     }
@@ -782,23 +806,6 @@ export component MainWindow inherits Window {
         }
     }
 
-    if root.dialog == "columns": Modal {
-        title: root.t("columns.title");
-        panel-width: 420px;
-        Muted { text: root.t("columns.hint"); }
-        for column in root.columns: CheckBox {
-            text: column.title;
-            checked: column.visible;
-            toggled => { root.column-visible(column.id, self.checked); }
-        }
-        HorizontalLayout {
-            alignment: end;
-            spacing: 8px;
-            AppButton { text: root.t("columns.reset"); clicked => { root.columns-reset(); } }
-            AppButton { text: root.t("button.close"); primary: true; clicked => { root.dialog = ""; } }
-        }
-    }
-
     if root.dialog == "plan": Modal {
         title: root.t("plan.title");
         panel-width: 640px;
@@ -895,50 +902,284 @@ export component MainWindow inherits Window {
     }
 
     if root.dialog == "settings": Modal {
-        title: root.t("settings.title");
-        panel-width: 600px;
-        SectionTitle { text: root.t("settings.appearance"); }
-        GridLayout {
-            spacing: 10px;
-            Row {
-                Text { text: root.t("settings.theme"); color: Theme.muted; vertical-alignment: center; }
-                ComboBox {
-                    model: [Tr.get(Tr.revision, "settings.theme.dark"), Tr.get(Tr.revision, "settings.theme.light")];
-                    current-index <=> root.set-theme-index;
-                }
-            }
-            Row {
-                Text { text: root.t("settings.accent"); color: Theme.muted; vertical-alignment: center; }
-                ComboBox {
-                    model: [Tr.get(Tr.revision, "settings.accent.teal"), Tr.get(Tr.revision, "settings.accent.blue"), Tr.get(Tr.revision, "settings.accent.violet")];
-                    current-index <=> root.set-accent-index;
-                }
-            }
-            Row {
-                Text { text: root.t("language.label"); color: Theme.muted; vertical-alignment: center; }
-                ComboBox {
-                    model: [Tr.get(Tr.revision, "language.zh-tw"), Tr.get(Tr.revision, "language.en")];
-                    current-index <=> root.set-language-index;
-                }
-            }
-        }
-        SectionTitle { text: root.t("settings.images"); }
-        CheckBox { text: root.t("settings.images_enabled"); checked <=> root.set-images; }
+        panel-width: 920px;
         HorizontalLayout {
-            spacing: 10px;
-            Text { text: root.t("settings.cache_limit"); color: Theme.muted; vertical-alignment: center; }
-            SpinBox { minimum: root.cache-mb-min; maximum: root.cache-mb-max; value <=> root.set-cache-mb; }
-        }
-        Muted { text: root.t("settings.cache_hint"); }
-        Text { text: root.set-usage; color: Theme.text; wrap: word-wrap; }
-        Muted { text: root.set-storage; }
-        HorizontalLayout {
-            spacing: 8px;
-            AppButton { text: root.t("settings.cache_clear"); tip: root.t("tip.cache_clear"); danger: true; clicked => { root.settings-clear-cache(); } }
-            AppButton { text: root.t("settings.data_folder"); tip: root.t("tip.data_folder"); clicked => { root.settings-open-data(); } }
-            Rectangle { horizontal-stretch: 1; }
-            AppButton { text: root.t("button.cancel"); clicked => { root.dialog = ""; } }
-            AppButton { text: root.t("button.save"); primary: true; clicked => { root.dialog = ""; root.settings-save(); } }
+            height: min(560px, root.height - 80px);
+            // ---------- navigation ----------
+            VerticalLayout {
+                width: 230px;
+                padding-right: 14px;
+                spacing: 2px;
+                alignment: start;
+                Text {
+                    text: root.t("settings.title");
+                    color: Theme.title;
+                    font-size: 15px;
+                    font-weight: 700;
+                    height: 40px;
+                    vertical-alignment: center;
+                }
+                NavItem {
+                    text: root.t("settings.group.preferences");
+                    group: true;
+                    expanded: root.preferences-open;
+                    clicked => { root.preferences-open = !root.preferences-open; }
+                }
+                if root.preferences-open: NavItem {
+                    text: root.t("settings.page.appearance");
+                    indent: true;
+                    active: root.settings-page == "appearance";
+                    clicked => { root.settings-page = "appearance"; }
+                }
+                if root.preferences-open: NavItem {
+                    text: root.t("settings.page.columns");
+                    indent: true;
+                    active: root.settings-page == "columns";
+                    clicked => { root.settings-page = "columns"; }
+                }
+                if root.preferences-open: NavItem {
+                    text: root.t("settings.page.images");
+                    indent: true;
+                    active: root.settings-page == "images";
+                    clicked => { root.settings-page = "images"; }
+                }
+                NavItem {
+                    text: root.t("settings.page.storage");
+                    active: root.settings-page == "storage";
+                    clicked => { root.settings-page = "storage"; }
+                }
+                NavItem {
+                    text: root.t("settings.page.providers");
+                    active: root.settings-page == "providers";
+                    clicked => { root.settings-page = "providers"; }
+                }
+                NavItem {
+                    text: root.t("settings.page.about");
+                    active: root.settings-page == "about";
+                    clicked => { root.settings-page = "about"; }
+                }
+            }
+            Rectangle { width: 1px; background: Theme.border; }
+
+            // ---------- page ----------
+            VerticalLayout {
+                horizontal-stretch: 1;
+                padding-left: 20px;
+                spacing: 16px;
+                Text {
+                    text: root.is-preference(root.settings-page)
+                        ? root.t("settings.group.preferences") + " › " + root.page-title(root.settings-page)
+                        : root.page-title(root.settings-page);
+                    color: Theme.title;
+                    font-size: 18px;
+                    font-weight: 700;
+                    height: 40px;
+                    vertical-alignment: center;
+                }
+
+                if root.settings-page == "appearance": VerticalLayout {
+                    spacing: 12px;
+                    SettingsSection { text: root.t("settings.appearance"); }
+                    SettingRow {
+                        label: root.t("settings.theme");
+                        ComboBox {
+                            width: 220px;
+                            model: [Tr.get(Tr.revision, "settings.theme.dark"), Tr.get(Tr.revision, "settings.theme.light")];
+                            current-index <=> root.set-theme-index;
+                            selected => { root.settings-save(); }
+                        }
+                    }
+                    SettingRow {
+                        label: root.t("settings.accent");
+                        ComboBox {
+                            width: 220px;
+                            model: [Tr.get(Tr.revision, "settings.accent.teal"), Tr.get(Tr.revision, "settings.accent.blue"), Tr.get(Tr.revision, "settings.accent.violet")];
+                            current-index <=> root.set-accent-index;
+                            selected => { root.settings-save(); }
+                        }
+                    }
+                    SettingsSection { text: root.t("settings.language"); }
+                    SettingRow {
+                        label: root.t("language.label");
+                        ComboBox {
+                            width: 220px;
+                            model: [Tr.get(Tr.revision, "language.zh-tw"), Tr.get(Tr.revision, "language.en")];
+                            current-index <=> root.set-language-index;
+                            selected => { root.settings-save(); }
+                        }
+                    }
+                }
+
+                if root.settings-page == "columns": VerticalLayout {
+                    spacing: 12px;
+                    SettingsSection { text: root.t("settings.section.columns"); }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        Muted { text: root.t("columns.hint"); }
+                    }
+                    // Three columns of check boxes; column k shows every third entry from k.
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        spacing: 12px;
+                        alignment: start;
+                        for k in 3: VerticalLayout {
+                            width: 190px;
+                            alignment: start;
+                            for column[i] in root.columns: Rectangle {
+                                height: Math.mod(i, 3) == k ? 32px : 0px;
+                                visible: Math.mod(i, 3) == k;
+                                CheckBox {
+                                    width: parent.width;
+                                    text: column.title;
+                                    checked: column.visible;
+                                    toggled => { root.column-visible(column.id, self.checked); }
+                                }
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        alignment: start;
+                        AppButton { text: root.t("columns.reset"); clicked => { root.columns-reset(); } }
+                    }
+                }
+
+                if root.settings-page == "images": VerticalLayout {
+                    spacing: 12px;
+                    SettingsSection { text: root.t("settings.images"); }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        CheckBox {
+                            text: root.t("settings.images_enabled");
+                            checked <=> root.set-images;
+                            toggled => { root.settings-save(); }
+                        }
+                    }
+                    SettingRow {
+                        label: root.t("settings.cache_limit");
+                        SpinBox {
+                            width: 160px;
+                            minimum: root.cache-mb-min;
+                            maximum: root.cache-mb-max;
+                            value <=> root.set-cache-mb;
+                            edited => { root.settings-save(); }
+                        }
+                    }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        Muted { text: root.t("settings.cache_hint"); }
+                    }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        Text { text: root.set-usage; color: Theme.text; wrap: word-wrap; }
+                    }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        alignment: start;
+                        AppButton { text: root.t("settings.cache_clear"); tip: root.t("tip.cache_clear"); danger: true; clicked => { root.settings-clear-cache(); } }
+                    }
+                }
+
+                if root.settings-page == "storage": VerticalLayout {
+                    spacing: 12px;
+                    SettingsSection { text: root.t("settings.section.storage"); }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        Text { text: root.set-storage; color: Theme.text; wrap: word-wrap; }
+                    }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        alignment: start;
+                        AppButton { text: root.t("settings.data_folder"); tip: root.t("tip.data_folder"); clicked => { root.settings-open-data(); } }
+                    }
+                }
+
+                if root.settings-page == "providers": VerticalLayout {
+                    spacing: 12px;
+                    SettingsSection { text: root.t("settings.section.providers"); }
+                    for provider in root.provider-rows: Rectangle {
+                        height: 62px;
+                        background: Theme.header;
+                        border-radius: 8px;
+                        HorizontalLayout {
+                            padding-left: 16px;
+                            padding-right: 12px;
+                            spacing: 12px;
+                            VerticalLayout {
+                                horizontal-stretch: 1;
+                                alignment: center;
+                                spacing: 3px;
+                                HorizontalLayout {
+                                    spacing: 8px;
+                                    alignment: start;
+                                    Text { text: provider.name; color: Theme.title; font-size: 14px; font-weight: 700; vertical-alignment: center; }
+                                    Badge { text: provider.id; }
+                                }
+                                Text { text: provider.homepage; color: Theme.muted; font-size: 12px; overflow: elide; }
+                            }
+                            VerticalLayout {
+                                alignment: center;
+                                AppButton { text: root.t("providers.homepage"); clicked => { root.open-link(provider.homepage); } }
+                            }
+                        }
+                    }
+                    Muted { text: root.t("providers.hint"); }
+                }
+
+                if root.settings-page == "about": VerticalLayout {
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 14px;
+                        alignment: start;
+                        Rectangle {
+                            width: 56px;
+                            height: 56px;
+                            border-radius: 14px;
+                            background: Theme.accent;
+                            Text {
+                                text: root.t("brand.mark");
+                                color: Theme.on-accent;
+                                font-size: 30px;
+                                font-weight: 800;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 4px;
+                            Text { text: root.t("app.title"); color: Theme.title; font-size: 20px; font-weight: 700; }
+                            Text { text: root.t("about.version") + " " + root.about-version; color: Theme.muted; }
+                        }
+                    }
+                    Muted { text: root.t("about.description"); font-size: 13px; }
+                    SettingsSection { text: root.t("settings.page.about"); }
+                    SettingRow {
+                        label: root.t("about.version");
+                        Text { text: root.about-version; color: Theme.text; vertical-alignment: center; }
+                    }
+                    SettingRow {
+                        label: root.t("about.license");
+                        Text { text: root.about-license; color: Theme.text; vertical-alignment: center; }
+                    }
+                    SettingRow {
+                        label: root.t("about.repository");
+                        Text { text: root.about-repository; color: Theme.text; vertical-alignment: center; overflow: elide; }
+                    }
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        alignment: start;
+                        AppButton { text: root.t("about.open_repository"); clicked => { root.open-link(root.about-repository); } }
+                    }
+                }
+
+                Rectangle { vertical-stretch: 1; }
+                HorizontalLayout {
+                    spacing: 8px;
+                    Muted { text: root.t("settings.autosave"); horizontal-stretch: 1; vertical-alignment: center; }
+                    AppButton { text: root.t("button.close"); primary: true; clicked => { root.dialog = ""; } }
+                }
+            }
         }
     }
 

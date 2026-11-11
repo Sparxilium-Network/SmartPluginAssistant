@@ -206,8 +206,9 @@ pub fn run(probe: &Probe, ui: &MainWindow) {
         });
         probe.settle(ui, Duration::from_millis(300));
         println!("export menu closed by outside click: {}", !ui.get_export_menu());
-        // Column chooser, then a hidden column and a drag-resized one.
-        ui.set_dialog("columns".into());
+        // Column chooser on its settings page, then a hidden column and a drag-resized one.
+        ui.invoke_show_settings("columns".into());
+        probe.wait(ui, long, |ui| ui.get_dialog() == "settings");
         probe.settle(ui, Duration::from_millis(300));
         probe.capture("06c-columns");
         ui.set_dialog("".into());
@@ -226,15 +227,30 @@ pub fn run(probe: &Probe, ui: &MainWindow) {
         ui.invoke_market_activated(true);
     }
 
-    ui.invoke_open_settings();
+    ui.invoke_show_settings("appearance".into());
     probe.wait(ui, long, |ui| ui.get_dialog() == "settings" && !ui.get_set_usage().is_empty());
+    probe.settle(ui, Duration::from_millis(300));
     probe.capture("07-settings");
+    for page in ["images", "storage", "providers", "about"] {
+        ui.set_settings_page(page.into());
+        probe.settle(ui, Duration::from_millis(300));
+        probe.capture(&format!("07-settings-{page}"));
+    }
+    // Changes are saved as they are made; switching language keeps the dialog open.
+    ui.set_settings_page("appearance".into());
     ui.set_set_theme_index(1);
     ui.set_set_accent_index(2);
     ui.set_set_language_index(1);
-    ui.set_dialog("".into());
     ui.invoke_settings_save();
     probe.settle(ui, Duration::from_secs(2));
+    println!("settings still open after saving: {}", ui.get_dialog() == "settings");
+    probe.capture("07-settings-light-english");
+    ui.set_preferences_open(false);
+    ui.set_settings_page("about".into());
+    probe.settle(ui, Duration::from_millis(300));
+    probe.capture("07-settings-collapsed");
+    ui.set_dialog("".into());
+    probe.settle(ui, Duration::from_secs(1));
     probe.capture("08-light-english");
     ui.set_tab(0);
     ui.invoke_market_activated(false);

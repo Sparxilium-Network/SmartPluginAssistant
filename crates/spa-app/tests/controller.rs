@@ -288,3 +288,15 @@ fn columns_can_be_hidden_resized_and_reset_but_never_all_hidden() {
     });
     assert_eq!(reset[6].width, 130.0);
 }
+
+#[test]
+fn settings_pages_list_providers_and_build_information() {
+    let (_dir, controller, _events, _provider) = setup();
+    let providers = controller.providers();
+    assert_eq!(providers.len(), 1);
+    assert!(providers[0].homepage.starts_with("https://"));
+    let about = Controller::about();
+    assert!(!about.version.is_empty());
+    assert_eq!(about.license, "AGPL-3.0-only");
+    assert_eq!(about.repository, "https://github.com/Sparxilium-Network/SmartPluginAssistant");
+}

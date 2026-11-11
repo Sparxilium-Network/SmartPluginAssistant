@@ -1360,6 +1360,9 @@ impl Controller {
             i18n::set_language(&next.language);
             self.inner.emit(UiEvent::Language(next.language.clone()));
             self.inner.emit(UiEvent::Status(tr("app.ready")));
+            // The settings pages stay open; refresh their host-formatted texts too.
+            self.inner.emit_settings();
+            self.inner.cache_usage();
             self.inner.emit_instances();
             self.inner.emit_columns();
             self.inner.emit_library();
@@ -1402,19 +1405,26 @@ impl Controller {
         });
     }
 
-    pub fn providers_text(&self) -> String {
-        let lines: Vec<String> = self
-            .inner
+    /// Built-in plugin sources, in registration order.
+    pub fn providers(&self) -> Vec<ProviderVm> {
+        self.inner
             .ctx
             .providers
             .all()
             .iter()
             .map(|p| {
                 let info = p.info();
-                format!("• {} ({}) — {}", info.name, info.id, info.homepage)
+                ProviderVm { name: info.name, id: info.id, homepage: info.homepage }
             })
-            .collect();
-        format!("{}\n\n{}", lines.join("\n"), tr("providers.hint"))
+            .collect()
+    }
+
+    pub fn about() -> AboutVm {
+        AboutVm {
+            version: env!("CARGO_PKG_VERSION").into(),
+            license: env!("CARGO_PKG_LICENSE").into(),
+            repository: env!("CARGO_PKG_REPOSITORY").into(),
+        }
     }
 
     pub fn is_busy(&self) -> bool {

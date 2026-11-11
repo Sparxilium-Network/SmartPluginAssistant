@@ -1,5 +1,10 @@
 # 離線畫面擷取（--snapshot）與打包檢查
 
+## 2026-11-11：設定視窗改版
+- `--snapshot` 全流程通過，新增截圖 07-settings（外觀與語言）、07-settings-images／storage／providers／about、07-settings-light-english、07-settings-collapsed；06c-columns 改為設定的表格欄位頁。
+- 已看過：深色繁中各頁、淺色英文（即時儲存後主題、主色、語言立即套用且視窗保持開啟）、收合「偏好設定」群組。
+- 未驗證：原生視窗中實際點選 NavItem 與「開啟官網」／「開啟原始碼頁面」按鈕（離線擷取直接設定 `settings-page`）。
+
 ## 2026-11-11：打包位置
 - 問題：`dist/SmartPluginAssistant/` 自 2026-10-31 存在，之後的打包都放到 `dist/<時間戳>/`，使用者看到的一直是舊版，誤以為沒打包。
 - 修正後 `./build.ps1` 通過：smoke `{"providers":["modrinth","hangar"],"success":true}`，舊產物改名為 `dist/SmartPluginAssistant-20261031-164210`，新產物在 `dist/SmartPluginAssistant/`。`build.sh` 只做 `bash -n` 語法檢查，未在 Linux／macOS 實際執行。

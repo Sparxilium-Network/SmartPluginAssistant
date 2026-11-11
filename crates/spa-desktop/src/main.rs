@@ -324,6 +324,16 @@ fn set_extras(ui: &MainWindow, extras: Vec<spa_app::Choice>) {
 fn wire(ui: &MainWindow, controller: &Controller) {
     ui.set_cache_mb_min(*IMAGE_CACHE_MB.start() as i32);
     ui.set_cache_mb_max(*IMAGE_CACHE_MB.end() as i32);
+    let providers: Vec<ProviderRow> = controller
+        .providers()
+        .into_iter()
+        .map(|p| ProviderRow { name: p.name.into(), id: p.id.into(), homepage: p.homepage.into() })
+        .collect();
+    ui.set_provider_rows(ModelRc::new(VecModel::from(providers)));
+    let about = Controller::about();
+    ui.set_about_version(about.version.into());
+    ui.set_about_license(about.license.into());
+    ui.set_about_repository(about.repository.into());
     macro_rules! on {
         ($c:ident, $ui:ident, $setter:ident, || $body:expr) => {
             on!($c, $ui, $setter, | | $body)
@@ -353,7 +363,16 @@ fn wire(ui: &MainWindow, controller: &Controller) {
         }
     });
     on!(c, ui, on_open_settings, || c.open_settings());
-    on!(c, ui, on_open_providers, || show_message(&ui, tr("providers.title"), c.providers_text(), false));
+    // Only the provider home pages and the repository shown on the settings pages are opened.
+    on!(c, ui, on_open_link, |url| {
+        let url = url.to_string();
+        let known = c.providers().iter().any(|p| p.homepage == url) || url == Controller::about().repository;
+        if known && url.starts_with("https://") {
+            if let Err(e) = open::that_detached(&url) {
+                show_message(&ui, tr("app.failed"), trf("app.error_detail", &[&e]), true);
+            }
+        }
+    });
 
     on!(c, ui, on_lib_filter, |text| c.filter_library(&text));
     on!(c, ui, on_lib_check, |file, checked| c.check_plugin(&file, checked));

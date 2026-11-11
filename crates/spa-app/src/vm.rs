@@ -147,6 +147,21 @@ pub struct InstanceForm {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ProviderVm {
+    pub name: String,
+    pub id: String,
+    pub homepage: String,
+}
+
+/// Build information for the about page.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AboutVm {
+    pub version: String,
+    pub license: String,
+    pub repository: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct SettingsVm {
     pub dark: bool,
     pub accent: String,

@@ -21,4 +21,5 @@
 14. macOS CI 測試暫存目錄修正、CI `--no-fail-fast`（cd8b770）。
 15. 2026-11-11：依規範 v2 建立 `.cowork/`，`docs/VALIDATION.md`、`docs/PROGRESS.md` 與 MEMORY 中的決策搬入（dce44c0）。
 16. 2026-11-11：前後端分離補強：匯出預設檔名、快取上限範圍、日誌初始化移到 spa-app（6c5a138）。
-17. 2026-11-11：打包腳本改為最新產物固定在 `dist/SmartPluginAssistant/`，先在暫存目錄通過 smoke 才替換，舊產物改名保留。
+17. 2026-11-11：打包腳本改為最新產物固定在 `dist/SmartPluginAssistant/`，先在暫存目錄通過 smoke 才替換，舊產物改名保留（f5d3c1b）。
+18. 2026-11-11：設定視窗改為左側導覽式版面，欄位設定、平台插件模組、關於本程式併入；設定即時儲存。

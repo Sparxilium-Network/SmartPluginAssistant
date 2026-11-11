@@ -6,7 +6,7 @@
 |------|------|--------|
 | `decisions/rust-rewrite-scope.md` | Rust 重寫的來源、Slint 與前後端分離、平台範圍、資料目錄、預設 Paper | rewrite, slint, provider, modrinth, hangar, data-dir, sol, javafx |
 | `decisions/sqlite-storage.md` | SQLite spa.db、存檔格式版本、遷移與備份、Sol JSON 匯入、v2 欄位 | sqlite, schema, migration, backup, user_version |
-| `decisions/library-table-and-menus.md` | 上次更新／上次檢查欄位、欄位自訂、匯出選單、懸浮說明、overlay 理由 | table, columns, export, tooltip, overlay, slint |
+| `decisions/library-table-and-menus.md` | 上次更新／上次檢查欄位、欄位自訂、匯出選單、懸浮說明、overlay 理由、設定視窗導覽式版面與即時儲存 | table, columns, export, tooltip, overlay, slint, settings, about, providers |
 | `decisions/repository-and-branches.md` | 目標 GitHub 儲存庫、名稱、javafx／main 分支、User-Agent、不主動 push | github, branch, javafx, main, user-agent, push |
 | `decisions/symlink-path-policy.md` | 拒絕路徑中任何符號連結，使用者決定維持；測試用 temp_dir() | symlink, paths, macos, security, tempdir |
 | `verification/workspace-tests.md` | 最新 fmt／Clippy／測試結果與 58 個測試的涵蓋範圍 | test, clippy, fmt, coverage |

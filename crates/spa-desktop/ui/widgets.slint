@@ -189,6 +189,70 @@ export component SectionTitle inherits Text {
     font-weight: 700;
 }
 
+// Settings navigation entry. A group shows an expand arrow (drawn, not a font glyph).
+export component NavItem inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    in property <bool> indent;
+    in property <bool> group;
+    in property <bool> expanded: true;
+    callback clicked();
+    height: 34px;
+    border-radius: 6px;
+    background: root.active ? Theme.selected : touch.has-hover ? Theme.hover : transparent;
+    HorizontalLayout {
+        padding-left: root.indent ? 30px : 10px;
+        padding-right: 10px;
+        spacing: 6px;
+        if root.group: Rectangle {
+            width: 10px;
+            Path {
+                x: 0;
+                y: (parent.height - 10px) / 2;
+                width: 10px;
+                height: 10px;
+                viewbox-width: 10;
+                viewbox-height: 10;
+                commands: root.expanded ? "M 1 3 L 9 3 L 5 8 Z" : "M 3 1 L 8 5 L 3 9 Z";
+                fill: Theme.muted;
+            }
+        }
+        Text {
+            text: root.text;
+            color: root.active ? Theme.title : Theme.text;
+            font-size: 13px;
+            font-weight: root.active ? 700 : 400;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+    }
+    touch := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Section heading followed by a rule, as used on settings pages.
+export component SettingsSection inherits HorizontalLayout {
+    in property <string> text;
+    spacing: 10px;
+    Text { text: root.text; color: Theme.title; font-size: 13px; font-weight: 700; vertical-alignment: center; }
+    Rectangle {
+        horizontal-stretch: 1;
+        Rectangle { height: 1px; background: Theme.border; }
+    }
+}
+
+// One labelled setting: a fixed-width label, then the control.
+export component SettingRow inherits HorizontalLayout {
+    in property <string> label;
+    padding-left: 16px;
+    spacing: 12px;
+    Text { text: root.label; width: 170px; color: Theme.text; vertical-alignment: center; wrap: word-wrap; }
+    @children
+    Rectangle { horizontal-stretch: 1; }
+}
+
 // Modal overlay: dims the window and centers a panel. Clicks outside are swallowed.
 export component Modal inherits Rectangle {
     in property <string> title;
@@ -207,7 +271,7 @@ export component Modal inherits Rectangle {
         layout := VerticalLayout {
             padding: 20px;
             spacing: 14px;
-            Text { text: root.title; color: Theme.title; font-size: 18px; font-weight: 700; }
+            if root.title != "": Text { text: root.title; color: Theme.title; font-size: 18px; font-weight: 700; }
             @children
         }
     }
